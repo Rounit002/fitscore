@@ -104,3 +104,21 @@ The format is based on Keep a Changelog and this project adheres to Semantic Ver
 - Rebuilt `Frontend/dist` and regenerated the Cordova `havenn/www` bundle from it.
 - Verification: production Vite build passes; 7 selected UI/theme-related Jest suites pass (45 tests); source + production + Cordova audit covered 77 files with 0 gradient matches and 0 legacy orange-brand matches.
 - Existing project-wide quality-gate issues remain outside this theme change: the global ESLint configuration scans coverage/test files without the appropriate globals (588 errors), and the full Jest suite has ESM/Jest-global configuration failures in legacy service/API suites. The theme-specific score-color assertion was updated and passes.
+
+## 2026-07-23 — Added complete PostgreSQL database creation script
+- Added `Backend/database-schema.sql` as a consolidated fresh-database schema for all six tables referenced by the mounted backend: `users`, `scans`, `product_database`, `feature_requests`, `user_medical_conditions`, and `user_health_goals`.
+- Included all columns added piecemeal by `Backend/server.js`, JSONB fields, foreign keys, uniqueness rules, the `pg_trgm` extension, and all application indexes.
+- Included required route fields missing from the current startup initializer: `scans.image_url`, `feature_requests.status`, and `feature_requests.category`.
+- The script is non-destructive (`CREATE ... IF NOT EXISTS`) and intended for a new/empty PostgreSQL database. It was reviewed against every SQL query in the backend; no database was modified while preparing it.
+
+## 2026-07-23 — Diagnosed Render/Supabase startup ENOIDENTIFIER
+- Render startup failure `(ENOIDENTIFIER) no tenant identifier provided` occurs at the first `pg` connection and is a Supabase Supavisor connection-routing error, not a missing-table/schema error.
+- `Backend/server.js` currently constructs `pg.Pool` exclusively from `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`, and `DB_NAME`; despite `PROJECT_SETUP.md`, it does not read `DATABASE_URL`.
+- For Supabase's shared session pooler, Render must use the dashboard-provided pooler hostname, port `5432`, database `postgres`, and username `postgres.<PROJECT_REF>` (not plain `postgres` and not an IP address). No source code was changed during this diagnosis.
+
+## 2026-07-23 — Fixed Render CORS and cross-site authentication cookies
+- Added `Backend/config/cors.js` with an explicit credentialed origin allow-list. It always includes local Vite, Cordova's `https://localhost`, and `https://fitscore-6hqp.onrender.com`, accepts `FRONTEND_URL`, and supports comma-separated `FRONTEND_URLS` for additional deployments.
+- Updated `Backend/server.js` to use the shared CORS configuration. The middleware now handles allowed OPTIONS preflights before auth routes and logs the active origin list at startup.
+- Added `Backend/config/cookies.js`; production auth cookies now use `Secure` plus `SameSite=None` for the separate Render frontend/API sites, while local development uses `SameSite=Lax` without Secure. Logout uses matching attributes.
+- Added focused CORS/cookie tests, including the exact deployed-origin `OPTIONS /auth/register` preflight. Verification passed: 3 suites and 36 tests (`config/cors.test.js`, `config/cookies.test.js`, `routes/auth.test.js`).
+- Deployment still requires pushing these changes and redeploying the correct `fitscan-api` Render service. The frontend Static Site also needs the `/*` to `/index.html` rewrite for BrowserRouter routes such as `/onboarding`.

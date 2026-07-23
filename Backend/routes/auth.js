@@ -3,6 +3,10 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { authLimiter } = require('../middleware/rateLimiter');
 const { validateProfileUpdate, validateDetailsUpdate } = require('../middleware/profileValidator');
+const {
+  createAuthCookieOptions,
+  createClearAuthCookieOptions,
+} = require('../config/cookies');
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key';
@@ -112,12 +116,7 @@ const hydrateUserMedicalProfile = async (pool, user) => {
 };
 
 // Cookie config — centralised so it's consistent across all auth routes
-const COOKIE_OPTIONS = {
-  httpOnly: true,                         // inaccessible to JS — blocks XSS token theft
-  secure: process.env.NODE_ENV === 'production', // HTTPS-only in prod; allows HTTP in local dev
-  sameSite: 'strict',                     // never sent in cross-site requests
-  maxAge: 30 * 24 * 60 * 60 * 1000,      // 30 days in milliseconds
-};
+const COOKIE_OPTIONS = createAuthCookieOptions();
 
 // Middleware to authenticate — reads JWT from HttpOnly cookie
 const authenticate = (req, res, next) => {
@@ -282,11 +281,7 @@ router.post('/google', authLimiter, async (req, res) => {
 
 // Logout — clears the HttpOnly auth cookie
 router.post('/logout', (req, res) => {
-  res.clearCookie('token', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-  });
+  res.clearCookie('token', createClearAuthCookieOptions());
   res.json({ success: true });
 });
 
