@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Nutri Scan - Home Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Manrope:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-fixed": "#6ffbbe",
+                        "on-primary-fixed": "#002113",
+                        "on-secondary-fixed": "#341100",
+                        "surface-container-low": "#eff4ff",
+                        "secondary-fixed-dim": "#ffb690",
+                        "outline-variant": "#bbcabf",
+                        "on-primary-container": "#00422b",
+                        "secondary-fixed": "#ffdbca",
+                        "on-secondary-container": "#5c2400",
+                        "error": "#ba1a1a",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-fixed": "#c9e6ff",
+                        "error-container": "#ffdad6",
+                        "on-secondary-fixed-variant": "#783200",
+                        "surface": "#f8f9ff",
+                        "secondary": "#9d4300",
+                        "inverse-on-surface": "#eaf1ff",
+                        "on-secondary": "#ffffff",
+                        "secondary-container": "#fd761a",
+                        "surface-variant": "#d3e4fe",
+                        "primary": "#006c49",
+                        "background": "#f8f9ff",
+                        "on-tertiary-fixed": "#001e2f",
+                        "surface-tint": "#006c49",
+                        "surface-dim": "#cbdbf5",
+                        "on-tertiary-container": "#003d59",
+                        "tertiary": "#006591",
+                        "primary-container": "#10b981",
+                        "surface-container-highest": "#d3e4fe",
+                        "on-surface-variant": "#3c4a42",
+                        "on-error": "#ffffff",
+                        "on-background": "#0b1c30",
+                        "on-tertiary-fixed-variant": "#004c6e",
+                        "tertiary-container": "#23acf1",
+                        "inverse-primary": "#4edea3",
+                        "surface-bright": "#f8f9ff",
+                        "tertiary-fixed-dim": "#89ceff",
+                        "outline": "#6c7a71",
+                        "on-surface": "#0b1c30",
+                        "on-primary": "#ffffff",
+                        "primary-fixed-dim": "#4edea3",
+                        "on-error-container": "#93000a",
+                        "surface-container-high": "#dce9ff",
+                        "inverse-surface": "#213145",
+                        "on-tertiary": "#ffffff",
+                        "surface-container": "#e5eeff",
+                        "on-primary-fixed-variant": "#005236"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "unit": "4px",
+                        "lg": "24px",
+                        "md": "16px",
+                        "sm": "8px",
+                        "xl": "32px",
+                        "xs": "4px",
+                        "margin-mobile": "20px",
+                        "gutter": "16px",
+                        "margin-desktop": "64px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "headline-md": ["Manrope"],
+                        "headline-lg": ["Manrope"],
+                        "body-lg": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "headline-xl": ["Manrope"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "headline-lg": ["32px", { "lineHeight": "1.25", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "label-sm": ["14px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-xl": ["40px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "800" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex flex-col pb-24 md:pb-0">
+<!-- TopAppBar (Hidden on mobile, visible on md+) -->
+<header class="hidden md:flex bg-surface-container-lowest text-primary font-headline-md font-extrabold tracking-tight docked full-width top-0 z-50 shadow-[0px_4px_20px_rgba(0,0,0,0.05)] flex justify-between items-center w-full px-5 py-3 h-16">
+<div class="flex items-center gap-4">
+<div class="w-8 h-8 rounded-full overflow-hidden bg-surface-container-high flex items-center justify-center">
+<img alt="User Profile Photo" class="w-full h-full object-cover" data-alt="A professional headshot of a friendly individual smiling warmly. The photo is well-lit with soft, natural light, emphasizing a modern and approachable look. The background is a clean, neutral tone, ensuring the subject stands out. This conveys a sense of trust and personal connection suitable for a wellness application profile." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA-6KFNiGvXpVTyIEoyjcjwQF1HAP4QEtqq2cOeG5ow0aDcQd2QdX0U0wWtWFIecDR0oRAXb4nkWlGvzaPD6ryWIa5s9W9sdudESPlkkdqPLNzJEKEs8aQB6kNSXEbgEh5sfYzHRV9Tw3DVccVdzH0ma-RD-sL_WLm-XjHGnBmCwc96RueasMHLYU1YjqWNe_XhlrpYob98mVahRxmXGE0Llzjh-HjoqMIs2TkCCPw3TQGb7ba0k02WEGNcSnN1zvZd77ATKit0Y0c"/>
+</div>
+<span class="text-xl font-extrabold text-primary tracking-tight">Nutri Scan</span>
+</div>
+<!-- Desktop Nav Items -->
+<nav class="flex gap-6">
+<a class="text-primary font-semibold hover:bg-surface-container-low transition-colors duration-200 px-3 py-2 rounded-md" href="#">Home</a>
+<a class="text-on-surface-variant hover:bg-surface-container-low transition-colors duration-200 px-3 py-2 rounded-md" href="#">Scan</a>
+<a class="text-on-surface-variant hover:bg-surface-container-low transition-colors duration-200 px-3 py-2 rounded-md" href="#">History</a>
+</nav>
+<button aria-label="Settings" class="text-primary hover:bg-surface-container-low transition-colors duration-200 p-2 rounded-full">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</header>
+<!-- Mobile Header (Simplified version for mobile, as TopAppBar hides nav on md) -->
+<div class="md:hidden flex justify-between items-center w-full px-margin-mobile py-4 bg-surface-container-lowest shadow-[0px_4px_20px_rgba(0,0,0,0.05)] sticky top-0 z-40">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full overflow-hidden bg-surface-container-high border border-outline-variant">
+<img alt="User Profile Photo" class="w-full h-full object-cover" data-alt="A professional headshot of a friendly individual smiling warmly. The photo is well-lit with soft, natural light, emphasizing a modern and approachable look. The background is a clean, neutral tone, ensuring the subject stands out. This conveys a sense of trust and personal connection suitable for a wellness application profile." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAnmA3-F5myHEuoTtwOTgLXqrJzpIUVKwEUJaqpFbvEMk5Ql-FL6ph2NIP4GlUjylNrjIZFxvyh_I_qLtzfNBGeOA5ScVIenIBaPeGI0QAkyoHoIswxmrDR4T-O6g_lpuYS5ZMZ-aSBW4z5IP8Pvwx8yMLsY-oSXjInAlja0Z8Du4WzEVYCQK9iQPFazB5yuYgLxDbv1INYMnqpmYXgzVvyDWxEJdCnssHXFPsFG4Dkkl9TwauCyBWoSUrOe5hrM90AyS-aDmYVjgs"/>
+</div>
+<div>
+<p class="font-body-md text-on-surface-variant text-sm">Good morning,</p>
+<h1 class="font-headline-md text-on-background text-lg">Alex!</h1>
+</div>
+</div>
+<button aria-label="Settings" class="text-on-surface-variant p-2 rounded-full bg-surface">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+<main class="flex-grow w-full max-w-7xl mx-auto px-margin-mobile md:px-margin-desktop py-lg space-y-xl">
+<!-- Desktop Greeting (Hidden on mobile) -->
+<section class="hidden md:block">
+<h1 class="font-headline-lg text-on-background">Good morning, Alex!</h1>
+<p class="font-body-lg text-on-surface-variant mt-2">Here's your nutritional overview for today.</p>
+</section>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter md:gap-lg">
+<!-- Health Score Card -->
+<div class="md:col-span-5 bg-surface-container-lowest rounded-xl p-lg shadow-[0px_4px_20px_rgba(0,0,0,0.05)] border border-surface-container-high flex flex-col items-center justify-center relative overflow-hidden">
+<div class="absolute top-0 left-0 w-full h-full bg-primary/5 pointer-events-none"></div>
+<h2 class="font-headline-md text-on-background self-start mb-6 w-full z-10">Daily Health Score</h2>
+<div class="relative w-48 h-48 flex items-center justify-center z-10">
+<!-- SVG Ring -->
+<svg class="w-full h-full -rotate-90" viewbox="0 0 100 100">
+<circle class="text-surface-container-high" cx="50" cy="50" fill="transparent" r="40" stroke="currentColor" stroke-width="12"></circle>
+<!-- Assuming 85% score -->
+<circle class="text-primary transition-all duration-1000 ease-out" cx="50" cy="50" fill="transparent" r="40" stroke="currentColor" stroke-dasharray="251.2" stroke-dashoffset="37.68" stroke-linecap="round" stroke-width="12"></circle>
+</svg>
+<div class="absolute flex flex-col items-center">
+<span class="font-headline-xl text-primary leading-none">85</span>
+<span class="font-label-sm text-on-surface-variant uppercase tracking-widest mt-1">Excellent</span>
+</div>
+</div>
+<p class="font-body-md text-on-surface-variant text-center mt-6 z-10">You're doing great! Keep balancing your macronutrients.</p>
+</div>
+<!-- Quick Actions & Progress -->
+<div class="md:col-span-7 flex flex-col gap-gutter md:gap-lg">
+<!-- Quick Actions -->
+<div class="grid grid-cols-3 gap-sm">
+<button class="bg-primary text-on-primary rounded-lg p-md flex flex-col items-center justify-center gap-2 hover:bg-primary/90 transition-colors shadow-[0px_4px_20px_rgba(0,0,0,0.05)] h-28">
+<span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">barcode_scanner</span>
+<span class="font-label-sm font-semibold">Scan Product</span>
+</button>
+<button class="bg-surface-container-lowest border border-outline-variant text-on-background rounded-lg p-md flex flex-col items-center justify-center gap-2 hover:bg-surface transition-colors shadow-[0px_4px_20px_rgba(0,0,0,0.05)] h-28">
+<span class="material-symbols-outlined text-3xl text-secondary-container" style="font-variation-settings: 'FILL' 1;">edit_document</span>
+<span class="font-label-sm font-semibold">Manual Log</span>
+</button>
+<button class="bg-surface-container-lowest border border-outline-variant text-on-background rounded-lg p-md flex flex-col items-center justify-center gap-2 hover:bg-surface transition-colors shadow-[0px_4px_20px_rgba(0,0,0,0.05)] h-28">
+<span class="material-symbols-outlined text-3xl text-tertiary" style="font-variation-settings: 'FILL' 1;">search</span>
+<span class="font-label-sm font-semibold">Search Database</span>
+</button>
+</div>
+<!-- Daily Nutrient Progress -->
+<div class="bg-surface-container-lowest rounded-xl p-lg shadow-[0px_4px_20px_rgba(0,0,0,0.05)] border border-surface-container-high flex-grow flex flex-col">
+<h2 class="font-headline-md text-on-background mb-6">Daily Nutrient Progress</h2>
+<div class="space-y-5 flex-grow flex flex-col justify-between">
+<!-- Calories -->
+<div>
+<div class="flex justify-between items-baseline mb-1">
+<span class="font-label-sm text-on-background">Calories</span>
+<span class="font-body-md text-on-surface-variant text-sm">1450 / 2000 kcal</span>
+</div>
+<div class="w-full bg-surface-container-high rounded-full h-2">
+<div class="bg-primary h-2 rounded-full" style="width: 72%"></div>
+</div>
+</div>
+<!-- Protein -->
+<div>
+<div class="flex justify-between items-baseline mb-1">
+<span class="font-label-sm text-on-background">Protein</span>
+<span class="font-body-md text-on-surface-variant text-sm">65g / 120g</span>
+</div>
+<div class="w-full bg-surface-container-high rounded-full h-2">
+<div class="bg-tertiary-container h-2 rounded-full" style="width: 54%"></div>
+</div>
+</div>
+<!-- Carbs -->
+<div>
+<div class="flex justify-between items-baseline mb-1">
+<span class="font-label-sm text-on-background">Carbs</span>
+<span class="font-body-md text-on-surface-variant text-sm">180g / 250g</span>
+</div>
+<div class="w-full bg-surface-container-high rounded-full h-2">
+<div class="bg-secondary-container h-2 rounded-full" style="width: 72%"></div>
+</div>
+</div>
+<!-- Fats -->
+<div>
+<div class="flex justify-between items-baseline mb-1">
+<span class="font-label-sm text-on-background">Fats</span>
+<span class="font-body-md text-on-surface-variant text-sm">45g / 65g</span>
+</div>
+<div class="w-full bg-surface-container-high rounded-full h-2">
+<div class="bg-[#FCD34D] h-2 rounded-full" style="width: 69%"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Recent Scans -->
+<section>
+<div class="flex justify-between items-center mb-md">
+<h2 class="font-headline-md text-on-background">Recent Scans</h2>
+<button class="font-label-sm text-primary hover:text-primary-container transition-colors">View All</button>
+</div>
+<!-- Horizontal Scroll Container -->
+<div class="flex gap-md overflow-x-auto pb-4 snap-x snap-mandatory hide-scrollbar" style="scrollbar-width: none; -ms-overflow-style: none;">
+<!-- Scan Card 1 -->
+<div class="min-w-[200px] bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)] border border-surface-container-high overflow-hidden snap-start flex-shrink-0">
+<div class="h-32 w-full bg-surface-variant relative">
+<img alt="Avocado Toast" class="w-full h-full object-cover" data-alt="A close-up, appetizing shot of a freshly prepared avocado toast on rustic bread, garnished with seeds and a dash of chili flakes. The lighting is bright and natural, highlighting the vibrant green of the avocado against the crisp, toasted bread. The background is a soft, out-of-focus modern kitchen setting, conveying a healthy, fresh morning aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBACc2NqOAVlJ0BB6rJSshUiKorlbdoFOkzDlAgPlfiA1-ugI22XYslxNLx8pardqnoMov6L06HxPB-N5orEjdHbuFxCWaWS8yYiNOemM63SxqxVslGN-2fngYgOUu-Ww2YlQlWx2eEBEPiVTUhclqm7NqNhTj1Kr_3HQF19AViAb8GIKzTSKzMYtNxjxk7PH_y8RN7Ekp-7I5HkEb8k4gNYSMw05dTEX9d12h0_zQWRXbl5E6tmSpAT-i91Xga3mlCHjtkPoDu-Oc"/>
+<div class="absolute top-2 right-2 bg-primary text-on-primary font-label-sm px-2 py-1 rounded-md flex items-center gap-1 shadow-sm">
+<span class="material-symbols-outlined text-[14px]">star</span>
+                            9.2
+                        </div>
+</div>
+<div class="p-4">
+<h3 class="font-label-sm text-on-background mb-1 truncate">Artisan Avocado Toast</h3>
+<p class="font-body-md text-on-surface-variant text-xs">High Fiber • Good Fats</p>
+</div>
+</div>
+<!-- Scan Card 2 -->
+<div class="min-w-[200px] bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)] border border-surface-container-high overflow-hidden snap-start flex-shrink-0">
+<div class="h-32 w-full bg-surface-variant relative">
+<img alt="Quinoa Salad" class="w-full h-full object-cover" data-alt="A vibrant, healthy quinoa salad bowl featuring colorful diced bell peppers, fresh herbs, and a light dressing. The image is brightly lit, emphasizing the fresh, crisp ingredients and appetizing colors. The setting implies a clean, modern lifestyle, fitting perfectly into a nutritional tracking application's visual style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB9rduPNv3X1_KMqa45sHl9QFc2mzlRsPZ8QDds4HnlORuFThZ_d-IdCze7ADhMJtAG2Cn1a8cu_2Gs7JpfwGSifnigFYwTzXchpNfkURRJBg7idogFCH109Xir1VJdtNHUZ4zmigT_ZcvkyYfFR-ZnhB4kkGKLgY1bm1FlQnZoDtNwyDdkyATngOKmxZAN1FmAk21axs6fAgA-ktWX41Nfvj8yRe9boXNCv7ntcCMpDXcokHGahq0gQhyy5SP0uPrdYFEhGOkgCBE"/>
+<div class="absolute top-2 right-2 bg-primary text-on-primary font-label-sm px-2 py-1 rounded-md flex items-center gap-1 shadow-sm">
+<span class="material-symbols-outlined text-[14px]">star</span>
+                            8.8
+                        </div>
+</div>
+<div class="p-4">
+<h3 class="font-label-sm text-on-background mb-1 truncate">Organic Quinoa Bowl</h3>
+<p class="font-body-md text-on-surface-variant text-xs">High Protein • Vegan</p>
+</div>
+</div>
+<!-- Scan Card 3 -->
+<div class="min-w-[200px] bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)] border border-surface-container-high overflow-hidden snap-start flex-shrink-0">
+<div class="h-32 w-full bg-surface-variant relative">
+<img alt="Protein Bar" class="w-full h-full object-cover" data-alt="A partially unwrapped chocolate peanut butter protein bar lying on a clean, light-colored surface. The lighting is crisp, showing the texture of the bar and the smooth wrapper. The overall look is functional and modern, representing a quick, healthy snack choice in a wellness app context." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAVLC_ZChmZXYk3fqk7-5mA3bFcMeWb5aF-Zm00zwrRqG6_EwcdwKVWOxc31FZvc9gvyCmFsIDjYmAMRrui7gQSCLfm_Gym4uUceDpnH7mdBrp5HJand4FO6TVyWZajfCiXIOSlM57zA8uWks3Id8uHYModZS86uf8LRB-TB2Xg60eRemxcn01nSCdzoarx82vS7R0ON47d0ndeKLtcr2XMG2jtyO-knCoahLw0389U9fQEmaJG66smsN-terXnKj5HT6S9aAXBF2g"/>
+<div class="absolute top-2 right-2 bg-secondary-container text-on-primary font-label-sm px-2 py-1 rounded-md flex items-center gap-1 shadow-sm">
+<span class="material-symbols-outlined text-[14px]">star</span>
+                            6.5
+                        </div>
+</div>
+<div class="p-4">
+<h3 class="font-label-sm text-on-background mb-1 truncate">Choco-Peanut Protein Bar</h3>
+<p class="font-body-md text-on-surface-variant text-xs">Processed • High Protein</p>
+</div>
+</div>
+<!-- Scan Card 4 -->
+<div class="min-w-[200px] bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)] border border-surface-container-high overflow-hidden snap-start flex-shrink-0">
+<div class="h-32 w-full bg-surface-variant relative flex items-center justify-center bg-surface-container-low">
+<span class="material-symbols-outlined text-4xl text-outline-variant">image</span>
+</div>
+<div class="p-4">
+<h3 class="font-label-sm text-on-background mb-1 truncate">Greek Yogurt Cup</h3>
+<p class="font-body-md text-on-surface-variant text-xs">Probiotics • Low Fat</p>
+</div>
+</div>
+</div>
+<!-- Custom CSS to hide scrollbar for webkit (Chrome, Safari) -->
+<style>
+                .hide-scrollbar::-webkit-scrollbar {
+                    display: none;
+                }
+            </style>
+</section>
+</main>
+<!-- BottomNavBar (Visible on mobile, hidden on md+) -->
+<nav class="md:hidden bg-white/90 backdrop-blur-md font-manrope text-[11px] font-semibold fixed bottom-0 w-full z-50 rounded-t-2xl shadow-[0_-4px_20px_rgba(0,0,0,0.05)] flex justify-around items-center px-4 pt-2 pb-6">
+<!-- Active Tab: Home -->
+<a class="flex flex-col items-center justify-center bg-emerald-50 text-emerald-600 rounded-2xl px-5 py-1.5 scale-90 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">home</span>
+<span>Home</span>
+</a>
+<!-- Inactive Tab: Scan -->
+<a class="flex flex-col items-center justify-center text-gray-400 px-5 py-1.5 hover:text-emerald-500 transition-colors" href="#">
+<span class="material-symbols-outlined mb-1">center_focus_strong</span>
+<span>Scan</span>
+</a>
+<!-- Inactive Tab: History -->
+<a class="flex flex-col items-center justify-center text-gray-400 px-5 py-1.5 hover:text-emerald-500 transition-colors" href="#">
+<span class="material-symbols-outlined mb-1">history</span>
+<span>History</span>
+</a>
+</nav>
+</body></html>

@@ -1,0 +1,59 @@
+/**
+ * Platform detection for NutriScore.
+ *
+ * RevenueCat / Google Play Billing only runs inside the Cordova Android shell.
+ * We deliberately do NOT rely on `window.cordova` because cordova.js defines it
+ * asynchronously â€” by the time our React code runs it may or may not exist.
+ *
+ * Instead we detect the *origin*: the bundled app shell is served from
+ * `https://localhost` (modern cordova-android) or `file://` (older builds),
+ * which the public web build / Vite dev server never use.
+ */
+
+const hasDOM = typeof window !== 'undefined' && typeof document !== 'undefined';
+
+function isLocalAppShellOrigin() {
+  if (!hasDOM) return false;
+  const { protocol, hostname } = window.location;
+  // Cordova WebView shells:
+  //   newer cordova-android â†’ https://localhost
+  //   older cordova-android â†’ file://
+  if (protocol === 'file:') return true;
+  if (protocol === 'https:' && hostname === 'localhost') return true;
+  return false;
+}
+
+// A desktop browser pointed at https://localhost (e.g. a local web dev server on
+// :443) should still count as "web". Cordova WebViews report a mobile UA.
+const notDesktopUA = (() => {
+  if (!hasDOM) return false;
+  const ua = navigator.userAgent || '';
+  return /Android|iPhone|iPad|iPod/i.test(ua);
+})();
+
+// True only inside the packaged mobile app shell.
+export const isCordova = Boolean(isLocalAppShellOrigin() && notDesktopUA);
+
+// True for the public web build and the Vite dev server.
+export const isWeb = !isCordova;
+
+/**
+ * Run `callback` once the native bridge is ready.
+ * - In the app: fires on the Cordova `deviceready` event (when window.Purchases exists).
+ * - On the web: runs immediately on a microtask.
+ *
+ * @param {() => void} callback
+ */
+export function onCordovaReady(callback) {
+  if (typeof callback !== 'function') return;
+
+  if (isCordova && hasDOM) {
+    // If deviceready already fired, the listener still runs because Cordova
+    // re-dispatches it to late subscribers via the bootstrap queue.
+    document.addEventListener('deviceready', callback, false);
+  } else if (typeof queueMicrotask === 'function') {
+    queueMicrotask(callback);
+  } else {
+    Promise.resolve().then(callback);
+  }
+}

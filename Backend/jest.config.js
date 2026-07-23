@@ -1,0 +1,21 @@
+module.exports = {
+  testEnvironment: 'node',
+  testMatch: ['**/*.test.js'],
+  collectCoverageFrom: [
+    'middleware/auth.js',
+    'middleware/requireSubscription.js',
+    'middleware/requirePlan.js',
+    'middleware/rateLimiter.js',
+    'middleware/validator.js',
+    'middleware/profileValidator.js',
+    'routes/auth.js',
+    'routes/billing.js',
+    'routes/revenueCatSubscriptions.js',
+    'routes/user.js',
+    'routes/features.js',
+    'routes/payment.js',
+    'routes/scans.js',
+    'routes/analyze.js',
+    'utils/ownershipCheck.js',
+  ],
+};

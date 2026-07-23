@@ -1,0 +1,51 @@
+{
+  "name": "nutri-scan",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "test": "node --experimental-vm-modules node_modules/.bin/jest",
+    "test:coverage": "node --experimental-vm-modules node_modules/.bin/jest --coverage"
+  },
+  "dependencies": {
+    "@headlessui/react": "^2.2.10",
+    "@react-oauth/google": "^0.13.5",
+    "@tailwindcss/vite": "^4.2.4",
+    "framer-motion": "^12.38.0",
+    "html-to-image": "^1.11.13",
+    "html5-qrcode": "^2.3.8",
+    "i18next": "^26.1.0",
+    "i18next-browser-languagedetector": "^8.2.1",
+    "lucide-react": "^1.9.0",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "react-i18next": "^17.0.7",
+    "react-router-dom": "^7.15.1",
+    "recharts": "^3.8.1",
+    "tailwindcss": "^4.2.4"
+  },
+  "devDependencies": {
+    "@babel/preset-env": "^8.0.2",
+    "@babel/preset-react": "^8.0.1",
+    "@eslint/js": "^10.0.1",
+    "@testing-library/jest-dom": "^5.17.0",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "babel-jest": "^30.4.1",
+    "babel-plugin-transform-vite-meta-env": "^1.0.3",
+    "eslint": "^10.2.1",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
+    "globals": "^17.5.0",
+    "jest": "^30.4.2",
+    "jest-environment-jsdom": "^30.4.1",
+    "vite": "^8.0.10"
+  }
+}
