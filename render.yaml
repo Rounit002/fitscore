@@ -1,0 +1,108 @@
+# Render Blueprint — reproducible deploy config for the FitScan backend API.
+# Docs: https://render.com/docs/blueprint-spec
+#
+# IMPORTANT:
+# - The service `name` below MUST match the EXISTING Render service (`fitscan-api`)
+#   so Render UPDATES it instead of creating a duplicate. Rename here if your
+#   service is named differently.
+# - Env vars marked `sync: false` are NOT stored in git. Set their values once in
+#   the Render dashboard (Environment tab); Render preserves them across deploys.
+# - The frontend static site is intentionally NOT defined here to avoid creating a
+#   duplicate of your existing `fitscore-6hqp` site. See the commented block at the
+#   bottom if you want to manage it via this blueprint too.
+
+services:
+  - type: web
+    name: fitscan-api
+    runtime: node
+    plan: free
+    rootDir: Backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      # Runtime
+      - key: NODE_ENV
+        value: production
+      # Render injects PORT automatically; server.js reads process.env.PORT.
+
+      # CORS — the frontend origin is already hardcoded in Backend/config/cors.js.
+      # This is only needed to allow ADDITIONAL origins without a code change.
+      - key: FRONTEND_URL
+        value: https://fitscore-6hqp.onrender.com
+      # Comma-separated extra origins (optional):
+      # - key: FRONTEND_URLS
+      #   value: https://another-frontend.example.com
+
+      # PostgreSQL (set values in dashboard)
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        sync: false
+
+      # Auth
+      - key: JWT_SECRET
+        sync: false
+
+      # AI (Gemini) — nutrition analysis
+      - key: GEMINI_API_KEY
+        sync: false
+
+      # Cloudinary — scan image uploads
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+
+      # Redis / job queue (optional — falls back to in-memory if unset)
+      - key: REDIS_URL
+        sync: false
+
+      # RevenueCat subscriptions (optional)
+      - key: REVENUECAT_SECRET_KEY
+        sync: false
+      - key: REVENUECAT_ENTITLEMENT_ID
+        value: premium
+      - key: REVENUECAT_WEBHOOK_AUTH
+        sync: false
+
+      # Google Play billing (optional/legacy)
+      - key: GOOGLE_SERVICE_ACCOUNT_JSON
+        sync: false
+      - key: GOOGLE_PACKAGE_NAME
+        sync: false
+
+      # Razorpay payments (optional)
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+
+# --- Optional: manage the frontend static site here too ---
+# Only enable if the `name` matches your existing site, or you accept a new one.
+#
+#  - type: web
+#    name: fitscore-6hqp
+#    runtime: static
+#    rootDir: Frontend
+#    buildCommand: npm install && npm run build
+#    staticPublishPath: dist
+#    autoDeploy: true
+#    envVars:
+#      - key: VITE_API_URL
+#        value: https://fitscan-api.onrender.com
+#      - key: VITE_API_BASE_URL
+#        value: https://fitscan-api.onrender.com
+#    routes:
+#      - type: rewrite
+#        source: /*
+#        destination: /index.html
