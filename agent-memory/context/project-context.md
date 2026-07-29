@@ -546,3 +546,27 @@ Native release compilation is blocked locally because the configured
   which App and the theme bootstrap rely on). Theme switching remains reachable
   via the Profile → Dark mode row.
 - Verified: `npm run build` clean.
+
+## 2026-07-29 — Fixed mobile 403 "Invalid CSRF token" on register/login
+- Symptom (Cordova APK, `https://localhost` WebView -> `https://fitscore-rqgb.onrender.com`):
+  `/auth/register` and `/auth/refresh` returned 403 `Invalid CSRF token`; `/auth/me` 401.
+- Root cause: `Backend/server.js` applies `csrfProtection` globally. It only exempted
+  requests carrying `Authorization: Bearer`. Pre-auth mobile writes have no token yet, and the
+  WebView drops the API's cross-site `SameSite=None` `fitscore_csrf` cookie, so the
+  double-submit pair could never match — every mobile sign-in/sign-up was rejected.
+- Fix in `Backend/middleware/csrf.js`: added `isMobileClient` (`X-Client: mobile`) +
+  `hasSessionCookie` (`token`/`refresh_token`); `csrfProtection` now also skips when the request
+  is a mobile client AND carries no session cookie. Safe because `X-Client` is a non-simple
+  header (needs a passing CORS preflight, which an attacker origin fails), and the exemption is
+  voided the moment a session cookie is present, so cookie-authenticated writes still need the token.
+- `isMobileClient` is now exported from `middleware/csrf.js`; `routes/auth.js` imports it instead
+  of defining its own duplicate copy.
+- Tests: 3 new cases in `Backend/middleware/csrf.test.js` (mobile pre-auth allowed; X-Client +
+  session cookie still 403; cookie-less browser write without the hint still 403).
+  Full backend suite: 21 suites / 174 tests pass.
+- Live verification (local `node server.js`): `POST /auth/login` with `X-Client: mobile` -> 401
+  `invalid_credentials` (reaches the route); same request without the header -> 403 `csrf_rejected`.
+- Mobile side needed NO change. `mobile/www` was re-synced from a fresh
+  `npm run build:cordova` (bundle `index-BxOU1q5M.js`); APK/AAB build not run to completion.
+- OUTSTANDING: the fix only takes effect for the installed APK after the backend on
+  fitscore-rqgb.onrender.com is redeployed.

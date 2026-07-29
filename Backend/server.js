@@ -67,7 +67,15 @@ const pool = new Pool({
   port: process.env.DB_PORT,
   database: process.env.DB_NAME,
   ssl: process.env.NODE_ENV === 'production' && process.env.DB_SSL !== 'false'
-    ? { rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false' }
+    ? {
+      rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false',
+      // Managed Postgres providers often sign certs with a private CA that is not
+      // in Node's trust store. Supply it via DB_SSL_CA (PEM contents) to keep
+      // certificate verification enabled instead of disabling it.
+      ...(process.env.DB_SSL_CA
+        ? { ca: process.env.DB_SSL_CA.replace(/\\n/g, '\n') }
+        : {}),
+    }
     : undefined,
 });
 

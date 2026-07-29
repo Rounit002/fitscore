@@ -26,7 +26,7 @@ const {
   createRefreshCookieOptions,
   createClearRefreshCookieOptions,
 } = require('../config/cookies');
-const { issueCsrfToken } = require('../middleware/csrf');
+const { issueCsrfToken, isMobileClient } = require('../middleware/csrf');
 
 const router = express.Router();
 const SEVERITY_LEVELS = ['Low', 'Medium', 'High'];
@@ -264,10 +264,9 @@ const authenticate = require('../middleware/auth');
  * Native (Cordova) clients cannot rely on the auth cookie, so they opt in to
  * receiving the raw token in the response body by sending `X-Client: mobile`.
  * Browsers never get the token in the body, so the web flow stays cookie-only.
+ * `isMobileClient` lives in middleware/csrf.js, which uses the same signal to
+ * skip the double-submit check the WebView cannot satisfy.
  */
-const isMobileClient = (req) =>
-  String(req.headers['x-client'] || '').toLowerCase() === 'mobile';
-
 const withMobileTokens = (req, payload, session) => isMobileClient(req)
   ? { ...payload, token: session.accessToken, refreshToken: session.refreshToken }
   : payload;

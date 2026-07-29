@@ -28,9 +28,35 @@ const timingSafeMatch = (left, right) => {
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 };
 
+/**
+ * Native (Cordova) clients send this on every request. See routes/auth.js.
+ */
+const isMobileClient = (req) =>
+  String(req.headers['x-client'] || '').toLowerCase() === 'mobile';
+
+/**
+ * A request that carries no session cookie cannot be a cookie-riding forgery,
+ * so the double-submit check has nothing to protect.
+ */
+const hasSessionCookie = (req) =>
+  Boolean(req.cookies?.token || req.cookies?.refresh_token);
+
 const csrfProtection = (req, res, next) => {
   if (SAFE_METHODS.has(req.method)) return next();
   if (req.headers.authorization?.toLowerCase().startsWith('bearer ')) return next();
+  /*
+   * Pre-auth native writes (register/login/refresh/forgot-password) have no
+   * Bearer token yet, and the Android WebView drops the API's cross-site
+   * `SameSite=None` CSRF cookie, so the double-submit pair can never match and
+   * every mobile sign-in was rejected with 403.
+   *
+   * `X-Client` is a non-simple header: a browser can only send it after a
+   * successful CORS preflight, which an attacker's origin fails. Requiring it
+   * is therefore itself a CSRF defence. Still gated on the absence of a session
+   * cookie, because a forged cross-site request always carries the victim's
+   * cookies — so cookie-authenticated writes keep needing the token.
+   */
+  if (isMobileClient(req) && !hasSessionCookie(req)) return next();
   if (
     req.originalUrl.startsWith('/billing/notifications')
     || req.originalUrl.startsWith('/api/subscriptions/revenuecat/webhook')
@@ -45,4 +71,6 @@ const csrfProtection = (req, res, next) => {
   return next();
 };
 
-module.exports = { CSRF_COOKIE, csrfCookieOptions, csrfProtection, issueCsrfToken };
+module.exports = {
+  CSRF_COOKIE, csrfCookieOptions, csrfProtection, issueCsrfToken, isMobileClient,
+};

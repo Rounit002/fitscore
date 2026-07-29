@@ -38,4 +38,34 @@ describe('CSRF protection', () => {
     csrfProtection(req, createResponse(), next);
     expect(next).toHaveBeenCalled();
   });
+
+  it('allows a pre-auth native sign-in that has no cookies to double-submit', () => {
+    const req = { method: 'POST', originalUrl: '/auth/register', cookies: {}, headers: { 'x-client': 'mobile' } };
+    const next = jest.fn();
+    csrfProtection(req, createResponse(), next);
+    expect(next).toHaveBeenCalled();
+  });
+
+  it('still enforces CSRF when a session cookie rides along with X-Client', () => {
+    const req = {
+      method: 'POST',
+      originalUrl: '/auth/profile',
+      cookies: { token: 'victim-session' },
+      headers: { 'x-client': 'mobile' },
+    };
+    const res = createResponse();
+    const next = jest.fn();
+    csrfProtection(req, res, next);
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('rejects a cookie-less browser write that omits the client hint', () => {
+    const req = { method: 'POST', originalUrl: '/auth/register', cookies: {}, headers: {} };
+    const res = createResponse();
+    const next = jest.fn();
+    csrfProtection(req, res, next);
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(next).not.toHaveBeenCalled();
+  });
 });
