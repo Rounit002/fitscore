@@ -5,7 +5,38 @@
   <meta charset="UTF-8" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Tells the browser (and the Android WebView) to render its own chrome —
+       scrollbars, form controls, the address bar — to match. Without it a dark
+       page keeps light native scrollbars. Both values, in preference order, so
+       the OS setting decides. -->
+  <meta name="color-scheme" content="light dark" />
   <title>NutriScore</title>
+  <!--
+    Theme applied before first paint, synchronously in <head>.
+
+    React applies the theme in an effect, i.e. after the first paint, so a user on
+    a dark system theme saw a white flash on every cold start — most visible in the
+    Cordova WebView, where the splash hands over to a white page. Inlined and
+    blocking on purpose: deferring it is the bug.
+
+    Deliberately duplicates the storage key and the resolution order from
+    ThemeToggle.jsx, because a module import cannot run this early. The two must
+    stay in step; the reviewer gate checks the key matches.
+  -->
+  <script>
+    (function () {
+      try {
+        var saved = localStorage.getItem('fitscan_theme');
+        var dark = saved === 'dark' || (saved !== 'light'
+          && window.matchMedia
+          && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (dark) document.documentElement.classList.add('dark');
+      } catch (e) {
+        /* Private mode can throw on localStorage access. Light is the fallback,
+           which is what the stylesheet already defaults to. */
+      }
+    })();
+  </script>
 </head>
 
 <body>

@@ -1,17 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Globe, ChevronDown } from 'lucide-react';
-
-const languages = [
-  { code: 'en', label: 'English' },
-  { code: 'fr', label: 'Français' },
-  { code: 'ar', label: 'عربي' },
-  { code: 'ur', label: 'اردو' },
-  { code: 'ne', label: 'नेपाली' },
-  { code: 'hi', label: 'हिन्दी' },
-  { code: 'de', label: 'Deutsch' },
-  { code: 'es', label: 'Español' },
-];
+import { LANGUAGES as languages } from '../utils/languages.js';
 
 export default function LanguageSwitcher() {
   const { i18n } = useTranslation();
@@ -48,7 +38,7 @@ export default function LanguageSwitcher() {
       >
         <Globe size={14} className="text-neutral-500" />
         <span>{currentLang.label}</span>
-        <ChevronDown size={12} className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown size={14} className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (

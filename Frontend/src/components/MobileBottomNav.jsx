@@ -1,91 +1,78 @@
 import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Home as HomeIcon, Camera, History as HistoryIcon, TrendingUp, User } from 'lucide-react';
+import { Home as HomeIcon, Camera, History as HistoryIcon, BarChart2, User } from 'lucide-react';
 
+/* Four tabs in the pill; scanning is the detached round action beside it, so it
+   is not a tab and does not take a slot. */
 const NAV_ITEMS = [
-  { view: 'dashboard', path: '/dashboard', icon: HomeIcon,    labelKey: 'home' },
-  { view: 'history',   path: '/history',   icon: HistoryIcon, labelKey: 'history' },
-  { view: 'home',      path: '/scan',      icon: Camera,      labelKey: 'scan', isScan: true },
-  { view: 'trends',    path: '/trends',    icon: TrendingUp,  labelKey: 'health_progress' },
-  { view: 'profile',   path: '/profile',   icon: User,        labelKey: 'profile' },
+  { view: 'dashboard', path: '/dashboard', icon: HomeIcon,    labelKey: 'home',        fallback: 'Home' },
+  { view: 'history',   path: '/history',   icon: HistoryIcon, labelKey: 'history',     fallback: 'History' },
+  { view: 'trends',    path: '/trends',    icon: BarChart2,   labelKey: 'nav_progress', fallback: 'Progress' },
+  { view: 'profile',   path: '/profile',   icon: User,        labelKey: 'profile',     fallback: 'Profile', isAvatar: true },
 ];
 
-export default function MobileBottomNav({ onNavigate }) {
+const SCAN = { view: 'home', path: '/scan' };
+
+export default function MobileBottomNav({ onNavigate, initials }) {
   const { t } = useTranslation();
   const location = useLocation();
 
   const isActive = (path) =>
     location.pathname === path || location.pathname.startsWith(path + '/');
 
-  return (
-    <nav
-      className="fixed bottom-0 left-0 right-0 z-[100] flex items-end justify-center border-t border-[var(--ns-outline-var)] bg-[var(--ns-surface)] pb-[env(safe-area-inset-bottom,0px)] shadow-[0_-4px_24px_rgba(0,0,0,0.06)] lg:hidden"
-      aria-label="Mobile navigation"
-    >
-      <div className="flex w-full max-w-[480px] items-center px-2 pb-2 pt-1.5">
-        {NAV_ITEMS.map(({ view, path, icon: Icon, labelKey, isScan }) => {
-          const active = isActive(path);
+  const scanActive = isActive(SCAN.path);
 
-          if (isScan) {
-            return (
-              <button
-                key={view}
-                type="button"
-                aria-label={t('scan_product', 'Scan product')}
-                onClick={() => onNavigate(view)}
-                className="relative -mt-5 flex flex-1 flex-col items-center gap-1 bg-transparent px-1 py-0.5"
-              >
-                <span
-                  className={[
-                    'flex h-[52px] w-[52px] items-center justify-center rounded-2xl text-white shadow-[0_6px_18px_rgba(16, 185, 129,0.4)]',
-                    active ? 'bg-[#047857]' : 'bg-ns-primary',
-                  ].join(' ')}
-                >
-                  <Icon size={24} />
-                </span>
-                <span
-                  className={[
-                    'text-[10px] leading-none font-[var(--font-main)]',
-                    active ? 'font-bold text-ns-primary' : 'font-semibold text-[var(--ns-outline)]',
-                  ].join(' ')}
-                >
-                  {t(labelKey)}
-                </span>
-              </button>
-            );
-          }
+  return (
+    /* The bar itself takes no pointer events, so the gap between the pill and the
+       round button stays a hole through to the page rather than an invisible
+       strip that eats taps on whatever sits underneath. */
+    <nav className="ns-bnav lg:hidden" aria-label={t('mobile_navigation', 'Mobile navigation')}>
+      <ul className="ns-bnav-pill">
+        {NAV_ITEMS.map(({ view, path, icon: Icon, labelKey, fallback, isAvatar }) => {
+          const active = isActive(path);
+          const label = t(labelKey, fallback);
 
           return (
-            <button
-              key={view}
-              type="button"
-              aria-label={t(labelKey)}
-              onClick={() => onNavigate(view)}
-              className="flex flex-1 flex-col items-center gap-1 rounded-xl bg-transparent px-1 py-1.5"
-            >
-              <span
-                className={[
-                  'flex h-9 w-9 items-center justify-center rounded-[10px]',
-                  active ? 'bg-[rgba(16, 185, 129,0.12)]' : 'bg-transparent',
-                ].join(' ')}
+            <li key={view} className="ns-bnav-item">
+              <button
+                type="button"
+                className="ns-bnav-tab"
+                data-active={active || undefined}
+                aria-current={active ? 'page' : undefined}
+                onClick={() => onNavigate(view)}
               >
-                <Icon
-                  size={20}
-                  className={active ? 'text-ns-primary' : 'text-[var(--ns-outline)]'}
-                />
-              </span>
-              <span
-                className={[
-                  'text-[10px] leading-none font-[var(--font-main)]',
-                  active ? 'font-bold text-ns-primary' : 'font-medium text-[var(--ns-outline)]',
-                ].join(' ')}
-              >
-                {t(labelKey)}
-              </span>
-            </button>
+                <span className="ns-bnav-puck" aria-hidden="true">
+                  {/* The profile tab carries the user's initials instead of a
+                      generic glyph, which is the one place in the bar where the
+                      icon is about a specific person rather than a section.
+                      Nav icon context = 22 (TOKENS 7). Stroke weight, not size,
+                      carries the active state, so the glyph does not shift by a
+                      subpixel when a tab is selected. */}
+                  {isAvatar && initials ? (
+                    <span className="ns-bnav-initials">{initials}</span>
+                  ) : (
+                    <Icon size={22} strokeWidth={active ? 2.4 : 2} />
+                  )}
+                </span>
+                <span className="ns-bnav-label">{label}</span>
+              </button>
+            </li>
           );
         })}
-      </div>
+      </ul>
+
+      {/* Scan is the app's persistent primary action, so it keeps the highlighted
+          edge and floating elevation that lift it clear of the pill. */}
+      <button
+        type="button"
+        className="ns-bnav-fab"
+        data-active={scanActive || undefined}
+        aria-label={t('scan_product', 'Scan product')}
+        aria-current={scanActive ? 'page' : undefined}
+        onClick={() => onNavigate(SCAN.view)}
+      >
+        <Camera size={26} strokeWidth={2.2} aria-hidden="true" />
+      </button>
     </nav>
   );
 }

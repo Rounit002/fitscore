@@ -13,16 +13,15 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "@prisma/client": "^7.8.0",
     "bcrypt": "^6.0.0",
     "bullmq": "^5.76.10",
     "cloudinary": "^2.10.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
-    "duckduckgo-images-api": "^1.0.5",
     "express": "^5.2.1",
     "express-rate-limit": "^8.5.2",
+    "express-slow-down": "^3.0.1",
     "googleapis": "^144.0.0",
     "helmet": "^8.1.0",
     "ioredis": "^5.10.1",
@@ -33,7 +32,6 @@
   },
   "devDependencies": {
     "jest": "^29.7.0",
-    "prisma": "^7.8.0",
     "supertest": "^6.3.4"
   }
 }

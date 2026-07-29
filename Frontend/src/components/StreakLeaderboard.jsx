@@ -8,7 +8,7 @@ const rankLabels = ['1', '2', '3'];
 function StatTile({ icon: Icon, label, value, tone }) {
   return (
     <div className={`streak-stat-tile ${tone}`}>
-      <Icon size={38} />
+      <Icon size={32} />
       <span>{label}</span>
       <strong>{value}</strong>
     </div>

@@ -81,7 +81,7 @@ const WEEK = [
   { dow: 'Sa', date: 20 },
 ];
 
-/* ---------- Score Ã¢â€ â€™ grade system ---------- */
+/* ---------- Score to grade system ---------- */
 const scoreMeta = (n) =>
   n >= 8
     ? { color: '#16A34A', soft: 'rgba(22,163,74,0.12)', label: 'Great' }
@@ -403,40 +403,39 @@ export default function DashboardRedesign({ onNavigate = () => {}, onViewDetail 
                 <span className="rounded-full bg-[#047857]/10 px-3 py-1 text-[11px] font-bold text-[#047857]">0 scans</span>
               </div>
 
-              <div className="flex items-center gap-2">
-                <button type="button" aria-label="Previous week" className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-[var(--fs-border)] text-[var(--fs-muted)] transition hover:border-[#047857] hover:text-[#047857]">
+              <div className="mb-3 flex justify-end gap-1.5">
+                <button type="button" aria-label="Previous week" className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-transparent text-[var(--fs-muted)] transition hover:text-[#047857]">
                   <ChevronLeft size={17} />
                 </button>
-
-                <div className="grid flex-1 grid-cols-7 gap-1.5">
-                  {WEEK.map((d) => {
-                    const on = selected === d.date;
-                    return (
-                      <button
-                        key={d.date}
-                        type="button"
-                        onClick={() => setSelected(d.date)}
-                        className={[
-                          'fs-day flex min-h-[66px] flex-col items-center justify-center gap-1 rounded-2xl border py-2 transition-all duration-200',
-                          on
-                            ? 'fs-day-on border-transparent bg-[#10B981] text-white shadow-[0_10px_22px_-8px_rgba(4, 120, 87,0.75)]'
-                            : 'border-transparent text-[var(--fs-muted)] hover:border-[#047857]/25 hover:bg-[var(--fs-hover)]',
-                        ].join(' ')}
-                      >
-                        <span className="text-[10px] font-bold uppercase tracking-wide opacity-80">{d.dow}</span>
-                        <strong className="font-display text-[15px] font-extrabold">{d.date}</strong>
-                        <span className={`h-1 w-1 rounded-full ${d.today ? (on ? 'bg-white' : 'bg-[#047857]') : 'bg-transparent'}`} />
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <button type="button" aria-label="Next week" className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-[var(--fs-border)] text-[var(--fs-muted)] transition hover:border-[#047857] hover:text-[#047857]">
+                <button type="button" aria-label="Next week" className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-transparent text-[var(--fs-muted)] transition hover:text-[#047857]">
                   <ChevronRight size={17} />
                 </button>
               </div>
-            </section>
 
+              <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
+                {WEEK.map((d) => {
+                  const on = selected === d.date;
+                  return (
+                    <button
+                      key={d.date}
+                      type="button"
+                      onClick={() => setSelected(d.date)}
+                      aria-pressed={on}
+                      className={[
+                        'fs-day flex min-h-[62px] min-w-0 flex-col items-center justify-center gap-1 rounded-[14px] bg-transparent px-1 py-2 transition-all duration-200',
+                        on
+                          ? 'fs-day-on text-[#047857]'
+                          : 'text-[var(--fs-muted)] hover:text-[#047857]',
+                      ].join(' ')}
+                    >
+                      <span className="text-[10px] font-bold uppercase tracking-wide opacity-80">{d.dow}</span>
+                      <strong className="font-display text-base font-extrabold leading-none">{d.date}</strong>
+                      <span className={d.today ? 'h-1 w-1 rounded-full bg-[#047857]' : 'h-1 w-1 rounded-full bg-transparent'} />
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
             {/* Recent scans */}
             <section>
               <div className="mb-3 flex items-center justify-between px-1">

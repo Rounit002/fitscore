@@ -1,6 +1,7 @@
 const {
   createAuthCookieOptions,
   createClearAuthCookieOptions,
+  createRefreshCookieOptions,
 } = require('./cookies');
 
 describe('authentication cookie configuration', () => {
@@ -9,7 +10,8 @@ describe('authentication cookie configuration', () => {
       httpOnly: true,
       secure: true,
       sameSite: 'none',
-      maxAge: 30 * 24 * 60 * 60 * 1000,
+      path: '/',
+      maxAge: 15 * 60 * 1000,
     });
   });
 
@@ -18,7 +20,8 @@ describe('authentication cookie configuration', () => {
       httpOnly: true,
       secure: false,
       sameSite: 'lax',
-      maxAge: 30 * 24 * 60 * 60 * 1000,
+      path: '/',
+      maxAge: 15 * 60 * 1000,
     });
   });
 
@@ -27,6 +30,17 @@ describe('authentication cookie configuration', () => {
       httpOnly: true,
       secure: true,
       sameSite: 'none',
+      path: '/',
     });
+  });
+
+  it('scopes the rotating refresh cookie to auth endpoints', () => {
+    expect(createRefreshCookieOptions('production')).toEqual(expect.objectContaining({
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      path: '/auth',
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+    }));
   });
 });

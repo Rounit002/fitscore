@@ -29,14 +29,14 @@ describe('GET /api/user/scan-quota', () => {
     mockPool.query.mockResolvedValue({ rows: [{ scans_used: 3, scan_limit: 20, plan: 'free', plan_expires_at: null }] });
     const res = await request(createApp()).get('/api/user/scan-quota');
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ used: 3, limit: 5, plan: 'free', remaining: 2, planExpiresAt: null });
+    expect(res.body).toEqual({ used: 3, limit: 5, plan: 'free', remaining: 2, isPremium: false, planExpiresAt: null });
   });
 
   it('returns quota data for premium user (uses stored scan_limit)', async () => {
     mockPool.query.mockResolvedValue({ rows: [{ scans_used: 10, scan_limit: 100, plan: 'premium', plan_expires_at: '2027-01-01' }] });
     const res = await request(createApp()).get('/api/user/scan-quota');
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ used: 10, limit: 100, plan: 'premium', remaining: 90, planExpiresAt: '2027-01-01' });
+    expect(res.body).toEqual({ used: 10, limit: 100, plan: 'premium', remaining: 90, isPremium: true, planExpiresAt: '2027-01-01' });
   });
 
   it('returns 404 when user not found', async () => {

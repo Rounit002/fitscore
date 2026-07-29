@@ -1,0 +1,6 @@
+# SPA fallback: the app uses BrowserRouter, so deep links like /dashboard or
+# /reset-password have no file on disk. Without this rule the static host returns
+# 404 on refresh or direct navigation. Serve index.html for any unmatched path
+# and let the client router resolve it. Supported by Render and Netlify static
+# hosting; Vite copies this file from public/ into dist/ at build time.
+/*    /index.html   200

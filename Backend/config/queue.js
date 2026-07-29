@@ -8,7 +8,8 @@ let redisConnection = null;
 const jobsStore = new Map();
 
 // Helper to generate unique IDs for in-memory jobs
-const generateJobId = () => `mem_${Math.random().toString(36).substring(2, 15)}`;
+const crypto = require('crypto');
+const generateJobId = () => `mem_${crypto.randomBytes(18).toString('base64url')}`;
 
 // Setup Redis & BullMQ if REDIS_URL is configured
 if (useRedis) {
@@ -62,12 +63,12 @@ const addAnalysisJob = async (jobName, data) => {
 };
 
 // Add a pre-completed cache-hit job directly to jobsStore
-const addPreCompletedJob = (result) => {
-  const jobId = `cache_${Math.random().toString(36).substring(2, 15)}`;
+const addPreCompletedJob = (result, userId) => {
+  const jobId = `cache_${crypto.randomBytes(18).toString('base64url')}`;
   const job = {
     id: jobId,
     name: 'cachedAnalysis',
-    data: {},
+    data: { userId },
     status: 'completed',
     result,
     error: null,
@@ -78,7 +79,7 @@ const addPreCompletedJob = (result) => {
 };
 
 // Retrieve job status
-const getJobStatus = async (jobId) => {
+const getJobStatus = async (jobId, userId) => {
   if (useRedis && queue) {
     // If it's a Redis job
     try {
@@ -86,7 +87,7 @@ const getJobStatus = async (jobId) => {
       if (!job) {
         // Fallback to checking in-memory cache-hit store
         const memJob = jobsStore.get(jobId);
-        if (memJob) {
+        if (memJob && String(memJob.data?.userId) === String(userId)) {
           return {
             id: memJob.id,
             status: memJob.status,
@@ -97,6 +98,7 @@ const getJobStatus = async (jobId) => {
         return null;
       }
       
+      if (String(job.data?.userId) !== String(userId)) return null;
       const state = await job.getState();
       return {
         id: job.id,
@@ -110,7 +112,7 @@ const getJobStatus = async (jobId) => {
     }
   } else {
     const job = jobsStore.get(jobId);
-    if (!job) return null;
+    if (!job || String(job.data?.userId) !== String(userId)) return null;
     return {
       id: job.id,
       status: job.status,

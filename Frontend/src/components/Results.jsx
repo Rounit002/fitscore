@@ -2,38 +2,42 @@ import { useRef, useState } from 'react';
 import { ArrowLeft, AlertTriangle, Check, CheckCircle, Info, Pencil, XCircle, Share2, Leaf, TrendingUp } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import { getNutritionChips } from '../utils/nutrition';
+import { macroMeta } from '../utils/macroMeta.js';
+import ProgressRing from './ProgressRing.jsx';
 import { useTranslation } from 'react-i18next';
 import { API } from '../api/client.js';
+import { scoreColor, scoreVerdict } from '../utils/scoreColor.js';
 
+/* Uses the shared ProgressRing rather than a third hand-rolled arc. This copy
+   had drifted from the dashboard's: a 1.4s transition against 700ms, an 8.3%
+   stroke against 8%, and a hardcoded `55` alpha suffix instead of a colour-mix,
+   so the same "value out of a ceiling" idea animated and weighed differently
+   depending on which screen you were on (DESIGN_TOKENS.md 8). */
 function HealthRingLarge({ score }) {
   const { t } = useTranslation();
-  const radius = 68;
-  const circ = 2 * Math.PI * radius;
-  const pct = Math.min(Math.max(score / 10, 0), 1);
-  const dash = circ * pct;
-  const color = score >= 8 ? '#5BAD4E' : score >= 6 ? '#5BAD4E' : score >= 4 ? '#F59E0B' : '#EF4444';
+  // The local table gave >= 8 and >= 6 the same colour, collapsing two bands
+  // into one, and skipped the >= 2 band entirely (DESIGN_TOKENS.md 14).
+  const color = scoreColor(score);
 
   return (
     <div className="health-score-ring result-score-ring" aria-label={`Average score ${score} out of 10`}>
-      <svg width="168" height="168" viewBox="0 0 168 168">
-        <circle cx="84" cy="84" r={radius} fill="none" stroke="var(--ns-surface-high)" strokeWidth="14" />
-        <circle
-          cx="84"
-          cy="84"
-          r={radius}
-          fill="none"
-          stroke={color}
-          strokeWidth="14"
-          strokeLinecap="round"
-          strokeDasharray={`${dash} ${circ}`}
-          style={{ transition: 'stroke-dasharray 1.4s cubic-bezier(0.34,1.56,0.64,1)', filter: `drop-shadow(0 0 8px ${color}55)` }}
-        />
-      </svg>
-      <div className="result-score-copy">
-        <span>{score}</span>
-        <em>/10</em>
-        <strong style={{ color }}>{t('health_score')}</strong>
-      </div>
+      {/* Clamped rather than fixed at 168px with a breakpoint override, so the
+          ring and its centred copy shrink together on a 360px phone. */}
+      <ProgressRing
+        value={score}
+        max={10}
+        size="clamp(152px, 44vw, 168px)"
+        stroke={8}
+        color={color}
+        trackColor="var(--ns-surface-high)"
+        glow
+      >
+        <div className="result-score-copy">
+          <span className="num-tabular">{score}</span>
+          <em>/10</em>
+          <strong style={{ color }}>{t('health_score')}</strong>
+        </div>
+      </ProgressRing>
     </div>
   );
 }
@@ -55,15 +59,9 @@ export default function Results({ result, onBack, authToken, onServingsChanged }
 
   if (!result) return null;
 
-  const getVerdict = (score) => {
-    if (score >= 8) return { status: t('safe_to_consume'), sub: t('safe_to_consume_sub'), icon: CheckCircle, color: '#5BAD4E', bg: 'rgba(91, 173, 78,0.08)', border: 'rgba(91, 173, 78,0.25)' };
-    if (score >= 6) return { status: t('mostly_safe'), sub: t('mostly_safe_sub'), icon: CheckCircle, color: '#5BAD4E', bg: 'rgba(91, 173, 78,0.08)', border: 'rgba(91, 173, 78,0.25)' };
-    if (score >= 4) return { status: t('use_caution'), sub: t('use_caution_sub'), icon: AlertTriangle, color: '#b45309', bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.3)' };
-    if (score >= 2) return { status: t('high_risk'), sub: t('high_risk_sub'), icon: AlertTriangle, color: '#B45309', bg: 'rgba(245, 158, 11,0.08)', border: 'rgba(245, 158, 11,0.3)' };
-    return { status: t('avoid'), sub: t('avoid_sub'), icon: XCircle, color: '#EF4444', bg: 'rgba(186,26,26,0.06)', border: 'rgba(186,26,26,0.25)' };
-  };
-
-  const verdict = getVerdict(result.score);
+  // Verdict text, icon and colour all come from the shared helper, so the ring
+  // above and the banner below cannot disagree about which band a score is in.
+  const verdict = scoreVerdict(result.score, t, { CheckCircle, AlertTriangle, XCircle });
 
   const handleShare = async () => {
     if (!summaryRef.current) return;
@@ -216,7 +214,7 @@ export default function Results({ result, onBack, authToken, onServingsChanged }
                   <>
                     <strong>{servings}</strong>
                     <button type="button" onClick={startEditingServings} aria-label="Edit servings">
-                      <Pencil size={15} />
+                      <Pencil size={16} />
                     </button>
                   </>
                 )}
@@ -224,17 +222,30 @@ export default function Results({ result, onBack, authToken, onServingsChanged }
             </div>
             
             <div className="result-macros-grid" aria-label="Nutrition facts per serving">
-              {nutritionChips.map((nutrient) => (
-                <div className="result-macro-item" key={nutrient.key}>
-                  <span><span aria-hidden="true">{nutrient.icon}</span>{nutrient.label}</span>
-                  <strong>{nutrient.value}</strong>
-                </div>
-              ))}
+              {nutritionChips.map((nutrient) => {
+                /* One accent + one glyph per nutrient category, from the shared
+                   macro map. These were emoji, which do not respond to colour
+                   mode, do not share a stroke weight with any other icon in the
+                   app, and render differently on every platform. */
+                const meta = macroMeta(nutrient.key);
+                const Icon = meta.icon;
+                return (
+                  <div className="result-macro-item" key={nutrient.key} data-macro={meta.key}>
+                    <span>
+                      {Icon && (
+                        <Icon size={14} strokeWidth={2} aria-hidden="true" style={{ color: meta.accent }} />
+                      )}
+                      {nutrient.label}
+                    </span>
+                    <strong className="num-tabular">{nutrient.value}</strong>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
           <div className="result-ai-label">
-            <Leaf size={13} />
+            <Leaf size={14} />
             <span>{t('scanned_with_ai')}</span>
           </div>
         </div>
@@ -267,7 +278,7 @@ export default function Results({ result, onBack, authToken, onServingsChanged }
         <div className="result-facts-card ns-card">
           {activeTab === 'effects' && (!verdictItems || verdictItems.length === 0) ? (
             <div className="result-empty-facts">
-              <CheckCircle size={24} style={{ color: 'var(--ns-primary)' }} />
+              <CheckCircle size={32} style={{ color: 'var(--ns-primary)' }} />
               <p>{t('no_side_effects')}</p>
             </div>
           ) : Array.isArray(verdictItems) ? verdictItems.map((point, idx) => {
@@ -275,8 +286,17 @@ export default function Results({ result, onBack, authToken, onServingsChanged }
             const isGood = !isEffects && point.toLowerCase().startsWith('good:');
             const isBad = !isEffects && point.toLowerCase().startsWith('bad:');
             const label = isGood ? point.replace(/^good:\s*/i, '') : isBad ? point.replace(/^bad:\s*/i, '') : point;
-            const dotColor = isEffects ? '#EF4444' : isGood ? '#5BAD4E' : isBad ? '#EF4444' : 'var(--ns-outline)';
-            const bg = isEffects ? 'rgba(186,26,26,0.06)' : isGood ? 'rgba(91, 173, 78,0.07)' : isBad ? 'rgba(186,26,26,0.06)' : 'var(--ns-surface-low)';
+            // Good/bad is the same judgement the score bands express, so it
+            // reads from the semantic map instead of its own hexes, and the
+            // fill is derived from that colour so the two cannot drift.
+            const dotColor = isEffects || isBad
+              ? 'var(--sem-impact-harmful)'
+              : isGood
+                ? 'var(--sem-impact-beneficial)'
+                : 'var(--ns-outline)';
+            const bg = isEffects || isGood || isBad
+              ? `color-mix(in srgb, ${dotColor} 7%, transparent)`
+              : 'var(--ns-surface-low)';
 
             return (
               <div key={idx} className="result-fact-item" style={{ background: bg }}>
@@ -327,8 +347,12 @@ export default function Results({ result, onBack, authToken, onServingsChanged }
                 .map((item, idx) => {
                   const isHarmful = item.impact?.toLowerCase() === 'harmful';
                   const isBeneficial = item.impact?.toLowerCase() === 'beneficial';
-                  const accent = isHarmful ? '#EF4444' : isBeneficial ? '#5BAD4E' : '#6c7a71';
-                  const bg = isHarmful ? 'rgba(186,26,26,0.06)' : isBeneficial ? 'rgba(91, 173, 78,0.06)' : 'rgba(108,122,113,0.06)';
+                  const accent = isHarmful
+                    ? 'var(--sem-impact-harmful)'
+                    : isBeneficial
+                      ? 'var(--sem-impact-beneficial)'
+                      : 'var(--sem-impact-neutral)';
+                  const bg = `color-mix(in srgb, ${accent} 6%, transparent)`;
                   const Icon = isHarmful ? AlertTriangle : isBeneficial ? CheckCircle : Info;
 
                   return (
@@ -338,7 +362,7 @@ export default function Results({ result, onBack, authToken, onServingsChanged }
                         <div className="result-audit-title-row">
                           <span>{item.name}</span>
                           <div className="result-status-badge" style={{ background: bg, border: `1px solid ${accent}33` }}>
-                            <Icon size={13} style={{ color: accent }} strokeWidth={2.5} />
+                            <Icon size={14} style={{ color: accent }} strokeWidth={2.5} />
                             <span style={{ color: accent }}>{item.impact}</span>
                           </div>
                         </div>

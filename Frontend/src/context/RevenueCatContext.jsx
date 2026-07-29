@@ -54,10 +54,9 @@ export function RevenueCatProvider({ user, onPremiumChange, children }) {
           method: 'POST',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            appUserId: rc.buildAppUserId(userId),
-            customerInfo,
-          }),
+          // CustomerInfo is intentionally not trusted or sent. The backend
+          // re-fetches the entitlement from RevenueCat using its secret key.
+          body: JSON.stringify({ appUserId: rc.buildAppUserId(userId) }),
         });
       } catch (err) {
         // Non-fatal: the entitlement already unlocked client-side.

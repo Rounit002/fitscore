@@ -42,6 +42,15 @@
 
   --font-main: 'DM Sans', 'Inter', sans-serif;
   --font-headline: 'Sora', 'Manrope', sans-serif;
+
+  /* Radius scale (DESIGN_TOKENS.md 1): remaps Tailwind's rounded-* utilities
+     onto the app scale so rounded-lg / rounded-xl are the only thing a builder
+     needs and arbitrary rounded-[Npx] values are never required. */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 28px;
 }
 
 /* Ã¢â€â‚¬Ã¢â€â‚¬ Script-Specific Typographies (Cairo, Noto Sans Arabic, Noto Nastaliq Urdu, Noto Sans Devanagari) Ã¢â€â‚¬Ã¢â€â‚¬ */
@@ -116,438 +125,45 @@ button, a, input, select, textarea, .interactive-card {
   0%, 100% { transform: scale(1); opacity: 0.85; }
   50%      { transform: scale(1.08); opacity: 1; }
 }
-.scan-lens-frame {
-  background: var(--ns-card-bg);
-  border: 2px solid var(--ns-primary);
-}
-.scan-lens-glow {
-  background: rgba(16, 185, 129, 0.18);
-  animation: lensGlow 3.2s ease-in-out infinite;
-}
-.scan-beam {
-  background: var(--ns-primary);
-  box-shadow: 0 0 18px 2px color-mix(in srgb, var(--ns-secondary) 60%, transparent);
-  animation: scanBeam 2.6s cubic-bezier(0.45, 0, 0.55, 1) infinite;
-}
-.scan-reticle { animation: reticlePulse 2.4s ease-in-out infinite; }
+
+
+
+
 @media (prefers-reduced-motion: reduce) {
-  .scan-beam, .scan-lens-glow, .scan-reticle { animation: none; }
-  .scan-beam { opacity: 0; }
+
+
 }
 
-.compare-page {
-  min-height: 100vh;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  padding: 18px 14px;
-  background: var(--ns-page-bg);
-  color: var(--ns-on-surface);
-  font-family: var(--font-main);
-  overflow: hidden;
+/* Reduced motion, app-wide (DESIGN_TOKENS.md 8): drop transforms and decorative
+   animation, but keep colour / opacity feedback so states stay legible. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  button:active:not(:disabled),
+  .page-transition,
+  .fs-day-on {
+    transform: none !important;
+    animation: none !important;
+  }
+
+  /* The in-button spinner is the only load affordance, so it keeps spinning. */
+  .btn-spinner,
+  .spinner {
+    animation-duration: 0.8s !important;
+    animation-iteration-count: infinite !important;
+  }
 }
 
-.compare-shell {
-  width: min(100%, 390px);
-  min-height: calc(100vh - 36px);
-  margin: 0 auto;
-  padding: 20px 16px 92px;
-  border: 2px solid var(--ns-border-light);
-  border-radius: 28px;
-  background: var(--ns-shell-bg);
-  box-shadow: var(--shadow-lg);
-  position: relative;
-  overflow: hidden;
-}
 
-.compare-header {
-  display: grid;
-  grid-template-columns: 42px 1fr 42px;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 20px;
-}
 
-.compare-header h1 {
-  margin: 0;
-  text-align: center;
-  font-family: var(--font-headline);
-  font-size: 1.05rem;
-  font-weight: 900;
-  letter-spacing: 0.06em;
-}
 
-.compare-back-button,
-.compare-pagination button {
-  width: 42px;
-  height: 42px;
-  border: 1.5px solid var(--ns-border-medium);
-  border-radius: 14px;
-  background: var(--ns-input-bg);
-  color: var(--ns-on-surface);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: var(--shadow-sm);
-  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
-}
-
-.compare-back-button:hover,
-.compare-pagination button:hover:not(:disabled) {
-  border-color: rgba(16, 185, 129, 0.34);
-  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.12);
-}
-
-.compare-header-spacer {
-  width: 42px;
-  height: 42px;
-}
-
-.compare-content,
-.compare-picker {
-  min-height: 0;
-}
-
-.compare-picker {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.compare-hero-copy {
-  padding: 0 2px;
-}
-
-.compare-hero-copy h2 {
-  margin: 0;
-  font-family: var(--font-headline);
-  font-size: 1.45rem;
-  line-height: 1.05;
-  font-weight: 900;
-  letter-spacing: 0;
-  color: var(--ns-on-surface);
-}
-
-.compare-hero-copy p {
-  margin: 6px 0 0;
-  color: var(--ns-outline);
-  font-size: 0.72rem;
-  font-weight: 850;
-  letter-spacing: 0.08em;
-}
-
-.compare-search {
-  width: 100%;
-  min-height: 50px;
-  padding: 0 16px;
-  border-radius: 14px;
-  border: 1.5px solid var(--ns-border-light);
-  background: var(--ns-input-bg);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  box-shadow: var(--shadow-sm);
-}
-
-.compare-search svg {
-  color: var(--ns-outline);
-  flex-shrink: 0;
-}
-
-.compare-search input {
-  width: 100%;
-  min-width: 0;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: var(--ns-on-surface);
-  font-size: 0.9rem;
-  font-weight: 700;
-}
-
-.compare-search input::placeholder {
-  color: var(--ns-outline);
-  font-weight: 700;
-}
-
-.compare-product-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-height: calc(100vh - 314px);
-  min-height: 230px;
-  overflow-y: auto;
-  padding: 2px 2px 4px;
-  scrollbar-width: thin;
-}
-
-.compare-product-card {
-  width: 100%;
-  min-height: 70px;
-  border: 1px solid var(--ns-border-light);
-  border-radius: 14px;
-  background: var(--ns-card-bg);
-  display: grid;
-  grid-template-columns: 22px 46px minmax(0, 1fr) 40px;
-  align-items: center;
-  gap: 10px;
-  padding: 8px;
-  cursor: pointer;
-  box-shadow: var(--shadow-sm);
-  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease, background 160ms ease;
-}
-
-.compare-product-card:hover,
-.compare-product-card:focus-visible {
-  border-color: color-mix(in srgb, var(--score-color) 34%, transparent);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
-  outline: none;
-}
-
-.compare-product-card.is-selected {
-  border-color: rgba(16, 185, 129, 0.5);
-  background: var(--ns-surface-low);
-}
-
-.compare-product-check {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  border: 2px solid var(--ns-border-medium);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--ns-card-bg);
-  transition: background 160ms ease, border-color 160ms ease;
-}
-
-.compare-product-card.is-selected .compare-product-check {
-  border-color: #10B981;
-  background: #10B981;
-}
-
-.compare-score-badge {
-  width: 40px;
-  height: 40px;
-  border-radius: 13px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--score-color);
-  background: color-mix(in srgb, var(--score-color) 13%, white);
-  border: 1px solid color-mix(in srgb, var(--score-color) 24%, white);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
-}
-
-.compare-score-badge span {
-  font-size: 0.9rem;
-  line-height: 1;
-  font-weight: 900;
-}
-
-.compare-product-image {
-  width: 46px;
-  height: 46px;
-  border-radius: 13px;
-  overflow: hidden;
-  display: grid;
-  place-items: center;
-  background: var(--ns-input-bg);
-  border: 1px solid var(--ns-border-light);
-  color: var(--ns-outline);
-  flex-shrink: 0;
-}
-
-.compare-product-image img,
-.compare-result-image img {
-  width: 100%;
-  height: 100%;
-  display: block;
-  object-fit: cover;
-}
-
-.compare-result-image {
-  width: 118px;
-  height: 118px;
-  margin: 0 auto;
-  border-radius: 24px;
-  overflow: hidden;
-  display: grid;
-  place-items: center;
-  background: var(--ns-input-bg);
-  border: 1.5px solid var(--ns-border-light);
-  color: var(--ns-outline);
-  box-shadow: var(--shadow-sm);
-}
-
-.compare-product-info {
-  min-width: 0;
-}
-
-.compare-product-info h3 {
-  margin: 0 0 3px;
-  color: var(--ns-on-surface);
-  font-family: var(--font-main);
-  font-size: 0.86rem;
-  line-height: 1.15;
-  font-weight: 850;
-  letter-spacing: 0;
-  text-transform: uppercase;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.compare-product-info p {
-  margin: 0;
-  color: var(--ns-outline);
-  font-size: 0.74rem;
-  font-weight: 650;
-  letter-spacing: 0;
-  text-transform: uppercase;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.compare-pagination {
-  display: grid;
-  grid-template-columns: 38px 1fr 38px;
-  align-items: center;
-  gap: 10px;
-  padding: 2px 2px 0;
-}
-
-.compare-pagination button {
-  width: 38px;
-  height: 38px;
-  border-radius: 13px;
-}
-
-.compare-pagination span {
-  color: var(--ns-outline);
-  text-align: center;
-  font-size: 0.72rem;
-  font-weight: 850;
-  letter-spacing: 0.08em;
-}
-
-.compare-pagination button:disabled {
-  opacity: 0.32;
-  cursor: not-allowed;
-  box-shadow: none;
-}
-
-.compare-action-bar {
-  position: absolute;
-  left: 12px;
-  right: 12px;
-  bottom: 12px;
-  z-index: 50;
-}
-
-.compare-action-bar button {
-  width: 100%;
-  min-height: 50px;
-  border: 0;
-  border-radius: 14px;
-  background: var(--ns-primary);
-  color: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  font-size: 0.9rem;
-  font-weight: 850;
-  box-shadow: 0 4px 18px rgba(16, 185, 129, 0.38);
-  transition: transform 160ms ease, opacity 160ms ease, filter 160ms ease;
-}
-
-.compare-action-bar button:hover:not(:disabled) {
-  transform: translateY(-1px);
-}
-
-.compare-action-bar button:disabled {
-  opacity: 0.42;
-  filter: grayscale(0.7);
-}
-
-.compare-state,
-.compare-empty,
-.compare-error,
-.compare-no-results {
-  text-align: center;
-  color: var(--ns-outline);
-}
-
-.compare-state,
-.compare-empty {
-  min-height: 360px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-}
-
-.compare-state p,
-.compare-error p,
-.compare-no-results p {
-  margin: 0;
-  font-size: 0.74rem;
-  font-weight: 850;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.compare-spinner {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  border: 4px solid rgba(16, 185, 129, 0.12);
-  border-top-color: #10B981;
-  animation: spin 0.9s linear infinite;
-}
-
-.compare-error {
-  padding: 16px;
-  border-radius: 14px;
-  background: rgba(186, 26, 26, 0.08);
-  border: 1px solid rgba(186, 26, 26, 0.12);
-}
-
-.compare-error p,
-.compare-error span {
-  color: #EF4444;
-}
-
-.compare-error span,
-.compare-empty p {
-  display: block;
-  margin-top: 6px;
-  font-size: 0.82rem;
-  font-weight: 750;
-}
-
-.compare-empty div {
-  width: 76px;
-  height: 76px;
-  border-radius: 20px;
-  background: rgba(0, 0, 0, 0.05);
-  color: var(--ns-outline);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.compare-empty h2 {
-  margin: 0;
-  color: var(--ns-on-surface);
-  font-family: var(--font-headline);
-  font-size: 1rem;
-  font-weight: 850;
-  text-transform: uppercase;
-}
 
 .result-page {
   min-height: 100vh;
@@ -588,8 +204,8 @@ button, a, input, select, textarea, .interactive-card {
   height: 42px;
   display: grid;
   place-items: center;
-  border: 1.5px solid var(--ns-border-light);
-  border-radius: 14px;
+  border: 1px solid var(--ns-border-light);
+  border-radius: 12px;
   background: var(--ns-input-bg);
   color: var(--ns-on-surface-var);
   box-shadow: var(--shadow-sm);
@@ -621,7 +237,7 @@ button, a, input, select, textarea, .interactive-card {
   gap: 22px;
   padding: 24px 18px 18px !important;
   text-align: center;
-  border-radius: 24px;
+  border-radius: 20px;
   background: var(--ns-card-bg);
 }
 
@@ -741,7 +357,7 @@ button, a, input, select, textarea, .interactive-card {
   gap: 16px;
   margin: 4px 0;
   padding: 16px 0 0;
-  border-top: 1.5px dashed var(--ns-border-light);
+  border-top: 1px dashed var(--ns-border-light);
 }
 
 .servings-control {
@@ -763,7 +379,7 @@ button, a, input, select, textarea, .interactive-card {
   width: 76px;
   height: 40px;
   border-radius: 12px;
-  border: 1.5px solid var(--ns-border-medium);
+  border: 1px solid var(--ns-border-medium);
   background: var(--ns-input-bg);
   color: var(--ns-on-surface);
   font-family: var(--font-main);
@@ -787,9 +403,9 @@ button, a, input, select, textarea, .interactive-card {
   justify-content: flex-end;
   gap: 8px;
   padding: 4px 5px 4px 12px;
-  border-radius: 14px;
+  border-radius: 12px;
   background: var(--ns-surface-low);
-  border: 1.5px solid var(--ns-border-light);
+  border: 1px solid var(--ns-border-light);
 }
 
 .servings-edit-box strong {
@@ -805,7 +421,7 @@ button, a, input, select, textarea, .interactive-card {
   width: 62px;
   height: 32px;
   padding: 0 6px;
-  border-radius: 10px;
+  border-radius: 12px;
 }
 
 .servings-edit-box button {
@@ -814,7 +430,7 @@ button, a, input, select, textarea, .interactive-card {
   flex: 0 0 32px;
   display: grid;
   place-items: center;
-  border-radius: 10px;
+  border-radius: 12px;
   color: var(--ns-primary);
   background: rgba(16, 185, 129, 0.11);
   border: 1px solid rgba(16, 185, 129, 0.18);
@@ -883,10 +499,13 @@ button, a, input, select, textarea, .interactive-card {
   white-space: nowrap;
 }
 
+/* Size is owned by ProgressRing's own `size` prop (a clamp), not restated here.
+   A fixed width at this level fought the ring's inline size on small phones:
+   the wrapper shrank to 152px while the ring stayed 168px and overflowed. */
 .result-score-ring {
   position: relative;
-  width: 168px;
-  height: 168px;
+  display: grid;
+  place-items: center;
   margin: 2px auto 4px;
 }
 
@@ -926,7 +545,7 @@ button, a, input, select, textarea, .interactive-card {
 .result-verdict-banner {
   width: 100%;
   padding: 16px 18px;
-  border-radius: 18px;
+  border-radius: 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -979,7 +598,7 @@ button, a, input, select, textarea, .interactive-card {
 .result-primary-button {
   width: 100%;
   min-height: 52px;
-  border-radius: 14px !important;
+  border-radius: 12px!important;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1066,7 +685,7 @@ button, a, input, select, textarea, .interactive-card {
   align-items: flex-start;
   gap: 12px;
   padding: 13px 14px;
-  border-radius: 14px;
+  border-radius: 12px;
   color: var(--ns-on-surface);
 }
 
@@ -1128,7 +747,7 @@ button, a, input, select, textarea, .interactive-card {
   padding: 0 !important;
   overflow: hidden;
   display: flex;
-  border-radius: 18px;
+  border-radius: 16px;
 }
 
 .result-accent-bar {
@@ -1172,7 +791,7 @@ button, a, input, select, textarea, .interactive-card {
   align-items: center;
   gap: 5px;
   padding: 5px 9px;
-  border-radius: 10px;
+  border-radius: 12px;
 }
 
 .result-status-badge span {
@@ -1206,57 +825,22 @@ button, a, input, select, textarea, .interactive-card {
     gap: 20px;
   }
 
-  .result-score-ring,
-  .result-score-ring svg {
-    width: 152px;
-    height: 152px;
-  }
-
+  /* Ring size is a clamp() on the component now, so it shrinks continuously
+     instead of stepping at one breakpoint — the override that used to live here
+     resized the wrapper without resizing the ring inside it. */
   .result-score-copy span {
     font-size: 2.1rem;
   }
 }
 
 @media (max-width: 420px) {
-  .compare-page {
-    padding: 10px 8px;
-  }
 
-  .compare-shell {
-    min-height: calc(100vh - 20px);
-    padding: 16px 12px 86px;
-    border-radius: 24px;
-  }
 
-  .compare-header {
-    margin-bottom: 18px;
-  }
 
-  .compare-hero-copy h2 {
-    font-size: 1.32rem;
-  }
 
-  .compare-product-card {
-      grid-template-columns: 20px 42px minmax(0, 1fr) 38px;
-      gap: 9px;
-      padding: 8px;
-      border-radius: 14px;
-    }
   
-  .compare-score-badge {
-      width: 38px;
-      height: 38px;
-    }
 
-  .compare-product-image {
-      width: 42px;
-      height: 42px;
-      border-radius: 12px;
-    }
   
-  .compare-product-info h3 {
-      font-size: 0.82rem;
-    }
 }
 
 /* Ã¢â€â‚¬Ã¢â€â‚¬ CSS Custom Properties Ã¢â€â‚¬Ã¢â€â‚¬ */
@@ -1290,6 +874,11 @@ button, a, input, select, textarea, .interactive-card {
   
   --ns-border-light: #EBEBEB;
   --ns-border-medium: rgba(26, 26, 26, 0.12);
+  /* Matches --edge-hairline (DESIGN_TOKENS.md 2.5). The dark half of this fix
+     landed in the earlier pass but light was left at 0.24 alpha, so the forced
+     global button border was three times heavier in light mode than dark —
+     the same "differs by more than colour" bug in token form. */
+  --ns-button-border: rgba(15, 23, 42, 0.08);
   --ns-glass-surface: rgba(255, 255, 255, 0.94);
   --ns-score-track: #D1FAE5;
   --ns-macro-track: #D1FAE5;
@@ -1317,18 +906,36 @@ button, a, input, select, textarea, .interactive-card {
   --font-headline: 'Sora', sans-serif;
 
   /* Ambient shadows Ã¢â‚¬â€ warm olive tone */
-  --shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.07);
-  --shadow-md: 0 4px 18px rgba(0, 0, 0, 0.09);
-  --shadow-lg: 0 8px 36px rgba(0, 0, 0, 0.14);
-  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.07);
-  --shadow-glow: 0 4px 18px rgba(16, 185, 129, 0.38);
-  --shadow-neon: 0 4px 14px rgba(16, 185, 129, 0.25);
+  /* Radius scale is declared once, in the @theme block above, so that the
+     rounded-* utilities and every var(--radius-*) consumer resolve to the same
+     values. Nothing to redeclare here. */
 
-  --radius-sm: 8px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
-  --radius-xl: 28px;
-  --radius-2xl: 28px;
+  /* Edge system (DESIGN_TOKENS.md 2) */
+  --edge-hairline: rgba(15, 23, 42, 0.08);
+  --edge-accent: var(--ns-primary);
+
+  /* Elevation (DESIGN_TOKENS.md 3)
+     Light mode casts a real shadow: tight contact stop + wide ambient stop. */
+  --elev-rest: 0 1px 2px rgba(15, 17, 22, 0.04), 0 6px 16px -10px rgba(15, 17, 22, 0.10);
+  --elev-raised: 0 1px 2px rgba(15, 17, 22, 0.05), 0 12px 30px -16px rgba(15, 17, 22, 0.18);
+  --elev-floating: 0 2px 4px rgba(15, 17, 22, 0.06), 0 24px 56px -20px rgba(15, 17, 22, 0.26);
+  --elev-pressed: 0 1px 1px rgba(15, 17, 22, 0.06);
+  --elev-accent: 0 10px 24px -8px color-mix(in srgb, var(--ns-primary) 45%, transparent);
+
+  /* Legacy shadow aliases mapped onto the elevation scale */
+  --shadow-sm: var(--elev-rest);
+  --shadow-md: var(--elev-raised);
+  --shadow-lg: var(--elev-floating);
+  --shadow-card: var(--elev-rest);
+  --shadow-glow: var(--elev-accent);
+  --shadow-neon: var(--elev-accent);
+
+  /* Motion (DESIGN_TOKENS.md 8) */
+  --dur-micro: 150ms;
+  --dur-enter: 220ms;
+  --dur-figure: 700ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /* Ã¢â€â‚¬Ã¢â€â‚¬ Dark Theme Ã¢â€â‚¬Ã¢â€â‚¬ */
@@ -1362,6 +969,9 @@ html.dark {
   
   --ns-border-light: rgba(255, 255, 255, 0.08);
   --ns-border-medium: rgba(255, 255, 255, 0.12);
+  /* Was rgba(0,0,0,0.68): a near-black border on a #111 surface, i.e. invisible.
+     Now matches --edge-hairline so every button reads as a real surface. */
+  --ns-button-border: rgba(255, 255, 255, 0.10);
   --ns-glass-surface: rgba(28, 28, 30, 0.92);
   --ns-score-track: #292929;
   --ns-macro-track: #292929;
@@ -1377,12 +987,25 @@ html.dark {
   --glass-bg: rgba(28, 28, 30, 0.85);
   --glass-border: rgba(255, 255, 255, 0.06);
 
-  --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.35);
-  --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.45);
-  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.25);
-  --shadow-glow: 0 4px 18px rgba(16, 185, 129, 0.38);
-  --shadow-neon: 0 4px 14px rgba(16, 185, 129, 0.25);
+  /* Edge system, dark scope (DESIGN_TOKENS.md 2) */
+  --edge-hairline: rgba(255, 255, 255, 0.10);
+
+  /* Elevation, dark scope (DESIGN_TOKENS.md 3)
+     A black shadow disappears on a near-black surface, so dark elevation is
+     carried by a top inset highlight plus a wider, softer ambient shadow: the
+     surface reads as lit from above rather than casting downward. */
+  --elev-rest: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 8px 20px -12px rgba(0, 0, 0, 0.60);
+  --elev-raised: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 16px 36px -18px rgba(0, 0, 0, 0.70);
+  --elev-floating: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 28px 64px -22px rgba(0, 0, 0, 0.80);
+  --elev-pressed: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  --elev-accent: 0 10px 24px -8px color-mix(in srgb, var(--ns-primary) 45%, transparent);
+
+  --shadow-sm: var(--elev-rest);
+  --shadow-md: var(--elev-raised);
+  --shadow-lg: var(--elev-floating);
+  --shadow-card: var(--elev-rest);
+  --shadow-glow: var(--elev-accent);
+  --shadow-neon: var(--elev-accent);
 }
 
 
@@ -1483,12 +1106,124 @@ h6 {
 button {
   font-family: var(--font-main);
   cursor: pointer;
-  border: none;
-  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  border: var(--button-border-width, 1px) solid var(--button-border-color, var(--ns-button-border)) !important;
+  transition:
+    color var(--dur-micro) var(--ease-out),
+    background-color var(--dur-micro) var(--ease-out),
+    border-color var(--dur-micro) var(--ease-out),
+    box-shadow var(--dur-micro) var(--ease-out),
+    transform var(--dur-micro) var(--ease-out);
 }
 
-button:active {
-  opacity: 0.85;
+/* Pressed must read as pressed: scale down + drop elevation (DESIGN_TOKENS.md 6).
+   The previous `opacity: 0.85` read as "disabled" on a filled button. */
+button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+/* ── Edge system utilities (DESIGN_TOKENS.md 2) ──
+   Exactly three treatments exist. Decision rule:
+     primary action on the screen -> .edge-highlight
+     selected / active / toggled  -> .edge-bold
+     any other distinct surface   -> .edge-hairline
+   A saturated colour fill is never a substitute for an edge. */
+
+.edge-hairline {
+  border: 1px solid var(--edge-hairline) !important;
+}
+
+.edge-highlight {
+  border: 1px solid color-mix(in srgb, var(--edge-accent) 45%, transparent) !important;
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--edge-accent) 18%, transparent),
+    var(--elev-raised);
+}
+
+.edge-highlight-sm {
+  border: 1px solid color-mix(in srgb, var(--edge-accent) 45%, transparent) !important;
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--edge-accent) 18%, transparent),
+    var(--elev-rest);
+}
+
+/* A low-opacity tint loses far more contrast over #111 than over #F5F5F5,
+   so the dark-mode ring is raised from 18% to 26%. */
+html.dark .edge-highlight {
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--edge-accent) 26%, transparent),
+    var(--elev-raised);
+}
+
+html.dark .edge-highlight-sm {
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--edge-accent) 26%, transparent),
+    var(--elev-rest);
+}
+
+.edge-bold {
+  border: 2px solid var(--edge-accent) !important;
+}
+
+/* ── Elevation utilities (DESIGN_TOKENS.md 3) ── */
+.elev-rest { box-shadow: var(--elev-rest); }
+.elev-raised { box-shadow: var(--elev-raised); }
+.elev-floating { box-shadow: var(--elev-floating); }
+.elev-accent { box-shadow: var(--elev-accent); }
+
+.elev-rest:active:not(:disabled),
+.elev-raised:active:not(:disabled),
+.elev-accent:active:not(:disabled) {
+  box-shadow: var(--elev-pressed);
+}
+
+/* ── Keyboard focus (DESIGN_TOKENS.md 6, 11) ──
+   Mandatory and visible on every focusable element. Applied globally because
+   `focus-visible:` appeared zero times across all 24 component files. */
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--ns-primary);
+  outline-offset: 2px;
+  border-radius: inherit;
+}
+
+/* ── Tabular numerals (DESIGN_TOKENS.md 5) ──
+   Mandatory for any figure that updates in place, so calorie / macro / score
+   values do not jitter as digits change width. */
+.num-tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* ── 44x44 minimum hit area (DESIGN_TOKENS.md 10) ──
+   Expands the touch target without changing the visual size of the control. */
+.tap-44 {
+  position: relative;
+}
+
+.tap-44::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  transform: translate(-50%, -50%);
+}
+
+/* ── One button spinner (DESIGN_TOKENS.md 6) ──
+   Replaces .spinner / .result-button-spinner / .compare-spinner divergence for
+   the in-button loading state. Sizes to the label and inherits its colour. */
+.btn-spinner {
+  width: 1em;
+  height: 1em;
+  flex: 0 0 auto;
+  border: 2px solid color-mix(in srgb, currentColor 30%, transparent);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
 }
 
 .btn-primary {
@@ -1553,7 +1288,8 @@ button:active {
 /* Ã¢â€â‚¬Ã¢â€â‚¬ Inputs Ã¢â€â‚¬Ã¢â€â‚¬ */
 input {
   background: var(--ns-surface-low);
-  border: 1.5px solid var(--ns-outline-var);
+  /* Inputs are a distinct surface, so they take the hairline (was 1.5px). */
+  border: 1px solid var(--edge-hairline);
   color: var(--ns-on-surface);
   padding: 0.875rem 1.125rem;
   border-radius: var(--radius-md);
@@ -1582,9 +1318,9 @@ input::placeholder {
   justify-content: center;
 }
 
-.health-score-ring svg {
-  transform: rotate(-90deg);
-}
+/* Rotation is not restated here: ProgressRing already applies -rotate-90 to its
+   own svg, so a rule at this level would rotate it a second time and start the
+   arc at 3 o'clock instead of 12. */
 
 /* Ã¢â€â‚¬Ã¢â€â‚¬ Nutrient Chip Ã¢â€â‚¬Ã¢â€â‚¬ */
 .nutrient-chip {
@@ -1592,7 +1328,7 @@ input::placeholder {
   align-items: center;
   gap: 0.375rem;
   padding: 0.375rem 0.75rem;
-  border-radius: 9999px;
+  border-radius: 999px;
   font-family: var(--font-main);
   font-size: 0.75rem;
   font-weight: 600;
@@ -1697,14 +1433,14 @@ input::placeholder {
 /* Ã¢â€â‚¬Ã¢â€â‚¬ Progress Bar Ã¢â€â‚¬Ã¢â€â‚¬ */
 .ns-progress-track {
   height: 8px;
-  border-radius: 9999px;
+  border-radius: 999px;
   background: var(--ns-surface-high);
   overflow: hidden;
 }
 
 .ns-progress-fill {
   height: 100%;
-  border-radius: 9999px;
+  border-radius: 999px;
   background: var(--ns-primary-con);
   transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -1716,7 +1452,7 @@ input::placeholder {
 /* Ã¢â€â‚¬Ã¢â€â‚¬ Header status bar (legacy) Ã¢â€â‚¬Ã¢â€â‚¬ */
 .header-status-bar {
   height: 8px;
-  border-radius: 9999px;
+  border-radius: 999px;
   background: var(--ns-surface-high);
   position: relative;
   overflow: hidden;
@@ -1724,7 +1460,7 @@ input::placeholder {
 
 .header-status-bar-fill {
   height: 100%;
-  border-radius: 9999px;
+  border-radius: 999px;
   background: var(--ns-primary-con);
   position: relative;
 }
@@ -1743,7 +1479,7 @@ input::placeholder {
 /* Ã¢â€â‚¬Ã¢â€â‚¬ Scan Hub Card Ã¢â€â‚¬Ã¢â€â‚¬ */
 .scan-hub-card {
   background: var(--ns-card-bg-alt);
-  border: 1.5px solid rgba(16, 185, 129, 0.25);
+  border: 1px solid rgba(16, 185, 129, 0.25);
   border-radius: var(--radius-2xl);
   box-shadow: 0 8px 32px rgba(16, 185, 129, 0.12);
   position: relative;
@@ -2002,7 +1738,8 @@ input::placeholder {
 
 ::-webkit-scrollbar-thumb {
   background: var(--ns-outline-var);
-  border-radius: 10px;
+  /* Shape, not scale: a 4px-wide thumb is a capsule. */
+  border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -2074,7 +1811,7 @@ input::placeholder {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1.5px solid var(--ns-border-medium);
+  border: 1px solid var(--ns-border-medium);
   background: var(--ns-input-bg);
   color: var(--ns-on-surface);
   box-shadow: 0 8px 20px var(--shadow-sm);
@@ -2091,7 +1828,7 @@ input::placeholder {
 .fitscan-logo-pill {
   gap: 8px;
   padding: 0 14px;
-  border-radius: 14px;
+  border-radius: 12px;
   font-weight: 800;
   font-size: 0.94rem;
   letter-spacing: 0;
@@ -2110,7 +1847,7 @@ input::placeholder {
 .fitscan-streak-pill {
   gap: 6px;
   padding: 0 12px;
-  border-radius: 14px;
+  border-radius: 12px;
   color: #B45309;
   font-size: 0.88rem;
   font-weight: 800;
@@ -2123,7 +1860,7 @@ input::placeholder {
 
 .fitscan-icon-button {
   width: 42px;
-  border-radius: 14px;
+  border-radius: 12px;
   color: var(--ns-error);
 }
 
@@ -2134,8 +1871,8 @@ input::placeholder {
   justify-content: space-between;
   gap: 12px;
   padding: 0 16px;
-  border-radius: 14px;
-  border: 1.5px solid var(--ns-border-light);
+  border-radius: 12px;
+  border: 1px solid var(--ns-border-light);
   background: var(--ns-input-bg);
   color: var(--ns-on-surface-var);
   font-weight: 700;
@@ -2161,7 +1898,7 @@ input::placeholder {
   gap: 12px;
   padding: 12px;
   border-radius: 20px;
-  border: 1.5px solid var(--ns-border-light);
+  border: 1px solid var(--ns-border-light);
   background: var(--ns-card-bg-alt);
   box-shadow: var(--shadow-md);
 }
@@ -2178,7 +1915,7 @@ input::placeholder {
   height: 38px;
   display: grid;
   place-items: center;
-  border-radius: 13px;
+  border-radius: 12px;
   background: var(--ns-card-bg);
   color: var(--ns-on-surface);
   border: 1px solid var(--ns-border-light);
@@ -2193,7 +1930,7 @@ input::placeholder {
   gap: 8px;
   min-height: 38px;
   padding: 4px 5px 4px 12px;
-  border-radius: 13px;
+  border-radius: 12px;
   background: var(--ns-card-bg);
   border: 1px solid var(--ns-border-light);
 }
@@ -2216,7 +1953,7 @@ input::placeholder {
   height: 30px;
   padding: 0 4px;
   border: 0;
-  border-radius: 9px;
+  border-radius: 8px;
   background: transparent;
   color: var(--ns-on-surface);
   font-size: 0.82rem;
@@ -2272,7 +2009,7 @@ input::placeholder {
   border-radius: 12px;
   background: var(--ns-card-bg);
   color: var(--ns-on-surface);
-  border: 1.5px solid var(--ns-border-light);
+  border: 1px solid var(--ns-border-light);
   box-shadow: var(--shadow-sm);
   flex-shrink: 0;
   transition: transform 160ms ease, background-color 160ms ease;
@@ -2311,7 +2048,7 @@ input::placeholder {
   border-radius: 12px;
   background: var(--ns-card-bg);
   color: var(--ns-on-surface-var);
-  border: 1.5px solid var(--ns-border-light);
+  border: 1px solid var(--ns-border-light);
   box-shadow: var(--shadow-sm);
   transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
 }
@@ -2381,8 +2118,8 @@ input::placeholder {
   align-items: center;
   gap: 16px;
   padding: 16px;
-  border-radius: 24px;
-  border: 1.5px solid var(--ns-border-light);
+  border-radius: 20px;
+  border: 1px solid var(--ns-border-light);
   background: var(--ns-card-bg-alt);
   box-shadow: var(--shadow-md);
 }
@@ -2469,7 +2206,7 @@ input::placeholder {
 
 .fitscan-macro-track {
   height: 8px;
-  border-radius: 99px;
+  border-radius: 999px;
   background: var(--ns-macro-track);
   overflow: hidden;
 }
@@ -2486,8 +2223,8 @@ input::placeholder {
   grid-template-columns: 1fr 1fr;
   gap: 0;
   padding: 12px;
-  border-radius: 24px;
-  border: 1.5px solid var(--ns-border-light);
+  border-radius: 20px;
+  border: 1px solid var(--ns-border-light);
   background: var(--ns-card-bg-alt);
   box-shadow: var(--shadow-md);
 }
@@ -2543,7 +2280,7 @@ input::placeholder {
   gap: 12px;
   padding: 16px;
   border-radius: 20px;
-  border: 1.5px solid var(--ns-border-light);
+  border: 1px solid var(--ns-border-light);
   background: var(--ns-card-bg-alt);
   box-shadow: var(--shadow-md);
 }
@@ -2596,7 +2333,7 @@ input::placeholder {
   align-items: center;
   gap: 10px;
   padding: 10px 8px;
-  border-radius: 14px;
+  border-radius: 12px;
   background: var(--ns-card-bg);
   border: 1px solid var(--ns-border-light);
   text-align: left;
@@ -2619,7 +2356,7 @@ input::placeholder {
   height: 40px;
   display: grid;
   place-items: center;
-  border-radius: 13px;
+  border-radius: 12px;
   background: rgba(16, 185, 129, 0.12);
   color: var(--ns-secondary-con);
 }
@@ -2628,7 +2365,7 @@ input::placeholder {
   width: 40px;
   height: 40px;
   flex-shrink: 0;
-  border-radius: 13px;
+  border-radius: 12px;
   overflow: hidden;
   background: var(--ns-input-bg);
   border: 1px solid var(--ns-border-light);
@@ -2713,7 +2450,7 @@ input::placeholder {
 .fitscan-recent-list em {
   min-width: 34px;
   padding: 6px 8px;
-  border-radius: 11px;
+  border-radius: 12px;
   background: rgba(16, 185, 129, 0.12);
   color: var(--ns-primary);
   font-style: normal;
@@ -2758,7 +2495,7 @@ html.dark .fitscan-nutrient-chip b {
   justify-content: center;
   gap: 9px;
   color: var(--ns-outline);
-  border-radius: 14px;
+  border-radius: 12px;
   background: var(--ns-card-bg);
   border: 1px dashed var(--ns-border-medium);
   padding: 12px;
@@ -2875,7 +2612,7 @@ html.dark .fitscan-nutrient-chip b {
   flex: 0 0 66px;
   width: 66px;
   min-height: 66px !important;
-  border-radius: 22px !important;
+  border-radius: 20px!important;
   background: #10B981 !important;
   color: #ffffff !important;
   border: 2px solid #10B981;
@@ -2904,7 +2641,7 @@ html.dark .fitscan-nutrient-chip b {
   .fitscan-phone-shell {
     min-height: calc(100vh - 20px);
     padding: 16px 12px 82px;
-    border-radius: 24px;
+    border-radius: 20px;
     gap: 12px;
   }
 
@@ -2959,7 +2696,7 @@ html.dark .fitscan-nutrient-chip b {
   height: 42px;
   display: grid;
   place-items: center;
-  border-radius: 14px;
+  border-radius: 12px;
   background: var(--ns-input-bg);
   color: var(--ns-on-surface);
   border: 1px solid var(--ns-border-light);
@@ -3000,8 +2737,8 @@ html.dark .fitscan-nutrient-chip b {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  border-radius: 24px;
-  border: 1.5px solid var(--ns-border-light);
+  border-radius: 20px;
+  border: 1px solid var(--ns-border-light);
   background: var(--ns-card-bg-alt);
   box-shadow: var(--shadow-md);
   color: var(--ns-on-surface);
@@ -3037,7 +2774,7 @@ html.dark .fitscan-nutrient-chip b {
   gap: 14px;
   padding: 14px;
   border-radius: 28px;
-  border: 1.5px solid var(--ns-border-light);
+  border: 1px solid var(--ns-border-light);
   background: var(--ns-card-bg-alt);
   box-shadow: var(--shadow-md);
 }
@@ -3087,7 +2824,7 @@ html.dark .fitscan-nutrient-chip b {
   align-items: center;
   gap: 10px;
   padding: 10px;
-  border-radius: 14px;
+  border-radius: 12px;
   background: var(--ns-card-bg);
   border: 1px solid var(--ns-border-light);
   box-shadow: var(--shadow-sm);
@@ -3107,14 +2844,17 @@ html.dark .fitscan-nutrient-chip b {
   text-align: center;
 }
 
+/* Tint comes from the shared badge rule via --edge-accent; the glyph reads the
+   same variable. The raw emerald rgba behind --ns-secondary-con was a light and
+   a dark green stacked on each other, and the literal could not follow the
+   colour mode. */
 .leaderboard-avatar {
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
   display: grid;
   place-items: center;
-  border-radius: 14px;
-  background: rgba(16, 185, 129, 0.12);
-  color: var(--ns-secondary-con);
+  border-radius: 12px;
+  color: var(--edge-accent);
 }
 
 .leaderboard-user {
@@ -3159,7 +2899,7 @@ html.dark .fitscan-nutrient-chip b {
   display: grid;
   place-items: center;
   padding: 20px;
-  border-radius: 18px;
+  border-radius: 16px;
   background: var(--ns-card-bg);
   color: var(--ns-outline);
   font-size: 0.88rem;
@@ -3176,7 +2916,7 @@ html.dark .fitscan-nutrient-chip b {
 
 .leaderboard-placeholder-line {
   height: 16px;
-  border-radius: 99px;
+  border-radius: 999px;
   background: rgba(0, 0, 0, 0.09);
 }
 
@@ -3189,7 +2929,7 @@ html.dark .fitscan-nutrient-chip b {
     min-height: calc(100vh - 20px);
     gap: 16px;
     padding: 16px 12px;
-    border-radius: 24px;
+    border-radius: 20px;
   }
 
   .streak-stats-grid {
@@ -3242,7 +2982,7 @@ html.dark .fitscan-nutrient-chip b {
   height: 40px;
   display: grid;
   place-items: center;
-  border-radius: 14px;
+  border-radius: 12px;
   background: var(--ns-input-bg);
   color: var(--ns-on-surface);
   border: 1px solid var(--ns-border-light);
@@ -3279,7 +3019,7 @@ html.dark .fitscan-nutrient-chip b {
   place-items: center;
   border-radius: 50%;
   background: var(--ns-card-bg-alt);
-  border: 1.5px solid var(--ns-border-medium);
+  border: 1px solid var(--ns-border-medium);
   box-shadow: var(--shadow-md);
   position: relative;
   overflow: visible;
@@ -3289,7 +3029,7 @@ html.dark .fitscan-nutrient-chip b {
 
 .profile-avatar:hover:not(:disabled) {
   transform: translateY(-1px);
-  border-color: rgba(16, 185, 129, 0.35);
+  border-color: color-mix(in srgb, var(--ns-primary) 35%, transparent);
   box-shadow: var(--shadow-lg);
 }
 
@@ -3366,7 +3106,7 @@ html.dark .fitscan-nutrient-chip b {
   grid-template-columns: minmax(0, 1fr) 72px;
   align-items: center;
   overflow: hidden;
-  border: 1.5px solid var(--ns-border-medium);
+  border: 1px solid var(--ns-border-medium);
   border-radius: 8px;
   background: var(--ns-card-bg-alt);
 }
@@ -3439,7 +3179,7 @@ html.dark .fitscan-nutrient-chip b {
   background: #D4AF37;
   color: #1a1a1a;
   box-shadow: 0 10px 24px rgba(212, 175, 55, 0.25);
-  border: 1.5px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .profile-upgrade-button.premium:hover {
@@ -3472,22 +3212,27 @@ html.dark .fitscan-nutrient-chip b {
   padding: 10px;
   border-radius: 20px;
   background: var(--ns-card-bg-alt);
-  border: 1.5px solid var(--ns-border-light);
+  border: 1px solid var(--ns-border-light);
   box-shadow: var(--shadow-sm);
 }
 
+/* Four columns: badge, label, optional value, chevron. The value column collapses
+   to nothing when the row has no value child, so rows with and without one keep
+   the same badge position and the same chevron alignment — the label column is
+   what flexes. Rows previously crammed their state into the label itself
+   ("Language: English"), which truncated the label to make room for the value. */
 .profile-menu-action {
   width: 100%;
   min-height: 48px;
   display: grid;
-  grid-template-columns: 36px minmax(0, 1fr) 18px;
+  grid-template-columns: 36px minmax(0, 1fr) auto 18px;
   align-items: center;
   gap: 10px;
   padding: 6px 12px 6px 8px;
-  border-radius: 14px;
+  border-radius: 12px;
   background: var(--ns-card-bg);
   color: var(--ns-on-surface);
-  border: 1.5px solid var(--ns-border-light);
+  border: 1px solid var(--ns-border-light);
   text-align: left;
   cursor: pointer;
   position: relative;
@@ -3540,7 +3285,7 @@ html.dark .fitscan-nutrient-chip b {
   height: 36px;
   display: grid;
   place-items: center;
-  border-radius: 11px;
+  border-radius: 12px;
   background: color-mix(in srgb, var(--ns-primary) 10%, transparent);
   color: var(--ns-primary);
   border: 1px solid color-mix(in srgb, var(--ns-primary) 15%, transparent);
@@ -3549,15 +3294,19 @@ html.dark .fitscan-nutrient-chip b {
   z-index: 1;
 }
 
+/* Hover derives from the row's own accent instead of hardcoding --ns-primary, so
+   a Support row does not flip from magenta to emerald mid-interaction. The
+   rotate is dropped: a 5deg tilt on a rounded square reads as a wobble, and it
+   was the only rotating hover in the app. */
 .profile-menu-action:hover .profile-action-icon,
 .profile-theme-toggle:hover .profile-action-icon,
 .profile-menu-action:focus-visible .profile-action-icon,
 .profile-theme-toggle:focus-visible .profile-action-icon {
-  transform: scale(1.1) rotate(5deg);
-  background: var(--ns-primary);
-  color: #ffffff;
-  border-color: var(--ns-primary);
-  box-shadow: 0 6px 16px color-mix(in srgb, var(--ns-primary) 30%, transparent);
+  transform: scale(1.06);
+  background: var(--edge-accent);
+  color: var(--ns-on-primary);
+  border-color: var(--edge-accent);
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--edge-accent) 30%, transparent);
 }
 
 .profile-menu-action .profile-action-icon svg,
@@ -3575,6 +3324,18 @@ html.dark .fitscan-nutrient-chip b {
   text-align: left;
   position: relative;
   z-index: 1;
+}
+
+/* Trailing value ("System theme", "English"). Muted and lighter than the label,
+   because the label is what the row *is* and the value is its current setting —
+   they should not compete. Shrinks before the label does on a narrow screen. */
+.profile-menu-action .profile-menu-value {
+  flex-shrink: 1;
+  max-width: 45%;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-align: right;
+  color: var(--ns-outline);
 }
 
 .profile-menu-action svg:last-child {
@@ -3641,7 +3402,7 @@ html.dark .fitscan-nutrient-chip b {
   flex-direction: column;
   gap: 16px;
   padding: 18px;
-  border-radius: 22px;
+  border-radius: 20px;
   background: var(--ns-card-bg);
   border: 1px solid var(--ns-border-light);
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.25);
@@ -3663,7 +3424,7 @@ html.dark .fitscan-nutrient-chip b {
 
 .profile-modal-title button {
   padding: 8px 10px;
-  border-radius: 10px;
+  border-radius: 12px;
   background: var(--ns-input-bg);
   color: var(--ns-primary);
   font-size: 0.78rem;
@@ -3879,9 +3640,9 @@ html.dark .fitscan-nutrient-chip b {
   align-items: center;
   gap: 14px;
   padding: 28px 22px 22px;
-  border-radius: 26px;
+  border-radius: 20px;
   background: var(--ns-card-bg);
-  border: 1.5px solid rgba(186, 26, 26, 0.22);
+  border: 1px solid rgba(186, 26, 26, 0.22);
   box-shadow:
     0 28px 80px rgba(186, 26, 26, 0.18),
     0 6px 20px rgba(0, 0, 0, 0.14);
@@ -3893,15 +3654,16 @@ html.dark .fitscan-nutrient-chip b {
   to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
+/* Tint and glyph both derive from --edge-accent (set in the badge block), so the
+   two cannot disagree. The literal rgba(186,26,26) here was a different red from
+   the --ns-error glyph sitting on top of it. */
 .delete-confirm-icon-wrap {
   width: 56px;
   height: 56px;
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: rgba(186, 26, 26, 0.1);
-  color: var(--ns-error);
-  border: 1.5px solid rgba(186, 26, 26, 0.2);
+  color: var(--edge-accent);
   animation: deleteIconPulse 1.6s ease infinite;
 }
 
@@ -3937,7 +3699,7 @@ html.dark .fitscan-nutrient-chip b {
   width: 100%;
   margin: 0;
   padding: 12px 14px 12px 32px;
-  border-radius: 14px;
+  border-radius: 12px;
   background: rgba(186, 26, 26, 0.05);
   border: 1px solid rgba(186, 26, 26, 0.12);
   list-style: none;
@@ -3965,7 +3727,7 @@ html.dark .fitscan-nutrient-chip b {
 .delete-confirm-warning {
   margin: 0;
   padding: 8px 14px;
-  border-radius: 10px;
+  border-radius: 12px;
   background: rgba(186, 26, 26, 0.06);
   border: 1px solid rgba(186, 26, 26, 0.14);
   color: var(--ns-error);
@@ -3998,10 +3760,10 @@ html.dark .fitscan-nutrient-chip b {
 
 .delete-confirm-cancel {
   min-height: 46px;
-  border-radius: 14px;
+  border-radius: 12px;
   background: var(--ns-input-bg);
   color: var(--ns-on-surface);
-  border: 1.5px solid var(--ns-border-medium);
+  border: 1px solid var(--ns-border-medium);
   font-size: 0.88rem;
   font-weight: 900;
   cursor: pointer;
@@ -4029,10 +3791,10 @@ html.dark .fitscan-nutrient-chip b {
   align-items: center;
   justify-content: center;
   gap: 7px;
-  border-radius: 14px;
+  border-radius: 12px;
   background: var(--ns-error);
   color: #ffffff;
-  border: 1.5px solid transparent;
+  border: 1px solid transparent;
   font-size: 0.84rem;
   font-weight: 900;
   cursor: pointer;
@@ -4102,20 +3864,18 @@ html.dark .fitscan-nutrient-chip b {
   padding: 16px;
   border-radius: 20px;
   background: var(--ns-error-con);
-  border: 1.5px solid rgba(186, 26, 26, 0.18);
+  border: 1px solid rgba(186, 26, 26, 0.18);
   box-shadow: 0 8px 24px rgba(186, 26, 26, 0.08);
   animation: deleteCardIn 280ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .deletion-banner-icon {
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: rgba(245, 158, 11, 0.12);
-  color: #B45309;
-  border: 1px solid rgba(245, 158, 11, 0.22);
+  color: var(--edge-accent);
   animation: deleteIconPulse 2s ease infinite;
 }
 
@@ -4180,22 +3940,22 @@ html.dark .fitscan-nutrient-chip b {
   align-items: center;
   gap: 14px;
   padding: 32px 24px 28px;
-  border-radius: 26px;
+  border-radius: 20px;
   background: var(--ns-card-bg);
-  border: 1.5px solid rgba(16, 185, 129, 0.25);
+  border: 1px solid rgba(16, 185, 129, 0.25);
   box-shadow: 0 28px 80px rgba(0, 0, 0, 0.2);
   animation: deleteCardIn 280ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+/* Was an emerald 12% fill behind #B45309 amber text inside an amber border:
+   three colours for one meaning, on a success dialog. Now one accent. */
 .delete-success-icon-wrap {
   width: 56px;
   height: 56px;
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: rgba(16, 185, 129, 0.12);
-  color: #B45309;
-  border: 1.5px solid rgba(245, 158, 11, 0.22);
+  color: var(--edge-accent);
 }
 
 .delete-success-title {
@@ -4302,7 +4062,7 @@ html.dark .fitscan-nutrient-chip b {
   padding: 28px 20px;
   background: var(--ns-shell-bg);
   border: 2px solid var(--ns-border-medium);
-  border-radius: 30px;
+  border-radius: 28px;
   box-shadow: var(--shadow-lg);
 }
 
@@ -4318,7 +4078,7 @@ html.dark .fitscan-nutrient-chip b {
   height: 40px;
   display: grid;
   place-items: center;
-  border-radius: 14px;
+  border-radius: 12px;
   background: var(--ns-input-bg);
   color: var(--ns-on-surface);
   border: 1px solid var(--ns-border-light);
@@ -4338,7 +4098,7 @@ html.dark .fitscan-nutrient-chip b {
   padding: 10px 0;
   border-radius: 28px;
   background: var(--ns-card-bg-alt);
-  border: 1.5px solid var(--ns-border-medium);
+  border: 1px solid var(--ns-border-medium);
   box-shadow: var(--shadow-md);
   overflow: hidden;
 }
@@ -4390,7 +4150,7 @@ html.dark .fitscan-nutrient-chip b {
   height: 36px;
   flex: 1;
   padding: 0 9px;
-  border-radius: 10px;
+  border-radius: 12px;
   border: 1px solid var(--ns-border-medium);
   background: var(--ns-card-bg);
   color: var(--ns-on-surface);
@@ -4412,7 +4172,7 @@ html.dark .fitscan-nutrient-chip b {
   flex: 0 0 27px;
   display: grid;
   place-items: center;
-  border-radius: 9px;
+  border-radius: 8px;
   background: rgba(16, 185, 129, 0.12);
   color: var(--ns-secondary-con);
 }
@@ -4451,7 +4211,7 @@ html.dark .fitscan-nutrient-chip b {
   padding: 28px 20px 20px;
   background: var(--ns-shell-bg);
   border: 2px solid var(--ns-border-medium);
-  border-radius: 30px;
+  border-radius: 28px;
   box-shadow: var(--shadow-lg);
 }
 
@@ -4467,7 +4227,7 @@ html.dark .fitscan-nutrient-chip b {
   height: 40px;
   display: grid;
   place-items: center;
-  border-radius: 14px;
+  border-radius: 12px;
   background: var(--ns-input-bg);
   color: var(--ns-on-surface);
   border: 1px solid var(--ns-border-light);
@@ -4490,7 +4250,7 @@ html.dark .fitscan-nutrient-chip b {
   padding: 0 16px;
   border-radius: 12px;
   background: var(--ns-card-bg-alt);
-  border: 1.5px solid var(--ns-border-medium);
+  border: 1px solid var(--ns-border-medium);
   box-shadow: var(--shadow-sm);
 }
 
@@ -4520,7 +4280,7 @@ html.dark .fitscan-nutrient-chip b {
   flex-direction: column;
   gap: 10px;
   padding: 12px;
-  border-radius: 18px;
+  border-radius: 16px;
   background: var(--ns-card-bg);
   border: 1px solid rgba(16, 185, 129, 0.28);
   box-shadow: 0 12px 28px rgba(16, 185, 129, 0.08);
@@ -4599,7 +4359,7 @@ html.dark .fitscan-nutrient-chip b {
   padding: 10px;
   border-radius: 12px;
   background: var(--ns-card-bg-alt);
-  border: 1.5px solid var(--ns-border-light);
+  border: 1px solid var(--ns-border-light);
 }
 
 .medical-issue-item>button {
@@ -4662,7 +4422,7 @@ html.dark .fitscan-nutrient-chip b {
 
 .medical-severity-control button {
   min-height: 34px;
-  border-radius: 9px;
+  border-radius: 8px;
   background: transparent;
   color: var(--ns-outline);
   font-size: 0.74rem;
@@ -4701,7 +4461,7 @@ html.dark .fitscan-nutrient-chip b {
 .medical-save-button {
   min-height: 50px;
   flex-shrink: 0;
-  border-radius: 14px;
+  border-radius: 12px;
   background: var(--ns-primary);
   color: #ffffff;
   box-shadow: 0 10px 24px rgba(16, 185, 129, 0.24);
@@ -4733,7 +4493,7 @@ html.dark .fitscan-nutrient-chip b {
   padding: 28px 20px 20px;
   background: var(--ns-shell-bg);
   border: 2px solid var(--ns-border-medium);
-  border-radius: 30px;
+  border-radius: 28px;
   box-shadow: var(--shadow-lg);
 }
 
@@ -4749,7 +4509,7 @@ html.dark .fitscan-nutrient-chip b {
   height: 40px;
   display: grid;
   place-items: center;
-  border-radius: 14px;
+  border-radius: 12px;
   background: var(--ns-input-bg);
   color: var(--ns-on-surface);
   border: 1px solid var(--ns-border-light);
@@ -4772,7 +4532,7 @@ html.dark .fitscan-nutrient-chip b {
   padding: 0 16px;
   border-radius: 12px;
   background: var(--ns-card-bg-alt);
-  border: 1.5px solid var(--ns-border-medium);
+  border: 1px solid var(--ns-border-medium);
   box-shadow: var(--shadow-sm);
 }
 
@@ -4802,7 +4562,7 @@ html.dark .fitscan-nutrient-chip b {
   flex-direction: column;
   gap: 10px;
   padding: 12px;
-  border-radius: 18px;
+  border-radius: 16px;
   background: var(--ns-card-bg);
   border: 1px solid rgba(35, 172, 241, 0.3);
   box-shadow: 0 12px 28px rgba(0, 101, 145, 0.08);
@@ -4875,7 +4635,7 @@ html.dark .fitscan-nutrient-chip b {
   border-radius: 12px;
   background: var(--ns-card-bg-alt);
   color: var(--ns-on-surface);
-  border: 1.5px solid var(--ns-border-light);
+  border: 1px solid var(--ns-border-light);
   text-align: left;
 }
 
@@ -4938,7 +4698,7 @@ html.dark .fitscan-nutrient-chip b {
 .health-goals-save-button {
   min-height: 50px;
   flex-shrink: 0;
-  border-radius: 14px;
+  border-radius: 12px;
   background: var(--ns-tertiary);
   color: #ffffff;
   box-shadow: 0 10px 24px rgba(0, 101, 145, 0.24);
@@ -4951,513 +4711,6 @@ html.dark .fitscan-nutrient-chip b {
   cursor: wait;
 }
 
-.food-db-page {
-  min-height: 100vh;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  background: var(--ns-page-bg);
-  font-family: var(--font-main);
-  padding: 16px 12px;
-}
-
-.food-db-shell {
-  width: min(100%, 430px);
-  min-height: calc(100vh - 32px);
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 20px 16px;
-  background: var(--ns-shell-bg);
-  border: 2px solid var(--ns-border-light);
-  border-radius: 28px;
-  box-shadow: var(--shadow-lg);
-}
-
-.food-db-header {
-  display: grid;
-  grid-template-columns: 42px minmax(0, 1fr) 42px;
-  align-items: center;
-  gap: 10px;
-}
-
-.food-db-header>button,
-.food-db-header>svg {
-  width: 42px;
-  height: 42px;
-  display: grid;
-  place-items: center;
-  border-radius: 14px;
-  background: var(--ns-input-bg);
-  color: var(--ns-on-surface);
-  border: 1px solid var(--ns-border-light);
-  padding: 10px;
-}
-
-.food-db-header div {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  line-height: 1.15;
-}
-
-.food-db-header span {
-  color: var(--ns-outline);
-  font-size: 0.72rem;
-  font-weight: 850;
-  text-transform: uppercase;
-}
-
-.food-db-header h1 {
-  color: var(--ns-on-surface);
-  font-family: var(--font-headline);
-  font-size: 1.16rem;
-  font-weight: 900;
-}
-
-.food-db-hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 48px;
-  align-items: center;
-  gap: 12px;
-  padding: 16px;
-  border-radius: 20px;
-  background: var(--ns-card-bg);
-  border: 1px solid rgba(16, 185, 129, 0.26);
-  box-shadow: 0 12px 28px rgba(16, 185, 129, 0.08);
-}
-
-.food-db-hero strong {
-  color: var(--ns-on-surface);
-  font-family: var(--font-headline);
-  font-size: 1.05rem;
-  font-weight: 900;
-}
-
-.food-db-hero p {
-  color: var(--ns-on-surface-var);
-  font-size: 0.82rem;
-  font-weight: 650;
-  line-height: 1.45;
-  margin-top: 4px;
-}
-
-.food-db-hero svg {
-  width: 48px;
-  height: 48px;
-  padding: 12px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.8);
-  color: var(--ns-primary);
-}
-
-.food-db-search {
-  min-height: 54px;
-  display: grid;
-  grid-template-columns: 28px minmax(0, 1fr);
-  align-items: center;
-  gap: 8px;
-  padding: 0 16px;
-  border-radius: 14px;
-  background: var(--ns-card-bg-alt);
-  border: 1.5px solid var(--ns-border-medium);
-  box-shadow: var(--shadow-sm);
-}
-
-.food-db-search svg {
-  color: var(--ns-primary);
-}
-
-.food-db-search input {
-  height: 100%;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--ns-on-surface);
-  font-size: 0.95rem;
-  font-weight: 800;
-  box-shadow: none;
-}
-
-.food-db-search input:focus {
-  border: 0;
-  background: transparent;
-  box-shadow: none;
-}
-
-.food-db-error {
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: rgba(186, 26, 26, 0.08);
-  color: var(--ns-error);
-  font-size: 0.82rem;
-  font-weight: 850;
-  text-align: center;
-}
-
-.food-db-list {
-  flex: 1;
-  min-height: 360px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  overflow: auto;
-  padding-right: 2px;
-}
-
-.food-db-card {
-  min-height: 72px;
-  display: grid;
-  grid-template-columns: 46px minmax(0, 1fr) 42px;
-  align-items: center;
-  gap: 12px;
-  padding: 12px;
-  border-radius: 16px;
-  background: var(--ns-card-bg-alt);
-  color: var(--ns-on-surface);
-  border: 1.5px solid var(--ns-border-light);
-  box-shadow: var(--shadow-sm);
-  text-align: left;
-}
-
-.food-db-card:hover {
-  border-color: rgba(16, 185, 129, 0.4);
-  background: rgba(16, 185, 129, 0.06);
-}
-
-.food-db-mark {
-  width: 46px;
-  height: 46px;
-  display: grid;
-  place-items: center;
-  border-radius: 15px;
-  background: rgba(16, 185, 129, 0.12);
-  color: var(--ns-secondary-con);
-  overflow: hidden;
-}
-
-.food-db-mark img {
-  width: 100%;
-  height: 100%;
-  display: block;
-  object-fit: cover;
-}
-
-.food-db-copy {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.food-db-copy strong,
-.food-db-copy small {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.food-db-copy strong {
-  color: var(--ns-on-surface);
-  font-family: var(--font-headline);
-  font-size: 0.94rem;
-  font-weight: 900;
-}
-
-.food-db-copy small {
-  color: var(--ns-outline);
-  font-size: 0.76rem;
-  font-weight: 750;
-}
-
-.food-db-score {
-  min-width: 40px;
-  min-height: 36px;
-  display: grid;
-  place-items: center;
-  border-radius: 12px;
-  background: rgba(16, 185, 129, 0.12);
-  color: var(--ns-primary);
-  font-size: 0.84rem;
-  font-weight: 900;
-}
-
-.food-db-score.is-online {
-  background: rgba(35, 172, 241, 0.12);
-  color: var(--ns-tertiary);
-  font-size: 0.68rem;
-}
-
-.food-db-skeleton {
-  height: 72px;
-  border-radius: 16px;
-  background: var(--ns-surface-low);
-  background-size: 220% 100%;
-  animation: shine 1.2s infinite linear;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-}
-
-.food-db-empty {
-  min-height: 220px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  border-radius: 18px;
-  background: var(--ns-card-bg-alt);
-  border: 1px dashed var(--ns-border-medium);
-  color: var(--ns-outline);
-  text-align: center;
-  padding: 20px;
-}
-
-.food-db-empty svg {
-  color: var(--ns-primary);
-}
-
-.food-db-empty strong {
-  color: var(--ns-on-surface);
-  font-family: var(--font-headline);
-  font-size: 1rem;
-  font-weight: 900;
-}
-
-.food-db-empty span {
-  color: var(--ns-outline);
-  font-size: 0.82rem;
-  font-weight: 750;
-}
-
-/* Clean mobile history page */
-.history-page {
-  min-height: 100vh;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  background: var(--ns-page-bg);
-  font-family: var(--font-main);
-  padding: 16px 12px;
-}
-
-.history-phone-shell {
-  width: min(100%, 390px);
-  min-height: calc(100vh - 32px);
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  padding: 24px 16px 18px;
-  background: var(--ns-shell-bg);
-  border: 2px solid var(--ns-border-light);
-  border-radius: 28px;
-  box-shadow: var(--shadow-lg);
-}
-
-.history-topbar {
-  display: grid;
-  grid-template-columns: 42px minmax(0, 1fr) 42px;
-  align-items: center;
-  gap: 10px;
-}
-
-.history-topbar button {
-  width: 42px;
-  height: 42px;
-  display: grid;
-  place-items: center;
-  border-radius: 14px;
-  background: var(--ns-input-bg);
-  color: var(--ns-on-surface);
-  border: 1px solid var(--ns-border-light);
-}
-
-.history-topbar h1 {
-  color: var(--ns-on-surface);
-  font-family: var(--font-headline);
-  font-size: 1.55rem;
-  font-weight: 900;
-  text-align: center;
-}
-
-.history-search-bar {
-  min-height: 54px;
-  display: grid;
-  grid-template-columns: 28px minmax(0, 1fr);
-  align-items: center;
-  gap: 8px;
-  padding: 0 16px;
-  border-radius: 14px;
-  background: var(--ns-card-bg-alt);
-  border: 1.5px solid var(--ns-border-medium);
-  box-shadow: var(--shadow-sm);
-}
-
-.history-search-bar svg {
-  color: var(--ns-primary);
-}
-
-.history-search-bar input {
-  height: 100%;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--ns-on-surface);
-  font-size: 0.98rem;
-  font-weight: 800;
-  box-shadow: none;
-}
-
-.history-search-bar input:focus {
-  border: 0;
-  background: transparent;
-  box-shadow: none;
-}
-
-.history-list {
-  flex: 1;
-  min-height: 420px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  overflow: auto;
-  padding: 2px 2px 8px;
-}
-
-.history-entry-card {
-  min-height: 74px;
-  display: grid;
-  grid-template-columns: 46px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 12px;
-  padding: 12px;
-  border-radius: 18px;
-  background: var(--ns-card-bg-alt);
-  border: 1.5px solid var(--ns-border-light);
-  box-shadow: var(--shadow-sm);
-  color: var(--ns-on-surface);
-  text-align: left;
-}
-
-.history-entry-card:hover {
-  transform: translateY(-1px);
-  border-color: rgba(16, 185, 129, 0.36);
-  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.08);
-}
-
-.history-entry-indicator {
-  width: 46px;
-  height: 46px;
-  display: grid;
-  place-items: center;
-  border-radius: 16px;
-  color: #ffffff;
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.1);
-}
-
-.history-entry-thumb {
-  width: 46px;
-  height: 46px;
-  flex-shrink: 0;
-  border-radius: 16px;
-  overflow: hidden;
-  background: var(--ns-input-bg);
-  border: 1px solid var(--ns-border-light);
-  box-shadow: var(--shadow-sm);
-}
-
-.history-entry-thumb img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.history-entry-copy {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.history-entry-copy strong,
-.history-entry-copy small {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.history-entry-copy strong {
-  color: var(--ns-on-surface);
-  font-family: var(--font-headline);
-  font-size: 0.96rem;
-  font-weight: 900;
-}
-
-.history-entry-copy small {
-  color: var(--ns-outline);
-  font-size: 0.76rem;
-  font-weight: 750;
-}
-
-.history-entry-value {
-  min-width: 42px;
-  min-height: 36px;
-  display: grid;
-  place-items: center;
-  border-radius: 13px;
-  background: rgba(0, 0, 0, 0.06);
-  color: var(--ns-on-surface);
-  font-size: 0.84rem;
-  font-weight: 900;
-}
-
-.history-state {
-  flex: 1;
-  min-height: 360px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  border-radius: 20px;
-  background: var(--ns-card-bg-alt);
-  border: 1px dashed var(--ns-border-medium);
-  color: var(--ns-outline);
-  text-align: center;
-  padding: 20px;
-}
-
-.history-state strong {
-  color: var(--ns-on-surface);
-  font-family: var(--font-headline);
-  font-size: 1rem;
-  font-weight: 900;
-}
-
-.history-state span {
-  color: var(--ns-outline);
-  font-size: 0.84rem;
-  font-weight: 750;
-}
-
-.history-state.is-error {
-  background: rgba(186, 26, 26, 0.06);
-  border-color: rgba(186, 26, 26, 0.18);
-  color: var(--ns-error);
-}
-
-.history-spinner {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: 3px solid var(--ns-surface-high);
-  border-top-color: var(--ns-primary);
-  animation: spin 0.8s linear infinite;
-}
-
 @media (max-width: 360px) {
   .profile-page {
     padding: 10px 8px;
@@ -5467,7 +4720,7 @@ html.dark .fitscan-nutrient-chip b {
     min-height: calc(100vh - 20px);
     gap: 12px;
     padding: 16px 12px;
-    border-radius: 24px;
+    border-radius: 20px;
   }
 
   .profile-avatar {
@@ -5477,7 +4730,7 @@ html.dark .fitscan-nutrient-chip b {
 
   .profile-menu-group {
     padding: 8px;
-    border-radius: 18px;
+    border-radius: 16px;
   }
 
   .personal-details-page {
@@ -5487,7 +4740,7 @@ html.dark .fitscan-nutrient-chip b {
   .personal-details-shell {
     min-height: calc(100vh - 20px);
     padding: 22px 14px;
-    border-radius: 26px;
+    border-radius: 20px;
   }
 
   .personal-detail-row {
@@ -5506,7 +4759,7 @@ html.dark .fitscan-nutrient-chip b {
   .medical-profile-shell {
     min-height: calc(100vh - 20px);
     padding: 22px 14px 16px;
-    border-radius: 26px;
+    border-radius: 20px;
   }
 
   .medical-issue-list {
@@ -5520,36 +4773,17 @@ html.dark .fitscan-nutrient-chip b {
   .health-goals-shell {
     min-height: calc(100vh - 20px);
     padding: 22px 14px 16px;
-    border-radius: 26px;
+    border-radius: 20px;
   }
 
   .health-goals-list {
     max-height: calc(100vh - 285px);
   }
 
-  .food-db-page {
-    padding: 10px 8px;
-  }
 
-  .food-db-shell {
-    min-height: calc(100vh - 20px);
-    padding: 16px 12px;
-    border-radius: 24px;
-  }
 
-  .history-page {
-    padding: 10px 8px;
-  }
 
-  .history-phone-shell {
-    min-height: calc(100vh - 20px);
-    padding: 20px 12px 14px;
-    border-radius: 24px;
-  }
 
-  .history-list {
-    min-height: 360px;
-  }
 }
 
 /* Ã¢â€â‚¬Ã¢â€â‚¬ Theme Toggle Button Ã¢â€â‚¬Ã¢â€â‚¬ */
@@ -5559,8 +4793,8 @@ html.dark .fitscan-nutrient-chip b {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 14px;
-  border: 1.5px solid var(--ns-border-medium);
+  border-radius: 12px;
+  border: 1px solid var(--ns-border-medium);
   background: var(--ns-input-bg);
   color: var(--ns-on-surface);
   box-shadow: var(--shadow-sm);
@@ -5582,10 +4816,10 @@ html.dark .fitscan-nutrient-chip b {
   align-items: center;
   gap: 10px;
   padding: 6px 12px 6px 8px;
-  border-radius: 14px;
+  border-radius: 12px;
   background: var(--ns-card-bg);
   color: var(--ns-on-surface);
-  border: 1.5px solid var(--ns-border-light);
+  border: 1px solid var(--ns-border-light);
   text-align: left;
   cursor: pointer;
   position: relative;
@@ -5660,7 +4894,7 @@ html.dark .fitscan-nutrient-chip b {
   min-height: 38px;
   padding: 0 34px 0 12px;
   border-radius: 12px;
-  border: 1.5px solid var(--ns-border-light);
+  border: 1px solid var(--ns-border-light);
   background: var(--ns-card-bg);
   color: var(--ns-on-surface);
   font: inherit;
@@ -5677,7 +4911,7 @@ html.dark .fitscan-nutrient-chip b {
 .fitscan-bmi-card {
   margin: 16px 20px;
   padding: 16px;
-  border-radius: 24px;
+  border-radius: 20px;
   background: var(--ns-card-bg);
   border: 1px solid var(--ns-border-light);
   box-shadow: var(--shadow-sm);
@@ -5796,7 +5030,9 @@ html.dark .fitscan-nutrient-chip b {
 .fitscan-bmi-scale-bar {
   position: relative;
   height: 8px;
-  border-radius: 4px;
+  /* Shape, not scale: an 8px-tall track is a capsule, matching every other
+     progress track in the app (--r-full). */
+  border-radius: 999px;
   display: flex;
   overflow: visible;
   background: var(--ns-input-bg);
@@ -5809,7 +5045,7 @@ html.dark .fitscan-nutrient-chip b {
 .fitscan-bmi-scale-bar .segment-blue {
   width: 25%;
   background: #3b82f6;
-  border-radius: 4px 0 0 4px;
+  border-radius: 999px 0 0 999px;
 }
 
 .fitscan-bmi-scale-bar .segment-green {
@@ -5825,7 +5061,7 @@ html.dark .fitscan-nutrient-chip b {
 .fitscan-bmi-scale-bar .segment-red {
   width: 25%;
   background: #EF4444;
-  border-radius: 0 4px 4px 0;
+  border-radius: 0 999px 999px 0;
 }
 
 .fitscan-bmi-pointer {
@@ -5942,24 +5178,28 @@ html.dark .fitscan-nutrient-chip b {
   place-items: center;
 }
 
+/* Each of the four accents now states itself once as --edge-accent, so the shared
+   badge rule derives the tint from the same value that colours the glyph. These
+   were raw hexes that duplicated the semantic map and had already drifted from
+   it: #10B981 against --sem-score-good's #059669 (which is ~2.3:1 on white and
+   below the AA floor), #EF4444 against #DC2626, and a hardcoded #F59E0B that
+   round 2 had already replaced everywhere else. Dark mode was inheriting the
+   light values because a raw hex cannot respond to a mode. */
 .stat-card-icon.best {
-  background: rgba(16, 185, 129, 0.1);
-  color: #10B981;
+  --edge-accent: var(--sem-score-good);
+  color: var(--edge-accent);
 }
 
 .stat-card-icon.worst {
-  background: rgba(239, 68, 68, 0.1);
-  color: #EF4444;
+  --edge-accent: var(--sem-score-bad);
+  color: var(--edge-accent);
 }
 
-.stat-card-icon.trend {
-  background: rgba(59, 130, 246, 0.1);
-  color: #3b82f6;
-}
-
+/* "Best streak" is engagement, not a score: it gets --sem-streak rather than the
+   amber score band, which would have read as a caution on an achievement. */
 .stat-card-icon.streak {
-  background: rgba(245, 158, 11, 0.1);
-  color: #F59E0B;
+  --edge-accent: var(--sem-streak);
+  color: var(--edge-accent);
 }
 
 .stat-card-info {
@@ -6008,7 +5248,7 @@ html.dark .fitscan-nutrient-chip b {
   padding: 8px 16px;
   font-size: 0.8rem;
   font-weight: 800;
-  border-radius: 10px;
+  border-radius: 12px;
   color: var(--ns-outline);
   transition: all 0.2s;
 }
@@ -6043,7 +5283,7 @@ html.dark .fitscan-nutrient-chip b {
 .custom-range-inputs input {
   height: 44px;
   border-radius: 12px;
-  border: 1.5px solid var(--ns-border-light);
+  border: 1px solid var(--ns-border-light);
   background: var(--ns-card-bg-alt);
   padding: 0 12px;
   font-size: 0.85rem;
@@ -6086,16 +5326,18 @@ html.dark .fitscan-nutrient-chip b {
   margin-right: 4px;
 }
 
+/* Score-band legend reads from the semantic map, so the legend can never
+   disagree with the band colour used on the chart or in the sheet (TOKENS 14). */
 .graph-legend .dot.good {
-  background: #10B981;
+  background: var(--sem-score-good);
 }
 
 .dot.avg {
-  background: #F59E0B;
+  background: var(--sem-score-avg);
 }
 
 .dot.bad {
-  background: #EF4444;
+  background: var(--sem-score-bad);
 }
 
 .graph-wrapper {
@@ -6215,7 +5457,8 @@ html.dark .fitscan-nutrient-chip b {
   width: 40px;
   height: 4px;
   background: var(--ns-border-light);
-  border-radius: 2px;
+  /* Shape, not scale: a 4px-tall grab handle is a capsule. */
+  border-radius: 999px;
   margin: -12px auto 20px;
 }
 
@@ -6300,12 +5543,16 @@ html.dark .fitscan-nutrient-chip b {
   border-bottom: none;
 }
 
+/* Good/bad here is the same judgement the score bands answer, so it references
+   them rather than re-picking a green and a red. These raw hexes were the
+   pre-round-2 values (#10B981 is ~2.3:1 on white, below AA) and could not
+   respond to colour mode, so dark mode was rendering the light values. */
 .sheet-product-icon .good {
-  color: #10B981;
+  color: var(--sem-score-good);
 }
 
 .sheet-product-icon .bad {
-  color: #EF4444;
+  color: var(--sem-score-bad);
 }
 
 .sheet-product-info {
@@ -6335,7 +5582,7 @@ html.dark .fitscan-nutrient-chip b {
 }
 
 .sheet-product-item em.good {
-  color: #10B981;
+  color: var(--sem-score-good);
 }
 
 .sheet-product-item em.bad {
@@ -6424,7 +5671,7 @@ html.dark .fitscan-nutrient-chip b {
 
 .search-pill {
   background: var(--ns-card-bg-alt);
-  border: 1.5px solid var(--ns-border-light);
+  border: 1px solid var(--ns-border-light);
   border-radius: 16px;
   height: 48px;
   display: flex;
@@ -6465,7 +5712,7 @@ html.dark .fitscan-nutrient-chip b {
 .fr-filter-tabs button {
   white-space: nowrap;
   padding: 6px 16px;
-  border-radius: 10px;
+  border-radius: 12px;
   font-size: 0.8rem;
   font-weight: 800;
   color: var(--ns-outline);
@@ -6549,8 +5796,8 @@ html.dark .fitscan-nutrient-chip b {
   width: 52px;
   height: 64px;
   background: var(--ns-card-bg-alt);
-  border: 1.5px solid var(--ns-border-light);
-  border-radius: 14px;
+  border: 1px solid var(--ns-border-light);
+  border-radius: 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -6597,7 +5844,7 @@ html.dark .fitscan-nutrient-chip b {
 
 .badge-status {
   padding: 2px 8px;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 0.65rem;
   font-weight: 900;
   text-transform: uppercase;
@@ -6606,7 +5853,7 @@ html.dark .fitscan-nutrient-chip b {
 
 .badge-category {
   padding: 2px 8px;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 0.65rem;
   font-weight: 800;
   background: var(--ns-card-bg-alt);
@@ -6700,7 +5947,7 @@ html.dark .fitscan-nutrient-chip b {
   background: var(--ns-primary);
   color: #fff;
   padding: 12px 24px;
-  border-radius: 14px;
+  border-radius: 12px;
   font-size: 0.95rem;
   font-weight: 850;
   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
@@ -6777,8 +6024,8 @@ html.dark .fitscan-nutrient-chip b {
 .form-group input,
 .form-group textarea {
   background: var(--ns-card-bg-alt);
-  border: 1.5px solid var(--ns-border-light);
-  border-radius: 14px;
+  border: 1px solid var(--ns-border-light);
+  border-radius: 12px;
   padding: 12px 16px;
   font-size: 0.95rem;
   font-weight: 600;
@@ -6800,7 +6047,7 @@ html.dark .fitscan-nutrient-chip b {
 
 .category-chips button {
   padding: 8px 14px;
-  border-radius: 10px;
+  border-radius: 12px;
   font-size: 0.75rem;
   font-weight: 800;
   background: var(--ns-card-bg-alt);
@@ -6844,49 +6091,13 @@ html.dark .fitscan-nutrient-chip b {
   font-weight: 700;
 }
 
-/* Ã¢â€â‚¬Ã¢â€â‚¬ Scanner UI Overhaul Ã¢â€â‚¬Ã¢â€â‚¬ */
 
-.scan-screen-wrapper {
-  background: var(--ns-page-bg);
-  color: var(--ns-on-surface);
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
 
-.scan-viewfinder-container {
-  flex: 1;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
 
-.scan-frame {
-  position: relative;
-  width: min(85vw, 400px);
-  aspect-ratio: 1;
-  border-radius: 40px;
-  overflow: hidden;
-  box-shadow: 0 0 0 1000px rgba(241, 248, 244, 0.72);
-  border: 1px solid rgba(16, 185, 129, 0.26);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
 
-.scan-live-preview {
-  position: absolute;
-  inset: 0;
-  background: rgba(16, 185, 129, 0.08);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-}
+
+
+
 
 .scan-brackets {
   position: absolute;
@@ -6934,9 +6145,7 @@ html.dark .fitscan-nutrient-chip b {
   border-bottom-right-radius: 20px;
 }
 
-.scan-frame.is-active .scan-bracket {
-  animation: bracket-pulse 1.5s infinite ease-in-out;
-}
+
 
 @keyframes bracket-pulse {
 
@@ -6997,176 +6206,47 @@ html.dark .fitscan-nutrient-chip b {
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
-.scan-bottom-bar {
-  background: rgba(255, 255, 255, 0.82);
-  backdrop-filter: blur(20px);
-  padding: 24px 20px calc(24px + env(safe-area-inset-bottom));
-  border-top: 1px solid var(--ns-border-light);
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
 
-.scan-actions-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-}
 
-.scan-action-btn {
-  background: var(--ns-card-bg);
-  border: 1px solid var(--ns-border-light);
-  border-radius: 20px;
-  padding: 16px 12px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  transition: all 0.2s ease;
-  color: var(--ns-on-surface);
-}
 
-.scan-action-btn:active {
-  transform: scale(0.95);
-  background: rgba(16, 185, 129, 0.1);
-}
 
-.scan-action-btn svg {
-  color: var(--ns-primary-con);
-}
 
-.scan-capture-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 10px;
-}
 
-.scan-capture-btn {
-  width: 76px;
-  height: 76px;
-  border-radius: 50%;
-  border: 4px solid var(--ns-primary);
-  padding: 4px;
-  background: transparent;
-  transition: all 0.2s ease;
-}
 
-.scan-capture-btn-inner {
-  width: 100%;
-  height: 100%;
-  background: var(--ns-primary);
-  border-radius: 50%;
-  transition: all 0.2s ease;
-}
 
-.scan-capture-btn:active {
-  transform: scale(0.92);
-}
 
-.scan-capture-btn:active .scan-capture-btn-inner {
-  transform: scale(0.9);
-  opacity: 0.8;
-}
 
-.scan-control-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: var(--ns-card-bg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--ns-on-surface);
-  border: 1px solid var(--ns-border-light);
-  transition: all 0.2s ease;
-}
 
-.scan-control-icon:active {
-  transform: scale(0.9);
-  background: rgba(16, 185, 129, 0.1);
-}
 
-/* Note Area */
-.scan-note-field {
-  background: var(--ns-card-bg);
-  border: 1px solid var(--ns-border-light);
-  border-radius: 16px;
-  padding: 12px 16px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
 
-.scan-note-field.is-expanded {
-  background: var(--ns-input-bg);
-  border-color: var(--ns-primary-con);
-}
 
-/* Glass Header */
-.scan-header {
-  padding: max(16px, env(safe-area-inset-top)) 20px 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: var(--ns-glass-surface);
-  z-index: 100;
-}
 
-.scan-header h1 {
-  font-family: var(--font-headline);
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  font-size: 1.1rem;
-  color: var(--ns-on-surface);
-  margin: 0;
-}
 
-.scan-header-btn {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  background: var(--ns-card-bg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--ns-on-surface);
-  border: 1px solid var(--ns-border-light);
-}
 
-.scan-preview-muted {
-  color: rgba(0, 0, 0, 0.28);
-}
 
-.scan-preview-message,
-.scan-zoom-labels,
-.scan-note-placeholder,
-.scan-note-muted {
-  color: var(--ns-outline);
-}
 
-.scan-preview-message {
-  font-size: 0.875rem;
-  font-weight: 650;
-}
 
-.scan-torch-button {
-  position: absolute;
-  top: 1.5rem;
-  right: 1.5rem;
-  width: 2.5rem;
-  height: 2.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.84);
-  color: var(--ns-on-surface);
-  border: 1px solid var(--ns-border-light);
-  backdrop-filter: blur(12px);
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 .scan-torch-on {
   color: #F59E0B;
@@ -7183,82 +6263,33 @@ html.dark .fitscan-nutrient-chip b {
   background: rgba(0, 0, 0, 0.16);
 }
 
-.scan-zoom-labels {
-  display: flex;
-  justify-content: space-between;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-}
 
-.scan-note-input {
-  width: 100%;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: var(--ns-on-surface);
-  font-size: 0.875rem;
-  font-weight: 650;
-}
 
-.scan-note-placeholder {
-  font-size: 0.875rem;
-  font-weight: 650;
-}
+
+
+
 
 .scan-note-active {
   color: var(--ns-primary-con);
 }
 
-html.dark .scan-screen-wrapper { background: var(--ns-surface);
-  color: #ffffff;
-}
 
-html.dark .scan-frame {
-  box-shadow: 0 0 0 1000px rgba(10, 15, 24, 0.6);
-  border-color: rgba(16, 185, 129, 0.2);
-}
 
-html.dark .scan-live-preview {
-  background: rgba(16, 185, 129, 0.05);
-}
 
-html.dark .scan-bottom-bar {
-  background: rgba(17, 17, 17, 0.8);
-  border-top-color: rgba(255, 255, 255, 0.1);
-}
 
-html.dark .scan-action-btn,
-html.dark .scan-control-icon,
-html.dark .scan-header-btn,
-html.dark .scan-note-field {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
-}
 
-html.dark .scan-header {
-  background: var(--ns-glass-surface);
-}
 
-html.dark .scan-header h1,
-html.dark .scan-note-input {
-  color: #ffffff;
-}
 
-html.dark .scan-preview-muted,
-html.dark .scan-preview-message,
-html.dark .scan-zoom-labels,
-html.dark .scan-note-placeholder,
-html.dark .scan-note-muted {
-  color: rgba(255, 255, 255, 0.42);
-}
 
-html.dark .scan-torch-button {
-  background: rgba(0, 0, 0, 0.4);
-  color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.1);
-}
+
+
+
+
+
+
+
+
+
 
 /* Success/Fail Feedback */
 .scan-toast {
@@ -7267,7 +6298,7 @@ html.dark .scan-torch-button {
   left: 50%;
   transform: translateX(-50%);
   padding: 12px 24px;
-  border-radius: 30px;
+  border-radius: 28px;
   background: var(--ns-primary);
   color: white;
   font-weight: 700;
@@ -7392,70 +6423,17 @@ html.dark .scan-torch-button {
 
   /* Ã¢â€â‚¬Ã¢â€â‚¬ 3. Compare Page Side-by-Side Overhaul Ã¢â€â‚¬Ã¢â€â‚¬ */
   /* Split the product picker into standard left sidebar + right list grid */
-  .compare-picker {
-    display: grid !important;
-    grid-template-columns: 300px 1fr !important;
-    gap: 32px !important;
-    align-items: start !important;
-  }
 
-  .compare-hero-copy {
-    grid-column: 1 !important;
-  }
 
-  .compare-search {
-    grid-column: 1 !important;
-    margin-top: 8px !important;
-  }
 
-  .compare-product-list {
-    grid-column: 2 !important;
-    grid-row: span 3 !important;
-    display: grid !important;
-    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)) !important;
-    gap: 16px !important;
-    margin-top: 0 !important;
-  }
 
-  .compare-pagination {
-    grid-column: 2 !important;
-    margin-top: 24px !important;
-  }
 
   /* Centered, high-contrast compared product cards */
-  .compare-content .flex.gap-4.overflow-x-auto {
-    display: flex !important;
-    flex-wrap: wrap !important;
-    justify-content: center !important;
-    gap: 24px !important;
-    overflow-x: visible !important;
-    padding-bottom: 20px !important;
-  }
 
-  .compare-content .flex.gap-4.overflow-x-auto > div {
-    min-width: 280px !important;
-    max-width: 320px !important;
-    flex: 1 1 280px !important;
-    margin: 0 !important;
-  }
 
   /* Ã¢â€â‚¬Ã¢â€â‚¬ 4. History Page Grid Overhaul Ã¢â€â‚¬Ã¢â€â‚¬ */
-  .history-search-bar {
-    max-width: 480px !important;
-    margin: 0 auto 28px auto !important;
-  }
 
-  .history-list {
-    display: grid !important;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
-    gap: 16px !important;
-    margin-top: 10px !important;
-  }
 
-  .history-entry-card {
-    min-height: 80px !important;
-    width: 100% !important;
-  }
 
   /* Ã¢â€â‚¬Ã¢â€â‚¬ 5. Streak Leaderboard Split Screen Overhaul Ã¢â€â‚¬Ã¢â€â‚¬ */
   /* Sidebar stats + scrollable rank list */
@@ -7483,34 +6461,10 @@ html.dark .scan-torch-button {
   }
 
   /* Ã¢â€â‚¬Ã¢â€â‚¬ 6. Food Database Sidebar & Grid Search Overhaul Ã¢â€â‚¬Ã¢â€â‚¬ */
-  .food-db-shell {
-    display: grid !important;
-    grid-template-columns: 320px 1fr !important;
-    gap: 32px !important;
-    align-items: start !important;
-  }
 
-  .food-db-header {
-    grid-column: span 2 !important;
-  }
 
-  .food-db-hero {
-    grid-column: 1 !important;
-    margin-bottom: 0 !important;
-  }
 
-  .food-db-search {
-    grid-column: 1 !important;
-    margin-top: 16px !important;
-  }
 
-  .food-db-list {
-    grid-column: 2 !important;
-    display: grid !important;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)) !important;
-    gap: 16px !important;
-    margin-top: 0 !important;
-  }
 
   /* Ã¢â€â‚¬Ã¢â€â‚¬ 7. Profile Page Cockpit Dashboard Overhaul Ã¢â€â‚¬Ã¢â€â‚¬ */
   .profile-phone-shell {
@@ -7528,8 +6482,8 @@ html.dark .scan-torch-button {
     grid-column: 1 !important;
     margin-bottom: 0 !important;
     padding: 28px 20px !important;
-    border-radius: 24px !important;
-    border: 1.5px solid var(--ns-border-light) !important;
+    border-radius: 20px!important;
+    border: 1px solid var(--ns-border-light) !important;
     background: var(--ns-card-bg-alt) !important;
   }
 
@@ -7542,7 +6496,7 @@ html.dark .scan-torch-button {
   }
 
   .profile-menu-section h2 {
-    border-bottom: 1.5px solid var(--ns-border-light) !important;
+    border-bottom: 1px solid var(--ns-border-light) !important;
     padding-bottom: 8px !important;
     margin-bottom: 4px !important;
   }
@@ -7767,7 +6721,7 @@ html.dark .scan-torch-button {
     height: 40px;
     display: grid;
     place-items: center;
-    border-radius: 14px;
+    border-radius: 12px;
     color: #fff;
     background: var(--ns-primary);
     box-shadow: 0 10px 24px rgba(16, 185, 129,0.38);
@@ -7837,7 +6791,7 @@ html.dark .scan-torch-button {
     margin-inline: 2px;
     padding: 18px;
     border: 1px solid var(--ns-border-light);
-    border-radius: 18px;
+    border-radius: 16px;
     background: var(--ns-card-bg-alt);
     box-shadow: var(--shadow-card);
   }
@@ -7997,7 +6951,7 @@ html.dark .scan-torch-button {
     height: 40px;
     display: inline-grid;
     place-items: center;
-    border-radius: 14px;
+    border-radius: 12px;
     border: 1px solid var(--ns-border-light);
     background: var(--ns-card-bg);
     color: var(--ns-on-surface);
@@ -8106,10 +7060,6 @@ html.dark .scan-torch-button {
   .fitscan-dashboard-grid .hidden.lg\:block > div:hover,
   .history-entry-card:hover,
   .food-db-card:hover,
-  .compare-product-card:hover {
-    transform: translateY(-3px) !important;
-    box-shadow: var(--shadow-hover) !important;
-  }
 
   .fitscan-action-card {
     display: grid !important;
@@ -8168,152 +7118,31 @@ html.dark .scan-torch-button {
     background: var(--ns-card-bg) !important;
   }
 
-  .compare-picker {
-    display: grid !important;
-    grid-template-columns: 300px 1fr !important;
-    gap: 28px !important;
-    align-items: start !important;
-  }
 
   .compare-hero-copy,
-  .compare-search {
-    grid-column: 1 !important;
-  }
 
-  .compare-hero-copy {
-    position: sticky;
-    top: calc(var(--header-height) + 32px);
-    padding: 28px !important;
-    border-radius: var(--card-radius);
-    border: 1px solid var(--ns-border-light);
-    background: var(--ns-card-bg-alt);
-    box-shadow: var(--shadow-card);
-  }
 
-  .compare-search {
-    position: sticky;
-    top: calc(var(--header-height) + 210px);
-  }
 
-  .compare-product-list {
-    grid-column: 2 !important;
-    grid-row: 1 / span 4 !important;
-    display: grid !important;
-    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)) !important;
-    gap: 16px !important;
-    max-height: none !important;
-    overflow: visible !important;
-  }
 
-  .compare-product-card {
-    min-height: 132px !important;
-    grid-template-columns: 22px 54px minmax(0, 1fr) 48px !important;
-    align-items: start !important;
-    padding: 14px !important;
-    border-radius: 16px !important;
-  }
 
-  .compare-pagination {
-    grid-column: 2 !important;
-  }
 
-  .compare-content .flex.gap-4.overflow-x-auto {
-    display: flex !important;
-    justify-content: center !important;
-    flex-wrap: wrap !important;
-    gap: 24px !important;
-    overflow: visible !important;
-  }
 
-  .compare-content .flex.gap-4.overflow-x-auto > div {
-    width: 320px !important;
-    flex: 0 0 320px !important;
-    border-radius: var(--card-radius) !important;
-    box-shadow: var(--shadow-card) !important;
-  }
 
-  .history-search-bar {
-    max-width: 480px !important;
-    margin: 0 auto 32px !important;
-  }
 
-  .history-list {
-    display: grid !important;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
-    gap: 20px !important;
-  }
 
-  .history-entry-card {
-    min-height: 116px !important;
-    align-items: flex-start !important;
-    padding: 20px !important;
-    border-radius: var(--card-radius) !important;
-    background: var(--ns-card-bg-alt) !important;
-    transition: transform 0.22s ease, box-shadow 0.22s ease;
-  }
 
-  .history-entry-value {
-    width: 42px !important;
-    height: 42px !important;
-    border-radius: 12px !important;
-    font-family: var(--font-headline) !important;
-  }
 
-  .food-db-shell {
-    display: grid !important;
-    grid-template-columns: 320px 1fr !important;
-    gap: 28px !important;
-    align-items: start !important;
-  }
 
-  .food-db-header {
-    grid-column: 1 / -1 !important;
-  }
 
   .food-db-hero,
   .food-db-search,
-  .food-db-error {
-    grid-column: 1 !important;
-  }
 
   .food-db-hero,
-  .food-db-search {
-    position: sticky !important;
-  }
 
-  .food-db-hero {
-    top: calc(var(--header-height) + 32px) !important;
-    padding: 28px !important;
-    border-radius: var(--card-radius) !important;
-  }
 
-  .food-db-search {
-    top: calc(var(--header-height) + 220px) !important;
-  }
 
-  .food-db-list {
-    grid-column: 2 !important;
-    grid-row: 2 / span 4 !important;
-    display: grid !important;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)) !important;
-    gap: 16px !important;
-    margin-top: 0 !important;
-  }
 
-  .food-db-card {
-    min-height: 142px !important;
-    display: flex !important;
-    align-items: flex-start !important;
-    flex-direction: column !important;
-    padding: 20px !important;
-    border-radius: 16px !important;
-    transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
-  }
 
-  .food-db-mark {
-    width: 64px !important;
-    height: 64px !important;
-  }
 
   .profile-phone-shell {
     display: grid !important;
@@ -8337,11 +7166,15 @@ html.dark .scan-torch-button {
     box-shadow: var(--shadow-card) !important;
   }
 
+  /* Was a 3px hardcoded emerald border — a fourth edge weight, outside the
+     1px/2px system, and a literal that could not follow the colour mode. Now the
+     bold outline (2px accent) that every other selected/emphasised state uses,
+     with the accent ring carrying the emphasis. */
   .profile-avatar {
     width: 96px !important;
     height: 96px !important;
-    border: 3px solid #10B981 !important;
-    box-shadow: 0 0 0 6px rgba(16, 185, 129,0.12) !important;
+    border: 2px solid var(--ns-primary) !important;
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--ns-primary) 12%, transparent) !important;
   }
 
   .profile-phone-shell > .profile-menu-section {
@@ -8598,27 +7431,6 @@ html.dark .scan-torch-button {
   flex: 0 0 auto;
 }
 
-.dashboard-week-strip {
-  min-width: 0;
-}
-
-.dashboard-day-grid {
-  min-width: 0;
-}
-
-.dashboard-day-button {
-  min-width: 0;
-  min-height: 58px;
-}
-
-.dashboard-selected-day {
-  gap: 12px;
-}
-
-.dashboard-selected-day > span {
-  flex: 0 0 auto;
-}
-
 .dashboard-scan-card {
   min-width: 0;
 }
@@ -8654,33 +7466,6 @@ html.dark .scan-torch-button {
   .dashboard-week-card,
   .dashboard-nutrition-card {
     padding: 14px !important;
-  }
-
-  .dashboard-week-strip {
-    gap: 4px !important;
-  }
-
-  .dashboard-week-strip > button {
-    width: 32px !important;
-    height: 32px !important;
-  }
-
-  .dashboard-day-grid {
-    gap: 3px !important;
-  }
-
-  .dashboard-day-button {
-    min-height: 52px;
-    border-radius: 12px !important;
-    padding: 6px 0 !important;
-  }
-
-  .dashboard-day-button span:first-child {
-    font-size: 9px !important;
-  }
-
-  .dashboard-day-button strong {
-    font-size: 0.78rem !important;
   }
 }
 
@@ -8795,7 +7580,7 @@ html.dark .scan-torch-button {
   align-items: flex-end;
   padding: clamp(16px, 3vw, 26px);
   border: 1px solid var(--ns-border-light);
-  border-radius: 24px;
+  border-radius: 20px;
   background: var(--ns-card-bg);
   box-shadow: var(--shadow-card);
 }
@@ -8843,7 +7628,7 @@ html.dark .scan-torch-button {
 .dashboard-recent-section,
 .dashboard-explore-section > div > button,
 .dashboard-scan-card {
-  border-radius: 18px !important;
+  border-radius: 16px!important;
   box-shadow: var(--shadow-card) !important;
 }
 
@@ -8869,7 +7654,7 @@ html.dark .scan-torch-button {
   height: 40px;
   padding: 9px;
   flex: 0 0 40px;
-  border-radius: 14px;
+  border-radius: 12px;
   background: rgba(255,255,255,0.18);
 }
 
@@ -8899,7 +7684,7 @@ html.dark .scan-torch-button {
   width: 40px;
   height: 40px;
   padding: 10px;
-  border-radius: 14px;
+  border-radius: 12px;
   color: var(--ns-tertiary);
   background: color-mix(in srgb, var(--ns-tertiary) 12%, transparent);
 }
@@ -8941,17 +7726,6 @@ html.dark .scan-torch-button {
   letter-spacing: 0;
 }
 
-.dashboard-day-button {
-  min-height: 66px;
-  border: 1px solid transparent;
-  border-radius: 16px !important;
-}
-
-.dashboard-day-button:not([aria-pressed="true"]):hover {
-  border-color: color-mix(in srgb, var(--ns-primary) 24%, transparent);
-  background: var(--ns-hover-tint) !important;
-}
-
 .dashboard-recent-section {
   padding: clamp(18px, 3vw, 24px);
   border: 1px solid var(--ns-border-light);
@@ -8988,51 +7762,23 @@ html.dark .scan-torch-button {
   width: 42px;
   height: 42px;
   padding: 10px;
-  border-radius: 14px;
+  border-radius: 12px;
   background: color-mix(in srgb, var(--ns-primary) 11%, transparent);
 }
 
-.scan-screen-wrapper {
-  background: var(--ns-page-bg);
-}
 
-.scan-header {
-  position: relative;
-  padding: max(18px, env(safe-area-inset-top)) clamp(18px, 5vw, 28px) 14px;
-  background: var(--ns-glass-surface);
-  border-bottom: 1px solid var(--ns-border-light);
-  backdrop-filter: blur(18px) saturate(160%);
-}
 
-.scan-header h1 {
-  letter-spacing: 0;
-  font-size: 1rem;
-}
 
-.scan-header-btn,
-.scan-control-icon,
-.scan-action-btn,
-.scan-note-field,
-.scan-torch-button {
-  box-shadow: var(--shadow-card);
-}
 
-.scan-viewfinder-container {
-  padding: clamp(18px, 5vw, 34px);
-}
 
-.scan-frame {
-  width: min(86vw, 440px);
-  border-radius: 30px;
-  border: 1px solid color-mix(in srgb, var(--ns-primary) 34%, transparent);
-  box-shadow:
-    0 24px 70px rgba(0, 0, 0, 0.14),
-    0 0 0 999px color-mix(in srgb, var(--ns-surface) 76%, transparent);
-}
 
-.scan-live-preview {
-  background: var(--ns-card-bg-alt);
-}
+
+
+
+
+
+
+
 
 .scan-bracket {
   width: 46px;
@@ -9056,50 +7802,21 @@ html.dark .scan-torch-button {
   font-weight: 850;
 }
 
-.scan-bottom-bar {
-  gap: 16px;
-  padding: 18px clamp(16px, 5vw, 28px) calc(18px + env(safe-area-inset-bottom));
-  background: var(--ns-glass-surface);
-  box-shadow: 0 -18px 42px rgba(0, 0, 0, 0.08);
-}
 
-.scan-bottom-bar > .w-full {
-  margin-bottom: 0 !important;
-  border-color: var(--ns-border-light) !important;
-  background: var(--ns-card-bg) !important;
-}
 
-.scan-capture-row {
-  max-width: 360px;
-  width: 100%;
-  margin: 0 auto;
-}
 
-.scan-capture-btn {
-  width: 78px;
-  height: 78px;
-  border-color: color-mix(in srgb, var(--ns-primary) 75%, white);
-  box-shadow: 0 12px 32px color-mix(in srgb, var(--ns-primary) 30%, transparent);
-}
 
-.scan-actions-grid {
-  gap: 10px;
-}
 
-.scan-action-btn {
-  min-height: 86px;
-  border-radius: 16px;
-  padding: 14px 8px;
-}
 
-.scan-action-btn span {
-  letter-spacing: 0.08em;
-}
 
-.scan-note-field {
-  min-height: 52px;
-  border-radius: 16px;
-}
+
+
+
+
+
+
+
+
 
 .scan-zoom-slider {
   height: 6px;
@@ -9118,19 +7835,11 @@ html.dark .dashboard-primary-action::after {
   background: rgba(255, 255, 255, 0.16);
 }
 
-html.dark .scan-header {
-  background: var(--ns-glass-surface);
-}
 
-html.dark .scan-frame {
-  box-shadow:
-    0 24px 70px rgba(0, 0, 0, 0.36),
-    0 0 0 999px color-mix(in srgb, var(--ns-surface) 76%, transparent);
-}
 
-html.dark .scan-bottom-bar {
-  background: var(--ns-glass-surface);
-}
+
+
+
 
 @media (max-width: 767px) {
   .dashboard-header {
@@ -9186,26 +7895,13 @@ html.dark .scan-bottom-bar {
     grid-column: 1 / -1;
   }
 
-  .scan-screen-wrapper {
-    min-height: calc(100vh - var(--header-height, 0px)) !important;
-  }
 
-  .scan-viewfinder-container {
-    align-items: stretch;
-    padding: 28px 32px;
-  }
 
-  .scan-frame {
-    width: min(58vh, 520px);
-    max-width: 520px;
-  }
 
-  .scan-bottom-bar {
-    width: min(100%, 760px);
-    margin: 0 auto 28px;
-    border: 1px solid var(--ns-border-light);
-    border-radius: 22px;
-  }
+
+
+
+
 }
 
 /* Final spacing and alignment pass */
@@ -9255,26 +7951,6 @@ html.dark .scan-bottom-bar {
   margin-bottom: 18px !important;
 }
 
-.dashboard-week-strip {
-  align-items: center !important;
-  gap: 10px !important;
-}
-
-.dashboard-week-strip > button {
-  width: 40px !important;
-  height: 40px !important;
-  flex: 0 0 40px !important;
-}
-
-.dashboard-day-grid {
-  gap: 8px !important;
-}
-
-.dashboard-selected-day {
-  margin-top: 18px !important;
-  padding-top: 16px !important;
-}
-
 .dashboard-nutrition-card > h2,
 .dashboard-explore-section > h2 {
   margin-bottom: 16px !important;
@@ -9303,60 +7979,30 @@ html.dark .scan-bottom-bar {
   padding: 16px !important;
 }
 
-.scan-screen-wrapper {
-  min-height: 100dvh;
-}
 
-.scan-viewfinder-container {
-  min-height: 0;
-  padding-top: clamp(18px, 4vh, 34px) !important;
-  padding-bottom: clamp(18px, 4vh, 34px) !important;
-}
 
-.scan-frame {
-  margin-inline: auto;
-}
 
-.scan-bottom-bar {
-  width: 100%;
-  max-width: 760px;
-  margin-inline: auto;
-}
 
-.scan-note-field,
-.scan-actions-grid,
-.scan-capture-row {
-  width: 100%;
-}
 
-.scan-note-field {
-  margin: 0;
-}
 
-.scan-capture-row {
-  padding-inline: 6px !important;
-}
 
-.scan-actions-grid {
-  align-items: stretch;
-}
 
-.scan-action-btn {
-  justify-content: center;
-  min-width: 0;
-}
 
-.scan-action-btn span {
-  max-width: 100%;
-  overflow: hidden;
-  text-align: center;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+
+
+
+
+
+
+
+
+
+
 
 @media (max-width: 767px) {
   .dashboard-page {
-    padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important;
+    /* Matches the floating bottom nav's height plus its bottom offset. */
+    padding-bottom: calc(104px + env(safe-area-inset-bottom, 0px)) !important;
   }
 
   .dashboard-header {
@@ -9394,36 +8040,11 @@ html.dark .scan-bottom-bar {
     padding: 18px !important;
   }
 
-  .dashboard-week-strip {
-    gap: 6px !important;
-  }
 
-  .dashboard-week-strip > button {
-    width: 34px !important;
-    height: 42px !important;
-    flex-basis: 34px !important;
-  }
 
-  .dashboard-day-grid {
-    gap: 4px !important;
-  }
 
-  .dashboard-day-button {
-    min-height: 58px !important;
-    border-radius: 13px !important;
-  }
 
-  .scan-header {
-    padding-inline: 16px !important;
-  }
 
-  .scan-viewfinder-container {
-    padding-inline: 16px !important;
-  }
-
-  .scan-bottom-bar {
-    padding-inline: 16px !important;
-  }
 }
 
 @media (min-width: 768px) {
@@ -9541,50 +8162,6 @@ html.dark .scan-bottom-bar {
   white-space: nowrap;
 }
 
-.dashboard-week-strip {
-  display: grid !important;
-  grid-template-columns: 42px minmax(0, 1fr) 42px;
-  gap: 12px !important;
-  align-items: stretch !important;
-}
-
-.dashboard-week-strip > button {
-  width: 42px !important;
-  height: auto !important;
-  min-height: 66px !important;
-  align-self: stretch;
-  border-radius: 16px !important;
-}
-
-.dashboard-day-grid {
-  display: grid !important;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 8px !important;
-  align-items: stretch;
-}
-
-.dashboard-day-button {
-  width: 100%;
-  min-height: 66px !important;
-  padding: 9px 2px !important;
-  justify-content: center;
-  line-height: 1;
-}
-
-.dashboard-day-button span:first-child {
-  line-height: 1;
-}
-
-.dashboard-day-button strong {
-  line-height: 1.1;
-}
-
-.dashboard-selected-day {
-  margin: 0 !important;
-  padding-top: 16px !important;
-  border-top: 1px solid var(--ns-border-light);
-}
-
 .compare-page,
 .history-page,
 .streak-page,
@@ -9685,7 +8262,7 @@ html.dark .scan-bottom-bar {
 .result-facts-card,
 .result-audit-card,
 .stat-card-premium {
-  border-radius: 18px !important;
+  border-radius: 16px!important;
 }
 
 .trends-page,
@@ -9700,7 +8277,7 @@ html.dark .scan-bottom-bar {
   width: min(100%, 1180px);
   margin: 0 auto var(--page-gap) !important;
   border: 1px solid var(--ns-border-light) !important;
-  border-radius: 18px !important;
+  border-radius: 16px!important;
   background: var(--ns-glass-surface) !important;
   box-shadow: var(--shadow-card);
   backdrop-filter: blur(16px) saturate(160%);
@@ -9760,7 +8337,7 @@ html.dark .scan-bottom-bar {
   height: 42px;
   display: grid;
   place-items: center;
-  border-radius: 14px;
+  border-radius: 12px;
   border: 1px solid var(--ns-border-light);
   background: var(--ns-input-bg);
   color: var(--ns-on-surface);
@@ -9797,7 +8374,7 @@ html.dark .scan-bottom-bar {
 .barcode-reader-card,
 .barcode-info-card {
   border: 1px solid var(--ns-border-light);
-  border-radius: 18px;
+  border-radius: 16px;
   background: var(--ns-card-bg);
   box-shadow: var(--shadow-card);
 }
@@ -9826,7 +8403,7 @@ html.dark .scan-bottom-bar {
   height: 42px;
   display: grid;
   place-items: center;
-  border-radius: 14px;
+  border-radius: 12px;
   color: var(--ns-primary);
   background: color-mix(in srgb, var(--ns-primary) 12%, transparent);
 }
@@ -9876,26 +8453,6 @@ html.dark .scan-bottom-bar {
 
   .dashboard-count-pill {
     min-height: 30px;
-  }
-
-  .dashboard-week-strip {
-    grid-template-columns: 34px minmax(0, 1fr) 34px;
-    gap: 6px !important;
-  }
-
-  .dashboard-week-strip > button {
-    width: 34px !important;
-    min-height: 58px !important;
-    flex-basis: 34px !important;
-  }
-
-  .dashboard-day-grid {
-    gap: 4px !important;
-  }
-
-  .dashboard-day-button {
-    min-height: 58px !important;
-    padding: 8px 1px !important;
   }
 
   .history-entry-card,
@@ -9965,9 +8522,6 @@ html.dark .scan-bottom-bar {
 
   .history-list,
   .food-db-list,
-  .compare-product-list {
-    gap: 16px !important;
-  }
 
   .history-entry-card,
   .food-db-card,
@@ -9984,4 +8538,2670 @@ html.dark .scan-bottom-bar {
   .result-content {
     width: min(100%, var(--content-max-width, 1280px)) !important;
   }
+}
+
+/* Calendar day cell. This held the "bold outline = selected" pattern that every
+   other selected state copies. Resting state is a hairline; only the selected
+   cell goes 2px. The dashboard's own calendar now lives in .ns-cal-day (see the
+   CalendarStrip block at the end of this file), which follows the same rule. */
+.fs-day {
+  --button-border-color: var(--edge-hairline);
+  width: 100%;
+  min-width: 0;
+  min-height: 62px !important;
+  padding: 8px 4px !important;
+  border-radius: var(--radius-lg) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  line-height: 1;
+}
+
+.fs-day[aria-pressed="true"] {
+  --button-border-width: 2px;
+  --button-border-color: var(--ns-primary);
+  background: transparent !important;
+  color: var(--ns-secondary) !important;
+}
+
+.fs-day:hover:not([aria-pressed="true"]) {
+  --button-border-color: color-mix(in srgb, var(--ns-primary) 45%, transparent);
+  background: var(--ns-hover-tint) !important;
+}
+
+.fs-day strong {
+  line-height: 1;
+}
+
+@media (max-width: 380px) {
+  .dashboard-week-header {
+    flex-direction: column;
+    align-items: stretch !important;
+  }
+
+  .dashboard-count-pill {
+    margin-right: auto;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 3 — Edge system, states and touch targets applied to the semantic
+   class layer. Every rule here traces to a section of DESIGN_TOKENS.md.
+   Grouped by builder lane so ownership stays clear.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Lane B/C/D/E: primary actions get the highlighted edge (TOKENS 2.2) ──
+   These were all `colored fill + drop shadow, no edge`, which is the defect the
+   pass exists to fix: a saturated fill is never a substitute for an edge.
+   One per screen, which is why e.g. .delete-confirm-destroy (the decisive
+   action in its modal) qualifies but .delete-confirm-cancel does not. */
+.profile-upgrade-button,
+.medical-save-button,
+.health-goals-save-button,
+.result-primary-button.btn-primary,
+.compare-action-bar button,
+.fr-new-btn,
+.submit-btn,
+.fr-empty-btn,
+.delete-confirm-destroy,
+.deletion-banner-cancel,
+.profile-modal-primary,
+.btn-primary {
+  border: 1px solid color-mix(in srgb, var(--edge-accent) 45%, transparent) !important;
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--edge-accent) 18%, transparent),
+    var(--elev-raised);
+}
+
+html.dark .profile-upgrade-button,
+html.dark .medical-save-button,
+html.dark .health-goals-save-button,
+html.dark .result-primary-button.btn-primary,
+html.dark .compare-action-bar button,
+html.dark .fr-new-btn,
+html.dark .submit-btn,
+html.dark .fr-empty-btn,
+html.dark .delete-confirm-destroy,
+html.dark .deletion-banner-cancel,
+html.dark .profile-modal-primary,
+html.dark .btn-primary {
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--edge-accent) 26%, transparent),
+    var(--elev-raised);
+}
+
+/* Destructive and tertiary primaries reuse the same class with their own hue
+   rather than inventing a second treatment. */
+.delete-confirm-destroy {
+  --edge-accent: var(--ns-error);
+}
+
+.health-goals-save-button {
+  --edge-accent: var(--ns-tertiary);
+}
+
+/* Pressed = scale down + shadow drop (TOKENS 6). A darker fill alone does not
+   satisfy the spec, and the previous global `opacity: 0.85` read as disabled. */
+.profile-upgrade-button:active:not(:disabled),
+.medical-save-button:active:not(:disabled),
+.health-goals-save-button:active:not(:disabled),
+.result-primary-button:active:not(:disabled),
+.compare-action-bar button:active:not(:disabled),
+.fr-new-btn:active:not(:disabled),
+.submit-btn:active:not(:disabled),
+.delete-confirm-destroy:active:not(:disabled),
+.deletion-banner-cancel:active:not(:disabled),
+.profile-modal-primary:active:not(:disabled),
+.btn-primary:active:not(:disabled) {
+  transform: scale(0.98) !important;
+  box-shadow: var(--elev-pressed) !important;
+}
+
+/* Disabled: one treatment everywhere. Replaces the mix of 0.32 / 0.42 / 0.5 /
+   0.55 / 0.6 / 0.65 / 0.7 / 0.82 opacities plus one grayscale filter. */
+.profile-upgrade-button:disabled,
+.medical-save-button:disabled,
+.health-goals-save-button:disabled,
+.result-primary-button:disabled,
+.compare-action-bar button:disabled,
+.compare-pagination button:disabled,
+.submit-btn:disabled,
+.delete-confirm-destroy:disabled,
+.delete-confirm-cancel:disabled,
+.deletion-banner-cancel:disabled,
+.profile-modal-primary:disabled,
+.btn-primary:disabled,
+.profile-avatar:disabled,
+.personal-detail-control button:disabled {
+  opacity: 0.5 !important;
+  box-shadow: none !important;
+  transform: none !important;
+  filter: none !important;
+  cursor: not-allowed;
+}
+
+/* ── Selected / active states -> bold outline (TOKENS 2.3) ──
+   Nine different mechanisms (solid fill, inverted fill, tint + alpha border,
+   underline, scale) collapse into the one pattern the calendar already used. */
+.range-tabs button.active,
+.fr-filter-tabs button.active,
+.category-chips button.active,
+.medical-severity-control button.is-active,
+.result-tabs button.is-active,
+.profile-language-list button.is-selected,
+.health-goals-list button.is-selected,
+.medical-issue-item.is-selected,
+.leaderboard-row.is-current-user,
+.compare-product-card.is-selected,
+.vote-btn.active,
+.fitscan-week-strip button.is-selected {
+  border: 2px solid var(--edge-accent) !important;
+  background: color-mix(in srgb, var(--edge-accent) 10%, transparent) !important;
+  color: var(--ns-primary-con) !important;
+  box-shadow: none !important;
+}
+
+.health-goals-list button.is-selected {
+  --edge-accent: var(--ns-tertiary);
+}
+
+/* The selected week cell keeps a readable label on the tinted surface. */
+.fitscan-week-strip button.is-selected strong,
+.fitscan-week-strip button.is-selected span {
+  color: var(--ns-primary-con) !important;
+}
+
+/* Active tab counters inside a selected chip must not stay a solid accent block,
+   or the chip reads as two competing states at once. */
+.medical-issue-item.is-selected > button strong,
+.health-goals-list button.is-selected strong,
+.medical-severity-control button.is-active {
+  background: color-mix(in srgb, var(--edge-accent) 16%, transparent) !important;
+  color: var(--ns-primary-con) !important;
+}
+
+/* The 3px underline pseudo-element is redundant once the tab carries a bold
+   outline, and it was the only instance of that mechanism in the app. */
+.result-tabs button.is-active::after {
+  display: none;
+}
+
+/* ── Chips / pills / badges -> hairline (TOKENS 2.5) ──
+   A chip is a distinct surface, so it takes an edge; it was fill-only. */
+.dashboard-count-pill,
+.badge-status,
+.badge-category,
+.sheet-score-pill,
+.plan-badge,
+.food-db-score,
+.history-entry-value,
+.leaderboard-points,
+.fitscan-bmi-pill,
+.result-status-badge,
+.medical-issue-item > button strong,
+.health-goals-list button strong,
+.medical-summary-title strong,
+.health-goals-summary-title strong {
+  border: 1px solid var(--edge-hairline);
+}
+
+/* ── Modals and sheets -> hairline + floating elevation (TOKENS 2.8) ──
+   These floated with no edge at all, so on a dark background they blended into
+   the page behind them. */
+.trends-bottom-sheet,
+.fr-bottom-sheet,
+.profile-modal-card,
+.delete-confirm-card,
+.delete-scheduled-success-card {
+  border: 1px solid var(--edge-hairline);
+  box-shadow: var(--elev-floating);
+}
+
+/* ── Empty states -> dashed hairline (TOKENS 2.9) ──
+   Dashed is kept deliberately: it reads as "nothing here yet" rather than as a
+   real surface. Only the colour is normalised. */
+.medical-empty-result,
+.health-goals-empty-result,
+.history-state,
+.food-db-empty,
+.fitscan-empty-state,
+.trends-empty,
+.compare-empty,
+.fr-empty {
+  border: 1px dashed var(--edge-hairline);
+}
+
+/* ── Error surfaces -> hairline in the error accent (TOKENS 2.9) ──
+   Eight of them had no edge at all while four did. */
+.personal-details-error,
+.medical-profile-error,
+.health-goals-error,
+.profile-photo-error,
+.fr-error,
+.delete-confirm-error {
+  border: 1px solid color-mix(in srgb, var(--ns-error) 30%, transparent);
+}
+
+/* ── Icon-in-circle badges -> one rule (TOKENS 7) ──
+   Was a spread of 9%, 10%, 11%, 12%, 13% and 16% mixes, some with a border and
+   some without. Now: 12% of the element's own accent, no border, --r-lg. */
+.profile-action-icon,
+.fitscan-action-icon,
+.leaderboard-avatar,
+.food-db-mark,
+.fitscan-food-mark,
+.stat-card-icon,
+.delete-confirm-icon-wrap,
+.delete-success-icon-wrap,
+.deletion-banner-icon,
+.barcode-info-card > div {
+  background: color-mix(in srgb, var(--edge-accent) 12%, transparent);
+  border: 0;
+}
+
+/* Each badge states its own accent, and both the tint and the glyph colour derive
+   from that one value, so a badge cannot end up tinted one hue and drawn in
+   another. `.delete-success-icon-wrap` was exactly that bug: an emerald 12% fill
+   behind #B45309 amber text inside an amber border, i.e. three colours for one
+   meaning on a success dialog. */
+.delete-confirm-icon-wrap {
+  --edge-accent: var(--ns-error);
+}
+
+.delete-success-icon-wrap {
+  --edge-accent: var(--sem-score-good);
+}
+
+.deletion-banner-icon {
+  --edge-accent: var(--sem-score-avg);
+}
+
+/* ── Settings-row group accents (TOKENS 14.4) ──
+   One accent per functional area, set on the row so the shared badge rule and the
+   hover state both read it. Every one of these rows was the same emerald before,
+   so eleven different destinations looked like eleven copies of one thing. */
+.profile-menu-action[data-area='account'],
+.profile-theme-toggle[data-area='account'] {
+  --edge-accent: var(--sem-area-account);
+}
+
+.profile-menu-action[data-area='health'] {
+  --edge-accent: var(--sem-area-health);
+}
+
+.profile-menu-action[data-area='support'] {
+  --edge-accent: var(--sem-area-support);
+}
+
+.profile-menu-action[data-area='premium'] {
+  --edge-accent: var(--sem-area-premium);
+}
+
+.profile-menu-action.is-danger {
+  --edge-accent: var(--ns-error);
+}
+
+/* The badge colour has to follow the accent too, not just the tint behind it. */
+.profile-action-icon {
+  color: var(--edge-accent);
+  border-color: color-mix(in srgb, var(--edge-accent) 15%, transparent);
+}
+
+/* ── Touch targets: 44x44 minimum (TOKENS 10) ──
+   Visual size is unchanged; only the hit area grows. */
+.profile-topbar button,
+.personal-details-header button,
+.medical-profile-header button,
+.health-goals-header button,
+.trends-back-btn,
+.fr-back-btn,
+.result-back-button,
+.compare-back-button,
+.history-topbar button,
+.food-db-header > button,
+.streak-page-header button,
+.barcode-header button,
+.theme-toggle-btn,
+.dashboard-streak-pill,
+.compare-pagination button,
+.personal-detail-control button,
+.servings-edit-box button,
+.medical-selected-strip button,
+.health-goals-selected-strip button,
+.medical-severity-control button,
+.fr-filter-tabs button,
+.fr-new-btn,
+.category-chips button,
+.profile-modal-title button,
+.range-tabs button,
+.sheet-close-btn,
+.sheet-close {
+  position: relative;
+}
+
+.profile-topbar button::after,
+.personal-details-header button::after,
+.medical-profile-header button::after,
+.health-goals-header button::after,
+.trends-back-btn::after,
+.fr-back-btn::after,
+.result-back-button::after,
+.compare-back-button::after,
+.history-topbar button::after,
+.food-db-header > button::after,
+.streak-page-header button::after,
+.barcode-header button::after,
+.theme-toggle-btn::after,
+.dashboard-streak-pill::after,
+.compare-pagination button::after,
+.personal-detail-control button::after,
+.servings-edit-box button::after,
+.medical-selected-strip button::after,
+.health-goals-selected-strip button::after,
+.medical-severity-control button::after,
+.fr-filter-tabs button::after,
+.fr-new-btn::after,
+.category-chips button::after,
+.profile-modal-title button::after,
+.range-tabs button::after,
+.sheet-close-btn::after,
+.sheet-close::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  transform: translate(-50%, -50%);
+}
+
+/* ── Motion: one duration/easing pair for micro-interactions (TOKENS 8) ──
+   Replaces the 160ms (50x) / 180ms (20x) / 200ms / 220ms / 280ms / 420ms spread
+   and adds `transform` to lists that omitted it, which is what made the new
+   pressed state snap instead of animating. */
+.compare-back-button,
+.compare-pagination button,
+.compare-product-card,
+.compare-product-check,
+.compare-action-bar button,
+.result-back-button,
+.result-macro-item,
+.result-tabs button,
+.servings-edit-box button,
+.profile-avatar,
+.profile-menu-action,
+.profile-theme-toggle,
+.profile-action-icon,
+.profile-upgrade-button,
+.profile-topbar button,
+.theme-toggle-btn,
+.language-selector select,
+.history-entry-card,
+.food-db-card,
+.fitscan-week-strip button,
+.fitscan-nav-arrow-btn,
+.fitscan-recent-list button,
+.fitscan-action-card button,
+.fitscan-home-nav button,
+.range-tabs button,
+.fr-filter-tabs button,
+.fr-card,
+.vote-btn,
+.category-chips button,
+.submit-btn,
+.stat-card-premium,
+.delete-confirm-cancel,
+.delete-confirm-destroy,
+.deletion-banner-cancel,
+.scan-action-btn,
+.scan-control-icon,
+.scan-capture-btn,
+.scan-note-field,
+.medical-save-button,
+.health-goals-save-button,
+.ns-card,
+.glass-card {
+  transition:
+    color var(--dur-micro) var(--ease-out),
+    background-color var(--dur-micro) var(--ease-out),
+    background var(--dur-micro) var(--ease-out),
+    border-color var(--dur-micro) var(--ease-out),
+    box-shadow var(--dur-micro) var(--ease-out),
+    transform var(--dur-micro) var(--ease-out),
+    opacity var(--dur-micro) var(--ease-out);
+}
+
+/* Data figures keep their own longer duration; the calendar pop keeps --ease-pop
+   because it is an intentional character moment. */
+.fitscan-score-value,
+.ns-progress-fill,
+.fitscan-macro-track span {
+  transition: stroke-dasharray var(--dur-figure) var(--ease-out),
+    width var(--dur-figure) var(--ease-out);
+}
+
+/* ── Tabular numerals on every figure that updates in place (TOKENS 5) ── */
+.result-score-copy span,
+.result-macro-item strong,
+.compare-score-badge span,
+.food-db-score,
+.history-entry-value,
+.leaderboard-points,
+.leaderboard-rank,
+.streak-stat-tile strong,
+.fitscan-score-copy strong,
+.fitscan-bmi-value,
+.fitscan-nutrient-chip b,
+.dashboard-count-pill,
+.sheet-stat-item strong,
+.sheet-score-pill,
+.sheet-product-item em,
+.trends-tooltip-score strong,
+.stat-card-info strong,
+.plan-price,
+.servings-edit-box strong,
+.medical-summary-title strong,
+.health-goals-summary-title strong {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* ── Typography micro-scale: uppercase tracking (TOKENS 5) ──
+   Uppercase labels ranged from 0.02em to 0.2em across 47 declarations. */
+.compare-hero-copy p,
+.compare-state p,
+.compare-error p,
+.compare-no-results p,
+.compare-pagination span,
+.result-product-copy p,
+.result-verdict-banner span,
+.result-status-badge span,
+.result-macro-item > span,
+.streak-page-header span,
+.food-db-header span,
+.fr-count,
+.badge-status,
+.badge-category,
+.sheet-product-list h3,
+.stat-card-info span,
+.fitscan-bmi-status-group span,
+.fitscan-bmi-pill,
+.plan-badge,
+.barcode-info-card strong,
+.barcode-footer,
+.label-uppercase,
+.premium-badge {
+  letter-spacing: 0.12em;
+}
+
+.badge-status,
+.badge-category,
+.result-status-badge span,
+.fitscan-bmi-pill,
+.result-macro-item > span {
+  letter-spacing: 0.08em;
+}
+
+/* ── Focus-visible restored where an outline was removed (TOKENS 11) ── */
+.compare-product-card:focus-visible,
+.graph-wrapper .recharts-wrapper:focus-visible,
+.medical-search-box input:focus-visible,
+.health-goals-search-box input:focus-visible,
+.food-db-search input:focus-visible,
+.history-search-bar input:focus-visible,
+.compare-search input:focus-visible,
+.search-pill input:focus-visible {
+  outline: 2px solid var(--ns-primary) !important;
+  outline-offset: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 5 — Round-2 findings (DESIGN_TOKENS.md 13–14)
+   Cross-mode shape parity, the semantic colour map, and light-mode surface
+   contrast. Every rule traces to a numbered finding in section 0.6 of the brief.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── 14. Semantic colour map (finding 6 + 8) ──
+   Every non-neutral colour that carries meaning is defined here, once, and
+   referenced everywhere that meaning appears. Nothing re-picks a hue locally.
+
+   Score bands answer "how good is this food": good / avg / bad.
+   Trend states answer "which way is it moving": improving / declining / stable.
+   These are different questions, so they get different scales — reusing the
+   score green for "improving" would imply an improving trend is also a good
+   score, which is not what the data says.
+
+   "Stable" is deliberately neutral rather than a fourth accent: it means "no
+   movement", and green/red are already spent on direction. This is also what
+   fixes the finding-6 bug, where the same word rendered blue in the stat card
+   and amber in the chip. */
+/* The score-band values here are the CSS mirror of SCORE_COLORS in
+   src/utils/scoreColor.js. CSS owns the colour wherever a stylesheet can, and
+   the JS module owns it where a value must be computed (SVG strokes, Recharts
+   props). The two must stay in step; neither may be edited alone. */
+:root {
+  --sem-score-good: #059669;  /* SCORE_COLORS.great */
+  --sem-score-avg: #B45309;   /* SCORE_COLORS.caution */
+  --sem-score-bad: #DC2626;   /* SCORE_COLORS.avoid */
+
+  --sem-trend-improving: #059669;
+  --sem-trend-declining: #DC2626;
+  --sem-trend-stable: #4B5563;
+
+  /* Ingredient / verdict impact: "is this item good or bad for you". Shares the
+     score palette because it is the same judgement at item rather than product
+     scope — a beneficial ingredient and a good score should not be two greens. */
+  --sem-impact-beneficial: var(--sem-score-good);
+  --sem-impact-harmful: var(--sem-score-bad);
+  --sem-impact-neutral: #4B5563;
+
+  /* BMI band: a clinical range, not a food judgement, so "underweight" gets its
+     own informational blue rather than borrowing the score scale. Normal/over/
+     obese do share the score hues, because there the judgement is the same
+     direction of good-to-bad. */
+  --sem-bmi-under: #0284C7;
+  --sem-bmi-normal: var(--sem-score-good);
+  --sem-bmi-over: var(--sem-score-avg);
+  --sem-bmi-obese: var(--sem-score-bad);
+
+  /* Macro / nutrient category: answers "which nutrient is this", never "is it
+     good or bad" (TOKENS 14, rule 4 as revised in round 3). One accent per
+     category, because reusing the brand green for every nutrient badge made the
+     badges decorative — they identified nothing.
+
+     Deliberately kept clear of the score scale: protein is a deep rose rather
+     than #DC2626 and carbs a yellow-brown rather than #B45309, so a nutrient
+     badge can never be misread as an alert. Each value is >= 4.5:1 on the light
+     card surface, since these are used as small label text. */
+  --sem-macro-calories: #C2410C;
+  --sem-macro-protein: #9F1239;
+  --sem-macro-carbs: #A16207;
+  --sem-macro-fats: #1D4ED8;
+  --sem-macro-sodium: #6D28D9;
+
+  /* Settings-row category: answers "what area of the app does this row touch".
+     One accent per functional GROUP, not per row — eleven rows in eleven colours
+     would be a paint chart, which fails the restraint half of the reference bar
+     as surely as eleven identical green badges failed the information half. The
+     grouping is the one the Profile screen already declares with its own section
+     headings, so the colour reinforces existing structure instead of inventing a
+     second taxonomy on top of it.
+
+     Destructive rows are excluded deliberately: they take --ns-error, because
+     "this will delete your data" outranks "this is an account setting". */
+  --sem-area-account: #4338CA;
+  --sem-area-health: #0F766E;
+  --sem-area-support: #A21CAF;
+  --sem-area-premium: #8A6516;
+
+  /* Engagement / streak: not a score and not a category, so it gets its own
+     value rather than borrowing the amber score band (which would read as
+     "caution") or the brand green (which would read as "good"). */
+  --sem-streak: #9A3412;
+}
+
+/* Dark mode shifts these lighter for contrast against #111111, but the meaning
+   mapping is identical — only the colour value changes (TOKENS 15). */
+html.dark {
+  --sem-score-good: #34D399;
+  --sem-score-avg: #FBBF24;
+  --sem-score-bad: #F87171;
+
+  --sem-trend-improving: #34D399;
+  --sem-trend-declining: #F87171;
+  --sem-trend-stable: #9CA3AF;
+
+  --sem-impact-beneficial: var(--sem-score-good);
+  --sem-impact-harmful: var(--sem-score-bad);
+  --sem-impact-neutral: #9CA3AF;
+
+  --sem-bmi-under: #38BDF8;
+  --sem-bmi-normal: var(--sem-score-good);
+  --sem-bmi-over: var(--sem-score-avg);
+  --sem-bmi-obese: var(--sem-score-bad);
+
+  --sem-macro-calories: #FB923C;
+  /* Not #FBBF24: that is exactly --sem-score-avg in dark mode, so a carbs badge
+     and a "caution" score rendered the same colour and categorical colour began
+     reading as a judgement. Shifted to a warm tan, which stays distinguishable
+     from the orange calories accent without entering amber's territory. */
+  --sem-macro-protein: #FB7185;
+  --sem-macro-carbs: #D9BE8C;
+  --sem-macro-fats: #60A5FA;
+  --sem-macro-sodium: #C4B5FD;
+
+  --sem-area-account: #A5B4FC;
+  --sem-area-health: #5EEAD4;
+  --sem-area-support: #F0ABFC;
+  --sem-area-premium: #D4AF37;
+
+  --sem-streak: #FDBA74;
+}
+
+/* ── 13. Light-mode surface contrast (finding 7) ──
+   The page was #F5F5F5 against #FFFFFF cards: a 4% luminance gap, so card
+   edges dissolved into the background and light mode read as "white streaming
+   into the screen". Deepening the page tint makes white cards sit on top of it,
+   which is what the hairline edge was fighting to do alone. Dark mode already
+   had a real gap (#111111 page vs #1C1C1E card) and is unchanged. */
+:root {
+  --ns-surface: #EBEEEC;
+  --ns-page-bg: #EBEEEC;
+  --bg-primary: #EBEEEC;
+}
+
+/* ── Trend state colour, applied to both places the trend is rendered ──
+   The stat-card icon was hardcoded `.trend` (always blue) regardless of state,
+   and `.graph-trend-chip` had no CSS at all, so it inherited the amber inline
+   colour of its `.graph-score` parent — the two halves of finding 6. */
+.stat-card-icon.trend-improving {
+  --edge-accent: var(--sem-trend-improving);
+  background: color-mix(in srgb, var(--sem-trend-improving) 12%, transparent);
+  color: var(--sem-trend-improving);
+}
+
+.stat-card-icon.trend-declining {
+  --edge-accent: var(--sem-trend-declining);
+  background: color-mix(in srgb, var(--sem-trend-declining) 12%, transparent);
+  color: var(--sem-trend-declining);
+}
+
+.stat-card-icon.trend-stable {
+  --edge-accent: var(--sem-trend-stable);
+  background: color-mix(in srgb, var(--sem-trend-stable) 12%, transparent);
+  color: var(--sem-trend-stable);
+}
+
+/* The chip is a distinct surface inside the score row, so it takes the hairline
+   (TOKENS 2.4 rule 3) and states its own colour instead of inheriting one. */
+.graph-trend-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--edge-hairline);
+  background: var(--ns-card-bg);
+  font-family: var(--font-main);
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.graph-trend-chip.improving { color: var(--sem-trend-improving); }
+.graph-trend-chip.declining { color: var(--sem-trend-declining); }
+.graph-trend-chip.stable    { color: var(--sem-trend-stable); }
+
+/* The score row's own figures: tabular so they do not jitter as the day's
+   average updates (TOKENS 5.3), and the heading micro-scale that was missing
+   entirely because none of these classes had CSS. */
+.graph-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* Radial indicator + heading on one line (TOKENS, round 3 finding 3). The score
+   has a fixed ceiling of 10, so the proportion is worth drawing; the ring shows
+   only the arc because the figure itself is stated beside it. */
+.graph-heading-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.graph-eyebrow {
+  color: var(--ns-outline);
+  font-family: var(--font-main);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.graph-score {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.graph-score strong {
+  font-family: var(--font-headline);
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+.graph-score-max {
+  color: var(--ns-outline);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+/* ── 5. "Premium Active" banner: identical edge in both modes (finding 5) ──
+   The banner is gold (#D4AF37) but inherited the shared primary-action ring,
+   which is tinted from --edge-accent (emerald). Over gold at 18% the emerald
+   ring was invisible in light mode; at 26% over #111 it read as a border. Same
+   component, two different edges — the finding-5 bug. Pointing --edge-accent at
+   the banner's own accent satisfies TOKENS 2.2 ("a tint of the element's own
+   accent") and makes the treatment identical in both modes. */
+.profile-upgrade-button.premium {
+  --edge-accent: #D4AF37;
+}
+
+/* ── Cross-mode shape parity guard (TOKENS 15, findings 4 + 5) ──
+   Shape is declared once, outside any colour-mode scope, for the components
+   whose light/dark versions are most at risk of drifting. A dark-mode rule that
+   changes one of these is a bug, and putting them here makes that visible in
+   the diff instead of hiding in a `html.dark` block 7,000 lines away. */
+.profile-action-icon,
+.fitscan-action-icon,
+.stat-card-icon,
+.food-db-mark,
+.fitscan-food-mark {
+  border-radius: var(--radius-md);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Calendar strip (CalendarStrip.jsx)
+   ---------------------------------------------------------------------------
+   Replaces the arrow-stepped 7-cell week grid (the .dashboard-week-strip /
+   .dashboard-day-* rules, now deleted) with a snap-scrolling rail.
+
+   Shape follows the reference: a weekday label over a dashed outline circle,
+   and the selected day lifted onto its own rounded tile with a solid ring.
+   Every colour is a token, so light / dark come out of the existing scopes.
+
+   Two local vars carry the only pair of values that cannot be shared across
+   modes: the tile has to end up *lighter* than the rail behind it, and "lighter"
+   means the card colour in light mode but the raised surface in dark.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+/* With no header left, the rail is the whole component, so the card treatment
+   sits on the rail itself rather than on a wrapper around it — one surface, not
+   a frame inside a frame. */
+.ns-cal {
+  --cal-cell-w: clamp(52px, 14.4vw, 64px);
+  --cal-circle: clamp(36px, 9.6vw, 44px);
+  --cal-gap: clamp(2px, 0.8vw, 6px);
+  --cal-rail-bg: var(--ns-card-bg);
+  --cal-tile-bg: var(--ns-surface-low);
+  --cal-outline: color-mix(in srgb, var(--ns-outline) 55%, transparent);
+
+  display: block;
+  min-width: 0;
+}
+
+html.dark .ns-cal {
+  --cal-tile-bg: var(--ns-surface-high);
+}
+
+/* ── Rail ── */
+
+.ns-cal-track {
+  min-width: 0;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--edge-hairline);
+  box-shadow: var(--elev-rest);
+  background: var(--cal-rail-bg);
+  /* Clips the masked rail to the card's own corners; without it the faded cells
+     would run under the 20px radius and square off the top and bottom edges. */
+  overflow: hidden;
+}
+
+.ns-cal-rail {
+  /* Edge fade on both ends (user request). The rail scrolls further than it shows,
+     and a hard edge made the first and last visible cells look clipped rather
+     than continuing — it read as a rendering fault instead of as more content.
+     A mask fades the cells themselves, so it works over any surface colour and
+     needs no per-mode gradient the way an overlay would: an overlay has to know
+     the exact background it is faking, which is one more thing to drift between
+     light and dark. --cal-fade is a touch wider than one cell so a day is
+     already dissolving before it reaches the edge. */
+  --cal-fade: clamp(28px, 9vw, 48px);
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 var(--cal-fade),
+    #000 calc(100% - var(--cal-fade)),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 var(--cal-fade),
+    #000 calc(100% - var(--cal-fade)),
+    transparent 100%
+  );
+
+  /* Makes the rail the offsetParent of its cells, so the component can read
+     cell.offsetLeft as a scroll offset instead of a page coordinate. */
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  gap: var(--cal-gap);
+  min-width: 0;
+  /* Half-viewport spacers let the first and last day centre like any other, so
+     "scroll the selected date into view" needs no special-casing at the ends. */
+  padding: clamp(8px, 2.2vw, 10px) calc(50% - (var(--cal-cell-w) / 2));
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  /* Keeps a swipe that runs off the end from triggering browser back / page
+     bounce, which is what made the old strip feel broken on Android. */
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.ns-cal-rail::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Day cell ── */
+
+/* No scroll-snap-stop: `always` would force a fling to halt on the next day,
+   which is exactly the one-day-at-a-time stepping the arrows were removed to
+   avoid. Snapping still settles the rail cleanly, it just does not fight
+   momentum, so weeks and months stay reachable in one gesture. */
+.ns-cal-day {
+  --button-border-color: transparent;
+  scroll-snap-align: center;
+  display: flex;
+  flex: 0 0 var(--cal-cell-w);
+  width: var(--cal-cell-w);
+  min-width: 0;
+  /* 44px minimum touch target on the smallest phone, met by the cell itself
+     rather than by an expanded pseudo-element, because the cells sit edge to
+     edge and overlapping hit areas would steal each other's taps. */
+  min-height: 76px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(5px, 1.4vw, 7px);
+  padding: clamp(6px, 1.8vw, 9px) 2px;
+  border-radius: var(--radius-lg);
+  background: transparent;
+  box-shadow: none;
+  color: var(--ns-on-surface-var);
+  line-height: 1;
+}
+
+.ns-cal-dow {
+  font-size: clamp(10px, 2.8vw, 12px);
+  font-weight: 600;
+  line-height: 1;
+  color: inherit;
+}
+
+/* Resting circle is dashed: it reads as an empty slot rather than as a second
+   selectable ring competing with the selected day. This is the hairline-vs-bold
+   split from TOKENS 2, and it matches the reference's own date strip — thin
+   dotted outline on inactive days, solid 2px on the selected one.
+   Width is 1px, not 1.5px: 1.5 is not one of the three treatments, and a
+   half-pixel dash against the selected day's 2px was the difference reading as
+   accidental rather than as two deliberate steps. */
+.ns-cal-ring {
+  display: grid;
+  place-items: center;
+  width: var(--cal-circle);
+  height: var(--cal-circle);
+  border-radius: 999px;
+  border: 1px dashed var(--cal-outline);
+  transition:
+    border-color var(--dur-micro) var(--ease-out),
+    border-style var(--dur-micro) var(--ease-out),
+    background-color var(--dur-micro) var(--ease-out);
+}
+
+.ns-cal-num {
+  font-family: var(--font-headline);
+  font-size: clamp(13px, 3.6vw, 15px);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--ns-on-surface);
+}
+
+/* Event marker. Reserved at every cell so selecting a day with scans cannot
+   change the cell's height and shift the rail. */
+.ns-cal-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: transparent;
+}
+
+.ns-cal-day[data-events] .ns-cal-dot {
+  background: var(--ns-primary);
+}
+
+/* Today, when it is not the selected day: solid ring instead of dashed, and the
+   accent on the numeral. No fill — the fill belongs to the selection. */
+.ns-cal-day[data-today]:not([data-selected]) .ns-cal-ring {
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--ns-primary) 55%, transparent);
+}
+
+.ns-cal-day[data-today]:not([data-selected]) .ns-cal-num {
+  color: var(--ns-primary-con);
+}
+
+.ns-cal-day:hover:not([data-selected]):not(:disabled) .ns-cal-ring {
+  border-color: color-mix(in srgb, var(--ns-primary) 50%, transparent);
+  background: var(--ns-hover-tint);
+}
+
+/* Selected: the cell lifts onto its own tile and the ring goes solid + 2px.
+   Same "bold outline = selected" rule the rest of the app uses (TOKENS 2.3),
+   just with the reference's raised tile carrying it. */
+.ns-cal-day[data-selected] {
+  background: var(--cal-tile-bg);
+  box-shadow: var(--elev-rest);
+}
+
+.ns-cal-day[data-selected] .ns-cal-ring {
+  border-style: solid;
+  border-width: 2px;
+  border-color: var(--ns-primary);
+}
+
+.ns-cal-day[data-selected] .ns-cal-dow {
+  color: var(--ns-on-surface);
+  font-weight: 700;
+}
+
+.ns-cal-day[data-selected] .ns-cal-num {
+  color: var(--ns-secondary);
+}
+
+html.dark .ns-cal-day[data-selected] .ns-cal-num {
+  color: var(--ns-primary);
+}
+
+.ns-cal-day[data-selected][data-today] .ns-cal-dot {
+  background: var(--ns-primary);
+}
+
+/* Unavailable (future) days stay visible so the rest of the week reads as a
+   week, but they are inert and clearly recessed. */
+.ns-cal-day:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.ns-cal-day:disabled .ns-cal-ring {
+  border-color: var(--ns-border-light);
+}
+
+.ns-cal-day:active:not(:disabled) {
+  transform: none;
+}
+
+@media (max-width: 380px) {
+  .ns-cal {
+    --cal-cell-w: 50px;
+    --cal-circle: 34px;
+  }
+
+  .ns-cal-day {
+    min-height: 70px;
+  }
+}
+
+/* From tablet up the rail has room to breathe, so the cells widen instead of
+   the row leaving dead space at the sides. */
+@media (min-width: 768px) {
+  .ns-cal {
+    --cal-cell-w: 68px;
+    --cal-circle: 46px;
+    --cal-gap: 6px;
+  }
+
+  .ns-cal-day {
+    min-height: 88px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .ns-cal {
+    --cal-cell-w: 74px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Mobile bottom navigation (MobileBottomNav.jsx)
+   ---------------------------------------------------------------------------
+   A floating translucent pill holding four tabs, with the scan action detached
+   as a round button beside it. Sticky to the bottom of the viewport above the
+   safe-area inset.
+
+   The reference's palette is not reused: the pill is the app's glass surface,
+   the active puck is the primary tint, and the round button is the primary
+   accent, so both colour modes come out of the existing tokens.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.ns-bnav {
+  --bnav-gap: clamp(8px, 2.6vw, 14px);
+  --bnav-fab: clamp(54px, 15vw, 62px);
+
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--bnav-gap);
+  padding: 0 clamp(12px, 4vw, 20px) calc(clamp(10px, 3vw, 16px) + env(safe-area-inset-bottom, 0px));
+  /* The bar is a positioning frame, not a surface: the gap between the pill and
+     the round button stays a hole through to the page instead of an invisible
+     strip that swallows taps. */
+  pointer-events: none;
+  background: none;
+}
+
+.ns-bnav > * {
+  pointer-events: auto;
+}
+
+/* ── Pill ── */
+
+.ns-bnav-pill {
+  display: flex;
+  align-items: stretch;
+  /* min-width:0 + flex-1 items means five languages' worth of label lengths
+     shrink the tabs evenly rather than pushing the round button off-screen. */
+  min-width: 0;
+  flex: 1 1 auto;
+  max-width: 420px;
+  margin: 0;
+  padding: clamp(6px, 1.8vw, 8px);
+  list-style: none;
+  border-radius: 999px;
+  border: 1px solid var(--edge-hairline);
+  background: var(--ns-glass-surface);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  box-shadow: var(--elev-floating);
+}
+
+.ns-bnav-item {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 0;
+}
+
+.ns-bnav-tab {
+  --button-border-color: transparent;
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  /* 44px minimum touch target (TOKENS 10), met by the control itself rather than
+     an expanded pseudo-element, because adjacent tabs would otherwise overlap
+     each other's hit areas. */
+  min-height: 44px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 4px 2px;
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--ns-outline);
+}
+
+/* The active puck is the "selected" affordance. It is a filled circle behind the
+   glyph rather than a border, because at this size a 2px outline on a circle
+   reads as a loading spinner. */
+.ns-bnav-puck {
+  display: grid;
+  place-items: center;
+  width: clamp(34px, 9.4vw, 40px);
+  height: clamp(34px, 9.4vw, 40px);
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  transition:
+    background-color var(--dur-micro) var(--ease-out),
+    color var(--dur-micro) var(--ease-out);
+}
+
+.ns-bnav-label {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: clamp(9px, 2.7vw, 11px);
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: inherit;
+}
+
+.ns-bnav-tab[data-active] {
+  color: var(--ns-primary-con);
+}
+
+.ns-bnav-tab[data-active] .ns-bnav-puck {
+  background: color-mix(in srgb, var(--ns-primary) 14%, transparent);
+}
+
+.ns-bnav-tab[data-active] .ns-bnav-label {
+  font-weight: 700;
+}
+
+.ns-bnav-tab:hover:not([data-active]) {
+  color: var(--ns-on-surface-var);
+}
+
+.ns-bnav-tab:hover:not([data-active]) .ns-bnav-puck {
+  background: var(--ns-hover-tint);
+}
+
+/* Initials stand in for the profile glyph, so the puck is always filled there —
+   an empty ring around two letters reads as an input field. */
+.ns-bnav-initials {
+  font-family: var(--font-headline);
+  font-size: clamp(11px, 3vw, 13px);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+
+.ns-bnav-tab:not([data-active]) .ns-bnav-initials {
+  color: var(--ns-on-surface-var);
+}
+
+.ns-bnav-item:last-child .ns-bnav-puck {
+  background: color-mix(in srgb, var(--ns-tertiary) 16%, transparent);
+}
+
+.ns-bnav-item:last-child .ns-bnav-tab[data-active] .ns-bnav-puck {
+  background: color-mix(in srgb, var(--ns-primary) 18%, transparent);
+}
+
+/* ── Scan action ── */
+
+/* Detached round button. Scanning is the app's persistent primary action, so it
+   keeps .edge-highlight's job (accent ring) and floating elevation, which is
+   what lifts it clear of the pill instead of looking pasted beside it. */
+.ns-bnav-fab {
+  --button-border-color: color-mix(in srgb, var(--ns-primary) 45%, transparent);
+  display: grid;
+  place-items: center;
+  width: var(--bnav-fab);
+  height: var(--bnav-fab);
+  flex: 0 0 var(--bnav-fab);
+  border-radius: 999px;
+  background: var(--ns-primary);
+  color: var(--ns-on-primary);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--ns-primary) 18%, transparent),
+    var(--elev-floating);
+}
+
+.ns-bnav-fab:hover,
+.ns-bnav-fab[data-active] {
+  background: var(--ns-primary-con);
+}
+
+/* At 26% the ring reads as a border over #111; at 18% it disappears. Same
+   correction .edge-highlight makes in its dark scope. */
+html.dark .ns-bnav-fab {
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--ns-primary) 26%, transparent),
+    var(--elev-floating);
+}
+
+/* Translucency needs a slightly heavier edge in dark mode to separate the pill
+   from the page behind it. */
+html.dark .ns-bnav-pill {
+  border-color: var(--ns-border-medium);
+}
+
+/* Blur is progressive enhancement: without support the surface would be see
+   through and the labels unreadable, so it falls back to the solid card. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .ns-bnav-pill {
+    background: var(--ns-card-bg);
+  }
+}
+
+@media (max-width: 360px) {
+  .ns-bnav {
+    --bnav-gap: 6px;
+    --bnav-fab: 50px;
+  }
+
+  .ns-bnav-pill {
+    padding: 5px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Pagination (Pagination.jsx)
+   ---------------------------------------------------------------------------
+   Shared pager. Follows the same rule as every other selected state in the app:
+   the current page is a bold outline plus a tint of the accent, never a solid
+   fill (TOKENS 2.3). All colour comes from tokens, so dark mode needs no rules
+   of its own.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.ns-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(4px, 1.4vw, 8px);
+  min-width: 0;
+  padding: 4px 0;
+}
+
+.ns-pager-pages {
+  display: flex;
+  align-items: center;
+  gap: clamp(2px, 1vw, 6px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ns-pager-arrow,
+.ns-pager-page {
+  --button-border-color: var(--edge-hairline);
+  display: grid;
+  place-items: center;
+  /* 40px visual box; .tap-44 expands the hit area to 44px without changing the
+     size, which is what keeps the row compact on a 320px screen. */
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  border-radius: var(--radius-md);
+  background: var(--ns-card-bg);
+  box-shadow: var(--elev-rest);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ns-on-surface-var);
+}
+
+.ns-pager-arrow:hover:not(:disabled),
+.ns-pager-page:hover:not([data-current]) {
+  --button-border-color: color-mix(in srgb, var(--ns-primary) 45%, transparent);
+  background: var(--ns-hover-tint);
+  color: var(--ns-primary-con);
+}
+
+.ns-pager-arrow:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.ns-pager-page[data-current] {
+  --button-border-width: 2px;
+  --button-border-color: var(--ns-primary);
+  background: color-mix(in srgb, var(--ns-primary) 10%, transparent);
+  color: var(--ns-primary-con);
+  font-weight: 700;
+}
+
+.ns-pager-dots {
+  display: grid;
+  place-items: center;
+  min-width: 22px;
+  height: 40px;
+  color: var(--ns-outline);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* On the narrowest phones the numbers shrink rather than the row wrapping onto
+   a second line, which would push content below the fold. */
+@media (max-width: 380px) {
+  .ns-pager-arrow,
+  .ns-pager-page {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    font-size: 12px;
+  }
+
+  .ns-pager-dots {
+    min-width: 16px;
+    height: 36px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Compare page (Compare.jsx)
+   ---------------------------------------------------------------------------
+   Only the two things Tailwind utilities cannot express cleanly live here: the
+   selectable pick row (which needs the bold-outline selected state driven by a
+   data attribute) and the sticky action bar (which has to clear the floating
+   bottom nav).
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.ns-compare-pick {
+  --button-border-color: var(--edge-hairline);
+  min-height: 44px;
+  background: var(--ns-card-bg);
+  box-shadow: var(--elev-rest);
+}
+
+.ns-compare-pick:hover:not([data-selected]) {
+  --button-border-color: color-mix(in srgb, var(--ns-primary) 40%, transparent);
+}
+
+/* Selected = bold outline + accent tint, the same rule the calendar's selected
+   day and the pager's current page follow. */
+.ns-compare-pick[data-selected] {
+  --button-border-width: 2px;
+  --button-border-color: var(--ns-primary);
+  background: color-mix(in srgb, var(--ns-primary) 8%, transparent);
+}
+
+/* The checkbox is a real box, so selection is legible without relying on the
+   surrounding tint alone. */
+.ns-compare-check {
+  border: 2px solid var(--ns-outline);
+  color: var(--ns-on-primary);
+  transition:
+    background-color var(--dur-micro) var(--ease-out),
+    border-color var(--dur-micro) var(--ease-out);
+}
+
+.ns-compare-pick[data-selected] .ns-compare-check {
+  border-color: var(--ns-primary);
+  background: var(--ns-primary);
+}
+
+/* Sticky rather than fixed, so it scrolls with the page content and cannot cover
+   the list's last row. The offset clears the floating bottom nav on phones; from
+   lg up that nav is gone, so the offset drops to the page gutter. */
+.ns-compare-bar {
+  position: sticky;
+  bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  z-index: 20;
+  margin-top: auto;
+}
+
+@media (min-width: 1024px) {
+  .ns-compare-bar {
+    bottom: 16px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Scan screen (Home.jsx)
+   ---------------------------------------------------------------------------
+   Camera, shutter, gallery. Nothing else.
+
+   The viewfinder is the page, not a card inside it: on a phone the old framed
+   3:4 lens left the camera occupying about a third of the screen while nine
+   controls fought over the rest. The controls now float over the feed, so the
+   camera keeps the full viewport.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.ns-scan {
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-height: 100dvh;
+  flex-direction: column;
+  overflow: hidden;
+  /* Always dark: the feed is the surface, and a light chrome around a camera
+     preview reads as a bug in dark mode. Fixed, not tokenised, for that reason. */
+  background: #0b0b0c;
+  color: #ffffff;
+}
+
+/* Inside the desktop shell the header takes 76px, so the screen stops short of
+   the viewport to avoid a scrollbar over a fixed layout. */
+@media (min-width: 1024px) {
+  .ns-scan {
+    min-height: calc(100dvh - 76px);
+    border-radius: var(--radius-xl);
+  }
+}
+
+/* ── Viewfinder ── */
+
+.ns-scan-view {
+  position: relative;
+  display: grid;
+  flex: 1 1 auto;
+  place-items: center;
+  min-height: 0;
+  overflow: hidden;
+  background: #0b0b0c;
+}
+
+.ns-scan-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  /* `cover` on the phone so there are no letterbox bars; `contain` from lg up,
+     where the shell is wider than the feed and cropping would hide the label the
+     user is trying to scan. */
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 300ms var(--ease-out);
+}
+
+.ns-scan-video[data-live] {
+  opacity: 1;
+}
+
+@media (min-width: 1024px) {
+  .ns-scan-video {
+    object-fit: contain;
+  }
+}
+
+/* ── No-camera fallback ── */
+
+.ns-scan-fallback {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  max-width: 320px;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 0 24px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.ns-scan-fallback-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.ns-scan-fallback-body {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.ns-scan-fallback-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.ns-scan-retry,
+.ns-scan-native {
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.ns-scan-retry {
+  --button-border-color: transparent;
+  background: var(--ns-primary);
+  color: var(--ns-on-primary);
+}
+
+.ns-scan-retry:hover {
+  background: var(--ns-primary-con);
+}
+
+.ns-scan-native {
+  --button-border-color: rgba(255, 255, 255, 0.25);
+  background: transparent;
+  color: #ffffff;
+}
+
+.ns-scan-native:hover {
+  --button-border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* ── Controls ── */
+
+/* Floats over the feed rather than sitting in a bar below it, so removing the
+   old footer gave the space back to the camera instead of to empty chrome. The
+   bottom offset clears the floating nav on phones. */
+.ns-scan-controls {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(112px + env(safe-area-inset-bottom, 0px));
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(24px, 9vw, 40px);
+  padding: 0 24px;
+  /* Only the buttons take taps; the rest stays a view of the camera. */
+  pointer-events: none;
+}
+
+.ns-scan-controls > * {
+  pointer-events: auto;
+}
+
+@media (min-width: 1024px) {
+  .ns-scan-controls {
+    bottom: clamp(24px, 4vh, 40px);
+  }
+}
+
+/* Shutter: a white ring with a filled core, the one shape a camera control is
+   universally recognised as. */
+.ns-scan-shutter {
+  --button-border-color: rgba(255, 255, 255, 0.9);
+  --button-border-width: 4px;
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.ns-scan-shutter-core {
+  width: 54px;
+  height: 54px;
+  border-radius: 999px;
+  background: #ffffff;
+  transition: transform var(--dur-micro) var(--ease-out);
+}
+
+.ns-scan-shutter:active:not(:disabled) {
+  /* The core shrinks instead of the whole button, so the ring stays put and the
+     press reads as a shutter firing. */
+  transform: none;
+}
+
+.ns-scan-shutter:active:not(:disabled) .ns-scan-shutter-core {
+  transform: scale(0.86);
+}
+
+.ns-scan-gallery {
+  --button-border-color: rgba(255, 255, 255, 0.28);
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  flex: 0 0 auto;
+  border-radius: var(--radius-lg);
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #ffffff;
+}
+
+.ns-scan-gallery:hover {
+  --button-border-color: rgba(255, 255, 255, 0.55);
+  background: rgba(0, 0, 0, 0.5);
+}
+
+/* ── Toast ── */
+
+.ns-scan-toast {
+  position: fixed;
+  left: 50%;
+  top: 20px;
+  z-index: 120;
+  display: flex;
+  width: min(calc(100% - 32px), 420px);
+  align-items: center;
+  gap: 12px;
+  transform: translateX(-50%);
+  padding: 12px 16px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elev-floating);
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.ns-scan-toast[data-tone='error'] {
+  background: var(--ns-error);
+}
+
+.ns-scan-toast[data-tone='success'] {
+  background: var(--ns-success);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ROUND 4 — Auth + Onboarding (DESIGN_TOKENS.md)
+
+   These three screens were the last ones outside the system, and they were the
+   first ones a new user sees. Onboarding carried 46 inline style objects, 66 raw
+   hexes and 22 !important overrides; Login/SignUp hardcoded #F5F5F5 / #FFFFFF /
+   #1A1A1A. Inline styles cannot respond to `html.dark`, which is why the whole
+   signup funnel stayed light while the rest of the app switched — and why the
+   reviewer scored 31/31 without ever looking at them (every check reads
+   className strings and tailwind.css).
+
+   Onboarding also used Material green (#4CAF50 / #43A047 / #F0FFF0), not the
+   brand emerald. Two greens, one brand, on the screen that introduces it.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Shared auth shell ── */
+
+.auth-page {
+  display: flex;
+  min-height: 100vh;
+  background: var(--ns-page-bg);
+  font-family: var(--font-main);
+}
+
+/* The brand panel is a full-bleed decorative surface, so it takes no edge
+   (TOKENS 2.4 rule 4): there is nothing beside it to separate it from. */
+.auth-brand-panel {
+  position: relative;
+  display: none;
+  flex: 1.2;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  padding: 56px;
+  background: var(--ns-primary);
+  color: var(--ns-on-primary);
+}
+
+@media (min-width: 1024px) {
+  .auth-brand-panel {
+    display: flex;
+  }
+}
+
+.auth-brand-mark {
+  font-family: var(--font-headline);
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.auth-brand-mark em {
+  font-style: normal;
+  color: var(--ns-surface-high);
+}
+
+.auth-brand-title {
+  margin: 0 0 24px;
+  font-family: var(--font-headline);
+  font-size: 40px;
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+/* Hairline on a saturated surface uses a white tint, since black/8 is invisible
+   on emerald — the same reason dark mode gets its own edge value. */
+.auth-feature {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-radius: var(--radius-xl);
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* Icon-in-circle on a filled surface: white/20 backdrop, glyph in currentColor
+   (TOKENS 7). Both values are neutral, so this is not a split-hue badge. */
+.auth-feature-figure {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.2);
+  color: var(--ns-on-primary);
+}
+
+.auth-feature-title {
+  margin-bottom: 4px;
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 700;
+}
+
+.auth-feature-copy {
+  font-size: 12px;
+  line-height: 1.45;
+  font-weight: 500;
+  opacity: 0.85;
+}
+
+.auth-brand-footer {
+  font-size: 12px;
+  line-height: 1.45;
+  font-weight: 500;
+  opacity: 0.75;
+}
+
+/* ── Form panel ── */
+
+.auth-form-panel {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  background: var(--ns-card-bg);
+}
+
+.auth-form-inner {
+  display: flex;
+  width: 100%;
+  max-width: 380px;
+  flex-direction: column;
+}
+
+.auth-form-mark {
+  margin-bottom: 32px;
+  font-family: var(--font-headline);
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--ns-primary-con);
+}
+
+.auth-form-mark em {
+  font-style: normal;
+  color: var(--ns-on-surface);
+}
+
+@media (min-width: 1024px) {
+  .auth-form-mark {
+    display: none;
+  }
+}
+
+/* Display step (TOKENS 5): this is the screen's hero line, not a section title. */
+.auth-title {
+  margin: 0 0 8px;
+  font-family: var(--font-headline);
+  font-size: 30px;
+  line-height: 1.05;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ns-on-surface);
+}
+
+.auth-subtitle {
+  margin: 0 0 32px;
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 400;
+  color: var(--ns-outline);
+}
+
+.auth-error {
+  margin-bottom: 20px;
+  padding: 12px 16px;
+  border: 1px solid color-mix(in srgb, var(--ns-error) 40%, transparent);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--ns-error) 10%, transparent);
+  font-size: 12px;
+  line-height: 1.45;
+  font-weight: 700;
+  text-align: center;
+  color: var(--ns-error);
+}
+
+.auth-field {
+  margin-bottom: 20px;
+}
+
+.auth-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 12px;
+  line-height: 1.45;
+  font-weight: 700;
+  color: var(--ns-on-surface-var);
+}
+
+.auth-input-wrap {
+  position: relative;
+}
+
+/* 48px keeps the field itself above the 44px floor (TOKENS 10). */
+.auth-input {
+  width: 100%;
+  height: 48px;
+  padding: 0 16px;
+  border: 1px solid var(--edge-hairline);
+  border-radius: var(--radius-md);
+  background: var(--ns-input-bg);
+  font-family: var(--font-main);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ns-on-surface);
+  transition:
+    border-color var(--dur-micro) var(--ease-out),
+    box-shadow var(--dur-micro) var(--ease-out);
+}
+
+.auth-input.has-reveal {
+  padding-right: 48px;
+}
+
+.auth-input::placeholder {
+  color: var(--ns-outline);
+  opacity: 0.8;
+}
+
+/* `outline: none` here is paired with an explicit :focus-visible rule below, as
+   TOKENS 11 requires. The global :where() focus rule has zero specificity and
+   would otherwise lose to this one. */
+.auth-input:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--ns-primary) 55%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ns-primary) 18%, transparent);
+}
+
+.auth-input:focus-visible {
+  outline: 2px solid var(--ns-primary);
+  outline-offset: 2px;
+}
+
+.auth-reveal {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  transform: translateY(-50%);
+  border-radius: var(--radius-md);
+  --button-border-color: transparent;
+  background: transparent;
+  color: var(--ns-outline);
+}
+
+.auth-reveal:hover {
+  background: var(--ns-hover-tint);
+  color: var(--ns-on-surface);
+}
+
+.auth-link-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 24px;
+}
+
+/* Emerald never carries small text on a light surface (TOKENS 11): #10B981 is
+   ~2.3:1 on white, so link text uses the -con step. */
+.auth-text-link {
+  --button-border-color: transparent;
+  min-height: 44px;
+  padding: 0 4px;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ns-primary-con);
+}
+
+.auth-text-link:hover {
+  text-decoration: underline;
+}
+
+.auth-submit {
+  display: flex;
+  width: 100%;
+  height: 48px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: var(--radius-lg);
+  background: var(--ns-primary);
+  font-size: 14px;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--ns-on-primary);
+}
+
+.auth-submit:hover:not(:disabled) {
+  background: var(--ns-primary-con);
+}
+
+.auth-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* "or" divider between the credential form and the Google button, so the two
+   read as alternatives rather than a stack of equal-weight actions. */
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0 16px;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--ns-outline-var);
+}
+
+.auth-divider span {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ns-outline);
+}
+
+/* Google sign-in button — neutral surface with a hairline edge so it reads as a
+   secondary action next to the primary submit button. Height matches
+   .auth-submit (48px) so the two align, per Google's sign-in button guidance. */
+.auth-google-btn {
+  display: flex;
+  width: 100%;
+  height: 48px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--ns-outline-var);
+  background: var(--ns-card-bg);
+  font-size: 14px;
+  line-height: 1;
+  font-weight: 600;
+  color: var(--ns-on-surface);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.auth-google-btn:hover:not(:disabled) {
+  background: var(--ns-surface-high);
+  border-color: var(--ns-outline);
+}
+
+.auth-google-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ns-primary) 28%, transparent);
+}
+
+.auth-google-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* The Google mark must keep its brand colours, so it is exempt from the dark
+   mode colour pass — only the surface behind it changes. */
+html.dark .auth-google-btn {
+  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+html.dark .auth-google-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.09);
+}
+
+/* Forgot-password dialog. */
+.auth-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: color-mix(in srgb, #000 55%, transparent);
+  backdrop-filter: blur(4px);
+}
+
+.auth-modal {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  border-radius: var(--radius-xl, 20px);
+  border: 1px solid var(--ns-outline-var);
+  background: var(--ns-card-bg);
+  box-shadow: var(--elev-raised, 0 20px 60px rgba(0, 0, 0, 0.3));
+  padding: 28px 24px 24px;
+}
+
+.auth-modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--ns-surface-high);
+  color: var(--ns-on-surface-var);
+}
+
+.auth-modal-close:hover {
+  color: var(--ns-on-surface);
+}
+
+.auth-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: center;
+}
+
+.auth-modal-body .auth-field,
+.auth-modal-body .auth-error {
+  text-align: left;
+}
+
+.auth-modal-icon {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin: 4px auto 0;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--ns-primary) 12%, transparent);
+  color: var(--ns-primary);
+}
+
+.auth-modal-title {
+  font-family: var(--font-headline, inherit);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ns-on-surface);
+}
+
+.auth-modal-subtitle {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ns-on-surface-var);
+}
+
+.auth-modal-success {
+  align-items: center;
+}
+
+.auth-alt {
+  margin: 32px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  text-align: center;
+  color: var(--ns-outline);
+}
+
+/* Dark mode: colour only, never shape (TOKENS 15). */
+html.dark .auth-feature {
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  background: rgba(0, 0, 0, 0.16);
+}
+
+html.dark .auth-input:focus {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ns-primary) 26%, transparent);
+}
+
+html.dark .auth-text-link,
+html.dark .auth-form-mark {
+  color: var(--ns-primary);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ROUND 4 — Onboarding
+
+   Replaces the component's inline <style> block and 46 inline style objects.
+   The old sheet forced `background: #ffffff !important` on the shell and pushed
+   #4CAF50 into the embedded Medical/Health pages with !important, overriding the
+   polish those two screens had already received in earlier rounds.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.ob-page {
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+  background: var(--ns-page-bg);
+  font-family: var(--font-main);
+  color: var(--ns-on-surface);
+}
+
+.ob-content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 430px;
+  margin: 0 auto;
+  padding: 24px 24px 16px;
+  box-sizing: border-box;
+}
+
+.ob-topbar {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.ob-back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin-left: -8px;
+  border-radius: var(--radius-md);
+  --button-border-color: transparent;
+  background: transparent;
+  color: var(--ns-on-surface);
+}
+
+.ob-back:hover {
+  background: var(--ns-hover-tint);
+}
+
+.ob-brand {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-headline);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.ob-brand-a {
+  color: var(--ns-outline);
+}
+
+.ob-brand-b {
+  color: var(--ns-primary-con);
+}
+
+.ob-brand-leaf {
+  color: var(--ns-primary-con);
+}
+
+/* Balances the 44px back button so the brand stays optically centred. */
+.ob-topbar-spacer {
+  width: 44px;
+  flex: 0 0 auto;
+}
+
+/* ── Stepper ──
+   Was a numbered circle per step. At 7 steps that is seven competing figures for
+   one piece of information; the progress is the message, not the index. */
+
+.ob-steps {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.ob-step {
+  flex: 1;
+  height: 4px;
+  border-radius: var(--radius-sm);
+  background: var(--ns-surface-con);
+  transition: background-color var(--dur-enter) var(--ease-out);
+}
+
+.ob-step.is-done {
+  background: var(--ns-primary);
+}
+
+.ob-step-label {
+  align-self: flex-start;
+  margin-bottom: 24px;
+  font-size: 10px;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ns-outline);
+}
+
+.ob-question {
+  margin: 0 0 32px;
+  font-family: var(--font-headline);
+  font-size: 24px;
+  line-height: 1.15;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  text-align: center;
+  color: var(--ns-on-surface);
+}
+
+.ob-body {
+  display: flex;
+  width: 100%;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ── Footer ── */
+
+.ob-footer {
+  width: 100%;
+  max-width: 430px;
+  margin: 0 auto;
+  padding: 16px 24px 32px;
+  box-sizing: border-box;
+}
+
+/* The one primary action on the screen, so it takes the highlighted edge. The
+   radius drops from a 50px pill to the 16px button step so it matches every
+   other primary CTA in the app. */
+.ob-next {
+  display: flex;
+  width: 100%;
+  height: 52px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: var(--radius-lg);
+  background: var(--ns-primary);
+  font-size: 14px;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--ns-on-primary);
+}
+
+.ob-next:hover:not(:disabled) {
+  background: var(--ns-primary-con);
+}
+
+.ob-error {
+  margin: 16px 0 0;
+  padding: 12px 16px;
+  border: 1px solid color-mix(in srgb, var(--ns-error) 40%, transparent);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--ns-error) 10%, transparent);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--ns-error);
+}
+
+/* ── Age picker (scroll wheel) ── */
+
+.ob-wheel {
+  position: relative;
+  width: 100%;
+  max-width: 220px;
+  height: 260px;
+  margin: 0 auto;
+  overflow: hidden;
+}
+
+/* Selected state is the bold outline, not a solid emerald block. The old fill
+   forced white text on the value, so the number changed colour as it scrolled
+   through the highlight — the value looked like a different kind of thing
+   depending on position. */
+.ob-wheel-marker {
+  position: absolute;
+  top: 104px;
+  left: 50%;
+  z-index: 0;
+  width: 104px;
+  height: 52px;
+  transform: translateX(-50%);
+  border: 2px solid var(--ns-primary);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--ns-primary) 10%, transparent);
+}
+
+.ob-wheel-scroll {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  padding: 104px 0;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ob-wheel-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.ob-wheel-item {
+  display: flex;
+  height: 52px;
+  align-items: center;
+  justify-content: center;
+  scroll-snap-align: center;
+  --button-border-color: transparent;
+  width: 100%;
+  background: transparent;
+  font-family: var(--font-headline);
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ns-outline);
+  opacity: 0.5;
+  transition:
+    font-size var(--dur-micro) var(--ease-out),
+    color var(--dur-micro) var(--ease-out),
+    opacity var(--dur-micro) var(--ease-out);
+}
+
+.ob-wheel-item.is-near {
+  font-size: 22px;
+  opacity: 0.8;
+}
+
+.ob-wheel-item.is-selected {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--ns-primary-con);
+  opacity: 1;
+}
+
+/* ── Big value readout (height / weight) ── */
+
+.ob-readout {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 24px;
+  font-family: var(--font-headline);
+  font-size: 40px;
+  line-height: 1;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--ns-on-surface);
+}
+
+.ob-readout span {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ns-primary-con);
+}
+
+.ob-scale-row {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ns-outline);
+}
+
+.ob-slider {
+  width: 100%;
+  accent-color: var(--ns-primary);
+  cursor: pointer;
+}
+
+/* ── Manual entry field ── */
+
+.ob-manual {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin-top: 24px;
+  padding: 12px 16px;
+  border: 1px solid var(--edge-hairline);
+  border-radius: var(--radius-md);
+  background: var(--ns-card-bg);
+}
+
+.ob-manual-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ns-outline);
+}
+
+.ob-manual input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font-family: var(--font-headline);
+  font-size: 16px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--ns-on-surface);
+}
+
+.ob-manual input:focus-visible {
+  outline: 2px solid var(--ns-primary);
+  outline-offset: 2px;
+}
+
+.ob-manual-unit {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--ns-primary-con);
+}
+
+/* ── Unit toggle ── */
+
+.ob-unit-toggle {
+  display: flex;
+  gap: 4px;
+  width: fit-content;
+  margin: 0 auto 24px;
+  padding: 4px;
+  border: 1px solid var(--edge-hairline);
+  border-radius: var(--radius-md);
+  background: var(--ns-card-bg);
+}
+
+.ob-unit-toggle button {
+  min-height: 36px;
+  padding: 0 20px;
+  border-radius: var(--radius-sm);
+  --button-border-color: transparent;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ns-outline);
+}
+
+/* Toggled-on is the bold outline (TOKENS 2.3), same as every other selected
+   state in the app. */
+.ob-unit-toggle button.is-selected {
+  border: 2px solid var(--ns-primary) !important;
+  background: color-mix(in srgb, var(--ns-primary) 10%, transparent);
+  color: var(--ns-primary-con);
+}
+
+/* ── Ruler ── */
+
+.ob-ruler {
+  position: relative;
+  width: 100%;
+  height: 72px;
+  overflow: hidden;
+}
+
+.ob-ruler-needle {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: 2;
+  width: 2px;
+  height: 44px;
+  transform: translateX(-50%);
+  border-radius: var(--radius-sm);
+  background: var(--ns-primary);
+}
+
+.ob-ruler-scroll {
+  height: 100%;
+  padding-top: 4px;
+  overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ob-ruler-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.ob-ruler-track {
+  display: inline-flex;
+  align-items: flex-end;
+  height: 48px;
+  padding: 0 50%;
+}
+
+.ob-tick {
+  display: flex;
+  width: 8px;
+  flex-direction: column;
+  align-items: center;
+}
+
+.ob-tick-mark {
+  width: 1px;
+  height: 20px;
+  border-radius: var(--radius-sm);
+  background: var(--ns-outline);
+  opacity: 0.45;
+}
+
+.ob-tick.is-major .ob-tick-mark {
+  width: 2px;
+  height: 32px;
+  opacity: 0.9;
+}
+
+.ob-tick-value {
+  margin-top: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ns-outline);
+}
+
+/* ── Choice list (gender) ── */
+
+.ob-choices {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ob-choice {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  min-height: 64px;
+  padding: 12px 16px;
+  border: 1px solid var(--edge-hairline) !important;
+  border-radius: var(--radius-lg);
+  background: var(--ns-card-bg);
+  box-shadow: var(--elev-rest);
+  text-align: left;
+}
+
+.ob-choice:hover {
+  background: var(--ns-hover-tint);
+}
+
+.ob-choice.is-selected {
+  border: 2px solid var(--ns-primary) !important;
+  background: color-mix(in srgb, var(--ns-primary) 10%, transparent);
+  box-shadow: none;
+}
+
+/* Icon-in-circle: the glyph is the subject of the row, so it keeps a backdrop.
+   Tint and glyph both derive from --edge-accent (TOKENS 7 single-accent rule). */
+.ob-choice-figure {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--edge-accent) 12%, transparent);
+  color: var(--edge-accent);
+}
+
+.ob-choice-label {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ns-on-surface);
+}
+
+/* Selected state is not colour-only: the outline is paired with a check glyph
+   that only the selected row renders (TOKENS 11). */
+.ob-choice-check {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-full);
+  background: var(--ns-primary);
+  color: var(--ns-on-primary);
+}
+
+/* ── Steps 5-6 host the already-polished Medical / Health Goals pages ──
+   The previous sheet repainted them with #4CAF50 and forced a white background
+   through !important, undoing round 1-3 work on those two screens. Onboarding
+   now only removes the standalone page chrome (its own shell border, shadow and
+   min-height) and lets those components keep their own styling. */
+
+.ob-embed .medical-profile-page,
+.ob-embed .health-goals-page {
+  min-height: auto;
+  padding: 0;
+  background: transparent;
+}
+
+.ob-embed .medical-profile-shell,
+.ob-embed .health-goals-shell {
+  width: 100%;
+  min-height: auto;
+  border: 0 !important;
+  background: transparent;
+  box-shadow: none;
 }

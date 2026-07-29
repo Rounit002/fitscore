@@ -1,6 +1,7 @@
 const express = require('express');
 const request = require('supertest');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 
 jest.mock('jsonwebtoken');
 
@@ -10,9 +11,10 @@ global.fetch = jest.fn();
 function createApp(pool) {
   process.env.REVENUECAT_SECRET_KEY = 'rc_secret';
   process.env.REVENUECAT_WEBHOOK_AUTH = 'Bearer wh_secret';
+  process.env.REVENUECAT_WEBHOOK_SIGNING_SECRET = 'webhook_signing_secret';
   const router = require('./revenueCatSubscriptions');
   const app = express();
-  app.use(express.json());
+  app.use(express.json({ verify: (req, _res, buffer) => { req.rawBody = Buffer.from(buffer); } }));
   const cookieParser = require('cookie-parser');
   app.use(cookieParser());
   app.use((req, res, next) => { req.pool = pool; next(); });
@@ -32,6 +34,7 @@ describe('RevenueCat Routes', () => {
     jwt.verify.mockReturnValue({ userId: 5 });
     process.env.REVENUECAT_SECRET_KEY = 'rc_secret';
     process.env.REVENUECAT_WEBHOOK_AUTH = 'Bearer wh_secret';
+    process.env.REVENUECAT_WEBHOOK_SIGNING_SECRET = 'webhook_signing_secret';
   });
 
   describe('POST /rc/sync', () => {
@@ -85,12 +88,23 @@ describe('RevenueCat Routes', () => {
           },
         }),
       });
-      pool.query.mockResolvedValue({});
+      pool.query
+        .mockResolvedValueOnce({ rows: [{ event_id: 'evt_1' }] })
+        .mockResolvedValue({ rows: [] });
+
+      const payload = { event: { id: 'evt_1', app_user_id: 'nutriscan_5' } };
+      const rawBody = JSON.stringify(payload);
+      const timestamp = Math.floor(Date.now() / 1000);
+      const signature = crypto.createHmac('sha256', 'webhook_signing_secret')
+        .update(`${timestamp}.${rawBody}`)
+        .digest('hex');
 
       const res = await request(app)
         .post('/rc/webhook')
         .set('Authorization', 'Bearer wh_secret')
-        .send({ event: { app_user_id: 'nutriscan_5' } });
+        .set('X-RevenueCat-Webhook-Signature', `t=${timestamp},v1=${signature}`)
+        .set('Content-Type', 'application/json')
+        .send(rawBody);
       expect(res.status).toBe(200);
       expect(res.body.ok).toBe(true);
       expect(pool.query).toHaveBeenCalled();

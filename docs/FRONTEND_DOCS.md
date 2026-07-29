@@ -502,16 +502,15 @@ Registration form. Does NOT call the API directly — defers to `onSignUpPending
 
 #### `Onboarding` — `src/components/Onboarding.jsx`
 
-7-step onboarding wizard run both for new signups and to collect profile data.
+6-step onboarding wizard run both for new signups and to collect profile data.
 
 **Steps:**
-1. Age — Scroll-wheel picker (`AgePicker`)
+1. Age — Scroll-wheel picker (`AgePicker`), range 13-100 (13+ policy)
 2. Height — Range slider with circle display (`HeightPicker`)
 3. Weight — Horizontal ruler slider with kg/lbs toggle (`WeightPicker`)
 4. Gender — Card selection (`GenderPicker`)
-5. Date of Birth — Native date input (`DateOfBirthPicker`)
-6. Medical Conditions — `MedicalProfilePage` (isOnboarding mode)
-7. Health Goals — `HealthGoalsPage` (isOnboarding mode) + triggers account creation
+5. Medical Conditions — `MedicalProfilePage` (isOnboarding mode)
+6. Health Goals — `HealthGoalsPage` (isOnboarding mode) + triggers account creation
 
 **Props:**
 | Prop | Type | Description |

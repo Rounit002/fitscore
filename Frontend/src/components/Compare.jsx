@@ -1,35 +1,230 @@
-import { useState, useEffect } from 'react';
-import { ArrowLeft, BarChart2, ChevronRight, Zap, CheckCircle, CheckCircle2, XCircle, ShieldCheck, Activity, Search, ChevronLeft } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  ArrowLeft,
+  BarChart2,
+  Check,
+  CheckCircle,
+  Search,
+  Utensils,
+  X,
+  XCircle,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { API } from '../api/client.js';
+import { scoreColor } from '../utils/scoreColor.js';
+import { safeJsonValue } from '../utils/nutrition.js';
+import usePagination from '../utils/usePagination.js';
+import Pagination from './Pagination.jsx';
 
-export default function Compare({ authToken, onBack }) {
+/* ------------------------------------------------------------------ */
+/*  Shared surface token                                              */
+/* ------------------------------------------------------------------ */
+
+const CARD = 'rounded-xl edge-hairline elev-rest bg-[var(--ns-card-bg)]';
+
+const PER_PAGE = 8;
+
+/* Verdict strings arrive in three shapes: a JSON array, a Postgres-style
+   brace list, or one blob of prose. Unchanged logic, just moved out of the
+   component body. */
+const parseVerdict = (verdictData) => {
+  if (!verdictData) return [];
+  let items = verdictData;
+
+  if (typeof items === 'string') {
+    const trimmed = items.trim();
+    if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+      try {
+        items = JSON.parse(trimmed.replace(/^{/, '[').replace(/}$/, ']'));
+      } catch {
+        items = trimmed
+          .replace(/^{/, '')
+          .replace(/^\[/, '')
+          .replace(/}$/, '')
+          .replace(/\]$/, '')
+          .split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/)
+          .map((s) => s.trim().replace(/^"/, '').replace(/"$/, ''));
+      }
+    } else {
+      items = trimmed
+        .split(/[.!?]+/)
+        .map((s) => s.trim())
+        .filter((s) => s.length > 5);
+    }
+  }
+
+  return Array.isArray(items) ? items : [];
+};
+
+const getProductImage = (scan) => {
+  const raw =
+    safeJsonValue(scan.raw_product_data, null) || safeJsonValue(scan.product_data, null) || {};
+  return (
+    scan.image_url ||
+    raw.image_front_small_url ||
+    raw.image_front_url ||
+    raw.image_small_url ||
+    raw.image_url ||
+    null
+  );
+};
+
+/* ------------------------------------------------------------------ */
+/*  Comparison column                                                 */
+/* ------------------------------------------------------------------ */
+
+/* One product, as a column in the comparison view. Typography drops from the old
+   card's four weights of uppercase black tracking to the app's headline/body
+   pair, matching the dashboard's cards. */
+function CompareColumn({ scan, onRemove }) {
+  const { t } = useTranslation();
+  const color = scoreColor(scan.score);
+  const insights = parseVerdict(scan.verdict);
+  const image = getProductImage(scan);
+
+  return (
+    <li
+      className={`${CARD} relative flex w-[264px] shrink-0 snap-center flex-col gap-4 p-4 sm:w-[280px] lg:w-auto`}
+    >
+      {/* Removing a product from the comparison without going back to the picker
+          is the action people reach for most here, and it did not exist. */}
+      <button
+        type="button"
+        onClick={() => onRemove(scan)}
+        aria-label={t('remove_from_comparison', 'Remove from comparison')}
+        className="tap-44 absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-md border-0 bg-transparent text-[var(--ns-outline)] transition hover:bg-[var(--ns-surface-low)] hover:text-[var(--ns-on-surface)]"
+      >
+        <X size={16} />
+      </button>
+
+      <div className="flex flex-col items-center gap-3 text-center">
+        {image ? (
+          <img
+            src={image}
+            alt=""
+            loading="lazy"
+            className="h-20 w-20 rounded-lg edge-hairline object-cover"
+          />
+        ) : (
+          <span
+            aria-hidden="true"
+            className="grid h-20 w-20 place-items-center rounded-lg edge-hairline bg-[var(--ns-surface-low)] text-[var(--ns-outline)]"
+          >
+            <Utensils size={32} />
+          </span>
+        )}
+
+        <div className="min-w-0 px-4">
+          <p className="truncate text-xs text-[var(--ns-on-surface-var)]">
+            {scan.brand || t('unknown_brand')}
+          </p>
+          <h3 className="line-clamp-2 font-[var(--font-headline)] text-sm font-bold leading-snug text-[var(--ns-on-surface)]">
+            {scan.product_name || t('unknown_product')}
+          </h3>
+        </div>
+
+        {/* Score badge uses the band colour as a tint plus a matching border —
+            the same treatment ScanCard uses, rather than a second glow-and-blur
+            style unique to this page. */}
+        <div
+          className="num-tabular flex h-16 w-16 flex-col items-center justify-center rounded-xl font-[var(--font-headline)] leading-none"
+          style={{
+            border: `2px solid color-mix(in srgb, ${color} 40%, transparent)`,
+            background: `color-mix(in srgb, ${color} 12%, transparent)`,
+            color,
+          }}
+        >
+          <span className="text-2xl font-bold">{scan.score ?? '--'}</span>
+          <span className="mt-0.5 text-[9px] font-semibold opacity-80">/10</span>
+        </div>
+      </div>
+
+      <div className="flex min-w-0 flex-1 flex-col gap-2 border-t border-[var(--ns-border-light)] pt-3">
+        <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--ns-outline)]">
+          {t('key_insights')}
+        </span>
+
+        {insights.length > 0 ? (
+          <ul className="flex list-none flex-col gap-1.5 p-0">
+            {insights.map((point, index) => {
+              const isGood = point.toLowerCase().startsWith('good:');
+              const isBad = point.toLowerCase().startsWith('bad:');
+              const label = point.replace(/^(good|bad):\s*/i, '');
+              /* Good / bad come from the impact tokens; a neutral point falls
+                 back to the product's own band rather than a third scale. */
+              const tone = isGood
+                ? 'var(--sem-impact-beneficial)'
+                : isBad
+                  ? 'var(--sem-impact-harmful)'
+                  : 'var(--ns-outline)';
+
+              return (
+                <li
+                  key={index}
+                  className="flex items-start gap-2 rounded-md px-2 py-1.5"
+                  style={{
+                    background:
+                      isGood || isBad
+                        ? `color-mix(in srgb, ${tone} 8%, transparent)`
+                        : 'var(--ns-surface-low)',
+                  }}
+                >
+                  {isGood ? (
+                    <CheckCircle size={14} style={{ color: tone }} className="mt-0.5 shrink-0" />
+                  ) : isBad ? (
+                    <XCircle size={14} style={{ color: tone }} className="mt-0.5 shrink-0" />
+                  ) : (
+                    <span
+                      aria-hidden="true"
+                      className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full"
+                      style={{ background: tone }}
+                    />
+                  )}
+                  <span className="text-xs leading-snug text-[var(--ns-on-surface)]">{label}</span>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p className="text-xs text-[var(--ns-outline)]">{t('no_data_available')}</p>
+        )}
+      </div>
+    </li>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Compare page                                                      */
+/* ------------------------------------------------------------------ */
+
+/* No onBack prop: Compare is reached from the dashboard's Explore row and the
+   shell's chrome handles leaving the page. The only "back" this page needs is
+   comparison -> picker, which is its own internal step. */
+export default function Compare() {
+  const { t } = useTranslation();
   const [scans, setScans] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedScans, setSelectedScans] = useState([]);
+  const [selectedIds, setSelectedIds] = useState([]);
   const [showComparison, setShowComparison] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
-  const { t } = useTranslation();
 
   useEffect(() => {
     const controller = new AbortController();
 
     const fetchHistory = async () => {
       try {
-        const response = await fetch(
-          `${API}/scans`,
-          { credentials: 'include', signal: controller.signal }
-        );
+        const response = await fetch(`${API}/scans`, {
+          credentials: 'include',
+          signal: controller.signal,
+        });
         if (!response.ok) throw new Error('Failed to fetch history');
         const data = await response.json();
-        setScans(data);
+        setScans(Array.isArray(data) ? data : []);
       } catch (err) {
         if (err.name === 'AbortError') return;
         console.error(err);
-        setError('Failed to load your scan history.');
+        setError(t('could_not_load'));
       } finally {
         if (!controller.signal.aborted) setIsLoading(false);
       }
@@ -37,344 +232,263 @@ export default function Compare({ authToken, onBack }) {
 
     fetchHistory();
     return () => controller.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const toggleSelection = (scan) => {
-    setSelectedScans(prev => {
-      const isSelected = prev.find(s => s.id === scan.id);
-      if (isSelected) {
-        return prev.filter(s => s.id !== scan.id);
-      }
-      return [...prev, scan];
-    });
-  };
+  /* Selection is held as ids, not as copies of the scan objects. The old version
+     stored whole rows, so a selected product kept whatever data it had at click
+     time even if the list refreshed underneath it. */
+  const selectedScans = useMemo(
+    () => selectedIds.map((id) => scans.find((scan) => scan.id === id)).filter(Boolean),
+    [selectedIds, scans]
+  );
 
-  const isSelected = (scan) => !!selectedScans.find(s => s.id === scan.id);
-
-  const parseVerdict = (verdictData) => {
-    if (!verdictData) return [];
-    let verdictItems = verdictData;
-
-    if (typeof verdictItems === 'string') {
-      const trimmed = verdictItems.trim();
-      if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
-        try {
-          verdictItems = JSON.parse(trimmed.replace(/^{/, '[').replace(/}$/, ']'));
-        } catch {
-          verdictItems = trimmed
-            .replace(/^{/, '')
-            .replace(/^\[/, '')
-            .replace(/}$/, '')
-            .replace(/\]$/, '')
-            .split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/)
-            .map(s => s.trim().replace(/^"/, '').replace(/"$/, ''));
-        }
-      } else {
-        verdictItems = trimmed.split(/[.!?]+/)
-          .map(s => s.trim())
-          .filter(s => s.length > 5);
-      }
-    }
-
-    if (!Array.isArray(verdictItems)) return [];
-    return verdictItems;
-  };
-
-  const parseJsonField = (value, fallback = null) => {
-    if (!value) return fallback;
-    if (typeof value !== 'string') return value;
-    try {
-      return JSON.parse(value);
-    } catch {
-      return fallback;
-    }
-  };
-
-  const getProductImage = (scan) => {
-    const rawProductData = parseJsonField(scan.raw_product_data, null) || parseJsonField(scan.product_data, null) || {};
-    return scan.image_url
-      || rawProductData.image_front_small_url
-      || rawProductData.image_front_url
-      || rawProductData.image_small_url
-      || rawProductData.image_url
-      || null;
-  };
-
-  const filteredScans = scans.filter(scan => {
-    const query = searchTerm.toLowerCase();
-    return (
-      (scan.product_name?.toLowerCase() || '').includes(query) ||
-      (scan.brand?.toLowerCase() || '').includes(query)
+  const filteredScans = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+    if (!query) return scans;
+    return scans.filter(
+      (scan) =>
+        (scan.product_name || '').toLowerCase().includes(query) ||
+        (scan.brand || '').toLowerCase().includes(query)
     );
-  });
+  }, [scans, searchTerm]);
 
-  const totalPages = Math.ceil(filteredScans.length / itemsPerPage);
-  const paginatedScans = filteredScans.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const { page, totalPages, pageItems, setPage, from, to, total } = usePagination(
+    filteredScans,
+    PER_PAGE,
+    searchTerm.trim()
+  );
 
-  const visibleIsLoading = isLoading;
-  const visibleError = error;
+  const toggleSelection = (scan) => {
+    setSelectedIds((prev) =>
+      prev.includes(scan.id) ? prev.filter((id) => id !== scan.id) : [...prev, scan.id]
+    );
+  };
+
+  const removeFromComparison = (scan) => {
+    const next = selectedIds.filter((id) => id !== scan.id);
+    setSelectedIds(next);
+    /* Dropping below two products means there is nothing left to compare, so the
+       view returns to the picker instead of showing a lone column. */
+    if (next.length < 2) setShowComparison(false);
+  };
+
+  const handlePageChange = (next) => {
+    setPage(next);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const canCompare = selectedScans.length >= 2;
 
   return (
-    <div className="compare-page animate-fade-in-up">
-      <div className="compare-shell">
-        <div className="compare-header">
-          <button
-            onClick={showComparison ? () => setShowComparison(false) : onBack}
-            className="compare-back-button"
-            aria-label="Go back"
-          >
-            <ArrowLeft size={20} />
-          </button>
-          <h1>{t('compare_title')}</h1>
-          <div className="compare-header-spacer" aria-hidden="true" />
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-4 pt-5 pb-8 sm:px-6 sm:pt-6 lg:gap-6">
+      {/* Back only appears in the comparison view, where it means "return to the
+          picker" — a real step in this page's own flow. The shell's chrome covers
+          leaving the page. */}
+      {showComparison && (
+        <button
+          type="button"
+          onClick={() => setShowComparison(false)}
+          className="tap-44 -ml-2 inline-flex min-h-11 w-fit items-center gap-1.5 rounded-md border-0 bg-transparent px-2 text-sm font-bold text-ns-primary-con transition hover:bg-[var(--ns-surface-low)]"
+        >
+          <ArrowLeft size={18} aria-hidden="true" />
+          {t('edit_selection', 'Edit selection')}
+        </button>
+      )}
+
+      {isLoading ? (
+        <div className={`${CARD} flex flex-col items-center gap-3 p-10 text-[var(--ns-on-surface-var)]`}>
+          <div
+            className="h-8 w-8 animate-spin rounded-full"
+            style={{ border: '3px solid var(--ns-surface-high)', borderTopColor: 'var(--ns-primary)' }}
+          />
+          <span className="text-sm">{t('analyzing_choices')}</span>
         </div>
-
-        {visibleIsLoading ? (
-          <div className="compare-state">
-            <div className="compare-spinner" />
-            <p>{t('analyzing_choices')}</p>
+      ) : error ? (
+        <div
+          className="rounded-xl p-4 text-center text-sm font-semibold"
+          style={{
+            border: '1px solid color-mix(in srgb, var(--ns-error) 30%, transparent)',
+            background: 'color-mix(in srgb, var(--ns-error) 8%, transparent)',
+            color: 'var(--ns-error)',
+          }}
+          role="alert"
+        >
+          {error}
+        </div>
+      ) : scans.length < 2 ? (
+        <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-[var(--edge-hairline)] bg-[var(--ns-card-bg)] px-4 py-10 text-center">
+          <BarChart2 size={32} className="text-[var(--ns-outline)]" aria-hidden="true" />
+          <p className="font-bold text-[var(--ns-on-surface)]">{t('need_more_scans')}</p>
+          <p className="max-w-xs text-sm text-[var(--ns-on-surface-var)]">
+            {t('need_more_scans_desc')}
+          </p>
+        </div>
+      ) : showComparison ? (
+        /* Comparison: a horizontal snap rail on phones, a grid once there is room
+           for the columns to sit side by side without scrolling. */
+        <ul
+          className="-mx-4 flex list-none snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:px-6 lg:mx-0 lg:grid lg:grid-cols-3 lg:overflow-visible lg:px-0 xl:grid-cols-4"
+          style={{ scrollbarWidth: 'none' }}
+          aria-label={t('comparison', 'Comparison')}
+        >
+          {selectedScans.map((scan) => (
+            <CompareColumn key={`compare-${scan.id}`} scan={scan} onRemove={removeFromComparison} />
+          ))}
+        </ul>
+      ) : (
+        <>
+          <div className="min-w-0">
+            <h2 className="font-[var(--font-headline)] text-base font-bold text-[var(--ns-on-surface)]">
+              {t('pick_rivals')}
+            </h2>
+            <p className="mt-0.5 text-sm text-[var(--ns-on-surface-var)]">
+              {t('select_to_compare')}
+            </p>
           </div>
-        ) : visibleError ? (
-          <div className="compare-error">
-            <p>{t('error')}</p>
-            <span>{visibleError}</span>
-          </div>
-        ) : scans.length < 2 ? (
-          <div className="compare-empty">
-            <div>
-              <BarChart2 size={44} />
-            </div>
-            <h2>{t('need_more_scans')}</h2>
-            <p>{t('need_more_scans_desc')}</p>
-          </div>
-        ) : (
-          <div className="compare-content">
-            {!showComparison ? (
-              <div className="compare-picker">
-                <div className="compare-hero-copy">
-                  <h2>{t('pick_rivals')}</h2>
-                  <p>{t('select_to_compare')}</p>
-                </div>
 
-                <div className="compare-search">
-                  <Search size={18} />
-                  <input
-                    type="text"
-                    placeholder={t('search_products')}
-                    value={searchTerm}
-                    onChange={(e) => {
-                      setSearchTerm(e.target.value);
-                      setCurrentPage(1);
-                    }}
-                  />
-                </div>
-
-                <div className="compare-product-list">
-                  {paginatedScans.length > 0 ? paginatedScans.map((scan) => {
-                    const selected = isSelected(scan);
-                    const scoreColor = scan.score >= 8 ? '#5BAD4E' : scan.score >= 5 ? '#F59E0B' : '#EF4444';
-                    const productImage = getProductImage(scan);
-
-                    return (
-                      <div
-                        key={scan.id}
-                        onClick={() => toggleSelection(scan)}
-                        className={`compare-product-card ${selected ? 'is-selected' : ''}`}
-                        style={{ '--score-color': scoreColor }}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(event) => {
-                          if (event.key === 'Enter' || event.key === ' ') {
-                            event.preventDefault();
-                            toggleSelection(scan);
-                          }
-                        }}
-                      >
-                        <div className="compare-product-check">
-                          {selected && <CheckCircle2 size={15} color="white" />}
-                        </div>
-
-                        <div className="compare-product-image" aria-hidden="true">
-                          {productImage ? (
-                            <img src={productImage} alt="" loading="lazy" />
-                          ) : (
-                            <BarChart2 size={18} />
-                          )}
-                        </div>
-
-                        <div className="compare-product-info">
-                          <h3>{scan.product_name || 'Product'}</h3>
-                          <p>{scan.brand || 'Unknown Brand'}</p>
-                        </div>
-
-                        <div className="compare-score-badge">
-                          <span>{scan.score}</span>
-                        </div>
-                      </div>
-                    );
-                  }) : (
-                    <div className="compare-no-results">
-                      <p>{t('no_products_found')}</p>
-                    </div>
-                  )}
-                </div>
-
-                {totalPages > 1 && (
-                  <div className="compare-pagination">
-                    <button
-                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                      disabled={currentPage === 1}
-                      aria-label="Previous page"
-                    >
-                      <ChevronLeft size={18} />
-                    </button>
-                    <span>{t('page_of', { current: currentPage, total: totalPages })}</span>
-                    <button
-                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                      disabled={currentPage === totalPages}
-                      aria-label="Next page"
-                    >
-                      <ChevronRight size={18} />
-                    </button>
-                  </div>
-                )}
-
-                {selectedScans.length > 0 && (
-                  <div className="compare-action-bar animate-streak-pop">
-                    <button
-                      onClick={() => setShowComparison(true)}
-                      disabled={selectedScans.length < 2}
-                    >
-                      <BarChart2 size={24} />
-                      {selectedScans.length < 2 ? t('select_more', { count: 2 - selectedScans.length }) : t('compare_choices', { count: selectedScans.length })}
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="flex flex-col gap-6 animate-fade-in">
-                <div className="flex gap-4 overflow-x-auto pb-10 snap-x snap-mandatory px-2 no-scrollbar">
-                  {selectedScans.map((scan) => {
-                    const scoreColor = scan.score >= 8 ? '#5BAD4E' : scan.score >= 5 ? '#F59E0B' : '#EF4444';
-                    const verdictItems = parseVerdict(scan.verdict);
-                    const productImage = getProductImage(scan);
-
-                    return (
-                      <div key={`compare-${scan.id}`} className="min-w-[280px] w-[280px] ns-card !p-6 flex flex-col gap-6 relative overflow-hidden snap-center group border-2 border-transparent">
-                        <div className="absolute top-0 left-0 w-full h-1.5" style={{ background: scoreColor }}></div>
-
-                        <div className="text-center space-y-4">
-                          <div className="space-y-1">
-                            <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80" style={{ color: 'var(--ns-secondary-con)' }}>{scan.brand || 'Unknown Brand'}</p>
-                            <h3 className="font-black text-lg leading-tight uppercase tracking-tight line-clamp-2 h-12" style={{ fontFamily: 'var(--font-headline)', color: 'var(--ns-on-surface)' }}>{scan.product_name || 'Unknown'}</h3>
-                          </div>
-
-                          <div className="compare-result-image" aria-label={`Product image for ${scan.product_name || 'product'}`}>
-                            {productImage ? (
-                              <img src={productImage} alt={scan.product_name || 'Product'} loading="lazy" />
-                            ) : (
-                              <BarChart2 size={28} />
-                            )}
-                          </div>
-
-                          <div className="relative inline-block">
-                            <div className="absolute inset-0 blur-xl opacity-15 rounded-full animate-pulse" style={{ background: scoreColor }}></div>
-                            <div className="w-20 h-20 rounded-[24px] border-2 flex flex-col items-center justify-center relative z-10 shadow-sm"
-                              style={{ borderColor: scoreColor + '44', background: scoreColor + '11' }}>
-                              <span className="text-4xl font-black leading-none" style={{ color: scoreColor }}>{scan.score}</span>
-                              <span className="text-[8px] font-black uppercase tracking-widest mt-1 opacity-80" style={{ color: scoreColor }}>{t('health_score')}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex-1 space-y-3">
-                          <div className="flex items-center gap-2 px-1">
-                            <Zap size={14} style={{ color: 'var(--ns-primary)' }} fill="currentColor" />
-                            <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--ns-on-surface-var)' }}>{t('key_insights')}</span>
-                          </div>
-
-                          <div className="flex flex-col gap-2">
-                            {verdictItems.length > 0 ? verdictItems.map((point, pIdx) => {
-                              const isGood = point.toLowerCase().startsWith('good:');
-                              const isBad = point.toLowerCase().startsWith('bad:');
-                              const label = isGood ? point.replace(/^good:\s*/i, '') : isBad ? point.replace(/^bad:\s*/i, '') : point;
-                              const dotColor = isGood ? '#5BAD4E' : isBad ? '#EF4444' : (scan.score >= 8 ? '#5BAD4E' : scan.score >= 5 ? '#F59E0B' : '#EF4444');
-                              const textColor = 'var(--ns-on-surface)';
-                              const bgColor = isGood ? 'rgba(91, 173, 78,0.08)' : isBad ? 'rgba(186,26,26,0.06)' : 'var(--ns-surface-low)';
-
-                              return (
-                                <div
-                                  key={pIdx}
-                                  className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border"
-                                  style={{ background: bgColor, borderColor: isGood ? 'rgba(91, 173, 78,0.1)' : isBad ? 'rgba(186,26,26,0.1)' : 'var(--ns-outline-var)' }}
-                                >
-                                  {isGood ? (
-                                    <CheckCircle size={15} style={{ color: dotColor, flexShrink: 0 }} />
-                                  ) : isBad ? (
-                                    <XCircle size={15} style={{ color: dotColor, flexShrink: 0 }} />
-                                  ) : (
-                                    <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: dotColor }}></div>
-                                  )}
-                                  <span className="text-[11px] font-bold leading-snug" style={{ color: textColor }}>{label}</span>
-                                </div>
-                              );
-                            }) : (
-                              <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl" style={{ background: 'var(--ns-surface-low)', border: '1px solid var(--ns-outline-var)' }}>
-                                <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: 'var(--ns-outline)' }}></div>
-                                <span className="text-[11px] font-bold leading-snug" style={{ color: 'var(--ns-outline)' }}>{t('no_data_available')}</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="pt-4 border-t flex items-center justify-between" style={{ borderColor: 'var(--ns-outline-var)' }}>
-                          <div className="flex items-center gap-2">
-                            <Activity size={14} style={{ color: 'var(--ns-outline)' }} />
-                            <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--ns-outline)' }}>NutriScore</span>
-                          </div>
-                          {scan.score >= 8 ? (
-                            <div className="flex items-center gap-1.5" style={{ color: '#5BAD4E' }}>
-                              <ShieldCheck size={14} />
-                              <span className="text-[10px] font-black uppercase tracking-widest">{t('safe')}</span>
-                            </div>
-                          ) : scan.score < 5 ? (
-                            <div className="flex items-center gap-1.5" style={{ color: '#EF4444' }}>
-                              <XCircle size={14} />
-                              <span className="text-[10px] font-black uppercase tracking-widest">{t('risky')}</span>
-                            </div>
-                          ) : null}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <div className="flex flex-col items-center gap-3 opacity-60 animate-pulse mt-4">
-                  <p className="text-[10px] font-black uppercase tracking-[0.4em]" style={{ color: 'var(--ns-outline)' }}>
-                    &larr; {t('swipe_to_compare')} &rarr;
-                  </p>
-                  <div className="flex gap-1">
-                    {selectedScans.map((_, i) => (
-                      <div key={i} className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--ns-outline-var)' }}></div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+          <div className={`${CARD} flex items-center gap-2 px-3`}>
+            <Search size={18} className="shrink-0 text-[var(--ns-outline)]" aria-hidden="true" />
+            <input
+              type="search"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder={t('search_products')}
+              aria-label={t('search_products')}
+              className="min-h-12 min-w-0 flex-1 border-0 bg-transparent text-sm text-[var(--ns-on-surface)] outline-none placeholder:text-[var(--ns-outline)]"
+            />
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => setSearchTerm('')}
+                aria-label={t('clear_search', 'Clear search')}
+                className="tap-44 grid h-8 w-8 shrink-0 place-items-center rounded-md border-0 bg-transparent text-[var(--ns-outline)] transition hover:text-[var(--ns-on-surface)]"
+              >
+                <X size={16} />
+              </button>
             )}
           </div>
-        )}
-      </div>
 
-      <style dangerouslySetInnerHTML={{
-        __html: `
-        .no-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-        .no-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-      `}} />
+          {pageItems.length > 0 ? (
+            <>
+              {totalPages > 1 && (
+                <p className="num-tabular -mb-1 text-xs font-medium text-[var(--ns-on-surface-var)]">
+                  {t('showing_range', 'Showing {{from}}-{{to}} of {{total}}', { from, to, total })}
+                </p>
+              )}
+
+              <ul className="grid list-none grid-cols-1 gap-3 p-0 sm:grid-cols-2 lg:gap-4">
+                {pageItems.map((scan) => {
+                  const selected = selectedIds.includes(scan.id);
+                  const color = scoreColor(scan.score);
+                  const image = getProductImage(scan);
+
+                  return (
+                    <li key={scan.id} className="min-w-0">
+                      {/* A real button with aria-pressed, not a div with a
+                          role and a hand-rolled key handler. */}
+                      <button
+                        type="button"
+                        onClick={() => toggleSelection(scan)}
+                        aria-pressed={selected}
+                        data-selected={selected || undefined}
+                        className="ns-compare-pick flex w-full min-w-0 items-center gap-3 rounded-xl p-3 text-left"
+                      >
+                        <span
+                          aria-hidden="true"
+                          className="ns-compare-check grid h-5 w-5 shrink-0 place-items-center rounded-sm"
+                        >
+                          {selected && <Check size={14} strokeWidth={3} />}
+                        </span>
+
+                        {image ? (
+                          <img
+                            src={image}
+                            alt=""
+                            loading="lazy"
+                            className="h-11 w-11 shrink-0 rounded-lg edge-hairline object-cover"
+                          />
+                        ) : (
+                          <span
+                            aria-hidden="true"
+                            className="grid h-11 w-11 shrink-0 place-items-center rounded-lg edge-hairline bg-[var(--ns-surface-low)] text-[var(--ns-outline)]"
+                          >
+                            <Utensils size={16} />
+                          </span>
+                        )}
+
+                        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                          <strong className="truncate text-sm font-bold text-[var(--ns-on-surface)]">
+                            {scan.product_name || t('unknown_product')}
+                          </strong>
+                          <span className="truncate text-xs text-[var(--ns-on-surface-var)]">
+                            {scan.brand || t('unknown_brand')}
+                          </span>
+                        </span>
+
+                        <span
+                          className="num-tabular grid h-9 min-w-9 shrink-0 place-items-center rounded-lg px-1.5 font-[var(--font-headline)] text-sm font-bold"
+                          style={{
+                            border: `1px solid color-mix(in srgb, ${color} 30%, transparent)`,
+                            background: `color-mix(in srgb, ${color} 12%, transparent)`,
+                            color,
+                          }}
+                        >
+                          {scan.score ?? '--'}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+
+              <Pagination
+                page={page}
+                totalPages={totalPages}
+                onChange={handlePageChange}
+                label={t('product_pagination', 'Product pages')}
+              />
+            </>
+          ) : (
+            <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-[var(--edge-hairline)] bg-[var(--ns-card-bg)] px-4 py-10 text-center">
+              <Search size={32} className="text-[var(--ns-outline)]" aria-hidden="true" />
+              <p className="font-bold text-[var(--ns-on-surface)]">{t('no_products_found')}</p>
+              <p className="max-w-xs text-sm text-[var(--ns-on-surface-var)]">
+                {t('try_another_search')}
+              </p>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Sticky action bar. Sits above the bottom nav rather than under it, which
+          is what the old fixed bar did on phones. Only while picking. */}
+      {!showComparison && selectedIds.length > 0 && (
+        <div className="ns-compare-bar">
+          <div className={`${CARD} flex items-center gap-3 p-2 pl-4`}>
+            <span className="num-tabular min-w-0 flex-1 truncate text-sm font-medium text-[var(--ns-on-surface-var)]">
+              {t('selected_count', '{{count}} selected', { count: selectedIds.length })}
+            </span>
+            <button
+              type="button"
+              onClick={() => setSelectedIds([])}
+              className="tap-44 shrink-0 rounded-md border-0 bg-transparent px-2 text-xs font-bold text-[var(--ns-outline)] transition hover:text-[var(--ns-on-surface)]"
+            >
+              {t('clear', 'Clear')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowComparison(true)}
+              disabled={!canCompare}
+              className="min-h-11 shrink-0 rounded-lg edge-hairline bg-ns-primary px-4 text-sm font-bold text-white transition hover:bg-ns-primary-con disabled:opacity-50"
+            >
+              {canCompare
+                ? t('compare_choices', { count: selectedScans.length })
+                : t('select_more', { count: 2 - selectedScans.length })}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

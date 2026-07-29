@@ -1,16 +1,153 @@
 const express = require('express');
+const crypto = require('crypto');
 const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const { authLimiter } = require('../middleware/rateLimiter');
+const {
+  authSlowDown,
+  loginLimiter,
+  passwordResetLimiter,
+  signupLimiter,
+} = require('../middleware/rateLimiter');
 const { validateProfileUpdate, validateDetailsUpdate } = require('../middleware/profileValidator');
+const { validateRequest } = require('../middleware/validateRequest');
+const { auth: authSchemas, emptyBody } = require('../validation/schemas');
+const { MINIMUM_AGE, isOldEnough } = require('../utils/ageCheck');
+const { buildQuotaFields } = require('../utils/scanQuota');
+const { sendPasswordResetEmail } = require('../utils/mailer');
+const { securityLog } = require('../utils/securityLogger');
+const {
+  issueSession,
+  revokeRefreshToken,
+  revokeUserSessions,
+  rotateRefreshToken,
+} = require('../utils/tokens');
 const {
   createAuthCookieOptions,
   createClearAuthCookieOptions,
+  createRefreshCookieOptions,
+  createClearRefreshCookieOptions,
 } = require('../config/cookies');
+const { issueCsrfToken } = require('../middleware/csrf');
 
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key';
 const SEVERITY_LEVELS = ['Low', 'Medium', 'High'];
+const BCRYPT_COST = Number(process.env.BCRYPT_COST || 12);
+const DUMMY_PASSWORD_HASH = '$2b$12$C6UzMDM.H6dfI/f/IKcEe.9zFfTqQYjWmLr7JmVZQYQ6jVQqYg5uK';
+
+/**
+ * Emails are stored and compared lowercased. Without this, `User@x.com` and
+ * `user@x.com` were two separate accounts, which is how duplicate registrations
+ * were getting through the UNIQUE constraint.
+ */
+const normalizeEmail = (email) =>
+  typeof email === 'string' ? email.trim().toLowerCase() : '';
+
+const findUserByEmail = (pool, email) =>
+  pool.query('SELECT * FROM users WHERE LOWER(email) = $1', [normalizeEmail(email)]);
+
+/**
+ * Resolves a trusted Google identity from a request body.
+ *
+ * Preferred path: `credential` (a Google ID token) is verified against Google's
+ * published keys and the identity is read from the signed payload.
+ *
+ * Fallback path: when GOOGLE_CLIENT_ID is not configured the raw
+ * `{ email, name, googleId }` body is accepted. That is only safe for local
+ * development, so it refuses to run when NODE_ENV is production.
+ */
+async function verifyGoogleIdentity(body = {}) {
+  const credential = body.credential || body.idToken || body.id_token;
+  const accessToken = body.accessToken || body.access_token;
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+
+  // Preferred for the web implicit flow: verify the access token by calling
+  // Google's userinfo endpoint. Only Google can answer for a valid token, so the
+  // resulting email is trustworthy and the client cannot forge it.
+  if (accessToken) {
+    let profile;
+    try {
+      const infoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        signal: AbortSignal.timeout(8000),
+      });
+      if (!infoRes.ok) throw new Error(`userinfo returned ${infoRes.status}`);
+      profile = await infoRes.json();
+    } catch (cause) {
+      const err = new Error(`Google access token verification failed: ${cause.message}`);
+      err.publicMessage = 'Google sign-in could not be verified. Please try again.';
+      throw err;
+    }
+
+    if (!profile.email) {
+      const err = new Error('Google profile carried no email');
+      err.publicMessage = 'Google did not share an email address for this account.';
+      throw err;
+    }
+    if (profile.email_verified === false || profile.email_verified === 'false') {
+      const err = new Error('Google email is not verified');
+      err.publicMessage = 'Your Google email address is not verified.';
+      throw err;
+    }
+
+    return {
+      email: normalizeEmail(profile.email),
+      name: profile.name || profile.given_name || normalizeEmail(profile.email).split('@')[0],
+      googleId: profile.sub,
+    };
+  }
+
+  if (credential) {
+    if (!clientId) {
+      const err = new Error('GOOGLE_CLIENT_ID is not configured on the server');
+      err.publicMessage = 'Google sign-in is not configured. Contact support.';
+      throw err;
+    }
+
+    const { OAuth2Client } = require('google-auth-library');
+    const client = new OAuth2Client(clientId);
+    let ticket;
+    try {
+      ticket = await client.verifyIdToken({ idToken: credential, audience: clientId });
+    } catch (cause) {
+      const err = new Error(`Invalid Google ID token: ${cause.message}`);
+      err.publicMessage = 'Google sign-in could not be verified. Please try again.';
+      throw err;
+    }
+
+    const payload = ticket.getPayload() || {};
+    if (!payload.email) {
+      const err = new Error('Google token carried no email claim');
+      err.publicMessage = 'Google did not share an email address for this account.';
+      throw err;
+    }
+    if (payload.email_verified === false) {
+      const err = new Error('Google email is not verified');
+      err.publicMessage = 'Your Google email address is not verified.';
+      throw err;
+    }
+
+    return {
+      email: normalizeEmail(payload.email),
+      name: payload.name || payload.given_name || normalizeEmail(payload.email).split('@')[0],
+      googleId: payload.sub,
+    };
+  }
+
+  if (clientId || process.env.NODE_ENV === 'production') {
+    const err = new Error('No Google credential supplied');
+    err.publicMessage = 'Google sign-in failed. Please try again.';
+    throw err;
+  }
+
+  const email = normalizeEmail(body.email);
+  if (!email) {
+    const err = new Error('No Google credential or email supplied');
+    err.publicMessage = 'Google sign-in failed. Please try again.';
+    throw err;
+  }
+
+  console.warn('[Google Auth] Accepting unverified identity — development mode only.');
+  return { email, name: body.name || email.split('@')[0], googleId: body.googleId };
+}
 
 const normalizeCondition = (condition) => {
   if (typeof condition === 'string') {
@@ -116,21 +253,60 @@ const hydrateUserMedicalProfile = async (pool, user) => {
 };
 
 // Cookie config — centralised so it's consistent across all auth routes
-const COOKIE_OPTIONS = createAuthCookieOptions();
+// Access and refresh cookie options are generated when a session is issued.
 
-// Middleware to authenticate — reads JWT from HttpOnly cookie
-const authenticate = (req, res, next) => {
-  const token = req.cookies?.token;
-  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+// Shared middleware: reads the JWT from the HttpOnly cookie, or from an
+// Authorization: Bearer header for the Cordova build (WebView blocks the
+// third-party cookie).
+const authenticate = require('../middleware/auth');
 
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    req.userId = decoded.userId;
-    next();
-  } catch (error) {
-    res.status(401).json({ error: 'Invalid token' });
-  }
+/**
+ * Native (Cordova) clients cannot rely on the auth cookie, so they opt in to
+ * receiving the raw token in the response body by sending `X-Client: mobile`.
+ * Browsers never get the token in the body, so the web flow stays cookie-only.
+ */
+const isMobileClient = (req) =>
+  String(req.headers['x-client'] || '').toLowerCase() === 'mobile';
+
+const withMobileTokens = (req, payload, session) => isMobileClient(req)
+  ? { ...payload, token: session.accessToken, refreshToken: session.refreshToken }
+  : payload;
+
+const setSessionCookies = (res, session) => {
+  res.cookie('token', session.accessToken, createAuthCookieOptions());
+  res.cookie('refresh_token', session.refreshToken, createRefreshCookieOptions());
 };
+
+const respondWithSession = async (req, res, user, payload = {}) => {
+  const session = await issueSession(req.pool, user, req);
+  const publicUser = { ...user };
+  delete publicUser.token_version;
+  setSessionCookies(res, session);
+  issueCsrfToken(req, res);
+  res.json(withMobileTokens(req, { user: publicUser, ...payload }, session));
+};
+
+const getRefreshToken = (req) => req.cookies?.refresh_token || req.body?.refreshToken || null;
+
+const recordLoginFailure = async (pool, userId, attempts) => {
+  if (!userId) return;
+  const nextAttempts = Number(attempts || 0) + 1;
+  const lockSeconds = nextAttempts >= 5 ? Math.min(30 * (2 ** (nextAttempts - 5)), 900) : 0;
+  await pool.query(
+    `UPDATE users
+     SET failed_login_attempts = $1,
+         last_failed_login_at = NOW(),
+         locked_until = CASE WHEN $2 > 0 THEN NOW() + ($2 * INTERVAL '1 second') ELSE NULL END
+     WHERE id = $3`,
+    [nextAttempts, lockSeconds, userId],
+  );
+  return lockSeconds;
+};
+
+const clearLoginFailures = (pool, userId) => pool.query(
+  'UPDATE users SET failed_login_attempts = 0, last_failed_login_at = NULL, locked_until = NULL WHERE id = $1',
+  [userId],
+);
 
 // Helper to update streak and points
 async function updateStreak(pool, userId) {
@@ -174,25 +350,63 @@ async function updateStreak(pool, userId) {
 }
 
 // Register
-router.post('/register', authLimiter, async (req, res) => {
-  const { email, password, name } = req.body;
-  try {
-    const userRes = await req.pool.query('SELECT * FROM users WHERE email = $1', [email]);
-    if (userRes.rows.length > 0) return res.status(400).json({ error: 'User already exists' });
+router.post('/register', signupLimiter, authSlowDown, validateRequest({ body: authSchemas.register }), async (req, res) => {
+  const { password, name, dateOfBirth } = req.body;
+  const email = normalizeEmail(req.body.email);
 
-    const passwordHash = await bcrypt.hash(password, 10);
-    const insertRes = await req.pool.query(
-      'INSERT INTO users (email, password_hash, name) VALUES ($1, $2, $3) RETURNING id, email, name, profile, is_premium, subscription_expires_at, image_scans_used, subscription_plan',
-      [email, passwordHash, name]
-    );
+  // Age gate. Only enforced when a date of birth is supplied, because onboarding
+  // collects it after this call for the existing signup flow; PUT /details
+  // applies the same rule so it cannot be bypassed by skipping it here.
+  if (dateOfBirth && !isOldEnough(dateOfBirth)) {
+    return res.status(400).json({
+      error: `You must be at least ${MINIMUM_AGE} years old to use FitScan`,
+      field: 'dateOfBirth',
+    });
+  }
+
+  try {
+    const userRes = await findUserByEmail(req.pool, email);
+    if (userRes.rows.length > 0) {
+      return res.status(409).json({
+        error: 'An account with this email already exists. Try logging in instead.',
+        field: 'email',
+      });
+    }
+
+    const passwordHash = await bcrypt.hash(password, BCRYPT_COST);
+    let insertRes;
+    try {
+      insertRes = await req.pool.query(
+        'INSERT INTO users (email, password_hash, name) VALUES ($1, $2, $3) RETURNING id, email, name, profile, is_premium, subscription_expires_at, image_scans_used, subscription_plan, token_version',
+        [email, passwordHash, name]
+      );
+    } catch (insertErr) {
+      // 23505 = unique_violation. Two concurrent signups for the same address
+      // both pass the SELECT above, so the constraint is the real guard.
+      if (insertErr.code === '23505') {
+        return res.status(409).json({
+          error: 'An account with this email already exists. Try logging in instead.',
+          field: 'email',
+        });
+      }
+      throw insertErr;
+    }
     const user = insertRes.rows[0];
     const { points, streak } = await updateStreak(req.pool, user.id);
-    const hydratedUser = await hydrateUserMedicalProfile(req.pool, { ...user, isPremium: user.is_premium, subscriptionExpiresAt: user.subscription_expires_at, imageScansUsed: user.image_scans_used, subscriptionPlan: user.subscription_plan, points, streak });
+    const hydratedUser = await hydrateUserMedicalProfile(req.pool, {
+      ...user,
+      isPremium: user.is_premium,
+      subscriptionExpiresAt: user.subscription_expires_at,
+      imageScansUsed: user.image_scans_used,
+      subscriptionPlan: user.subscription_plan,
+      points,
+      streak,
+      ...buildQuotaFields(user),
+    });
 
-    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '30d' });
+    const sessionUser = { ...hydratedUser, token_version: user.token_version || 0 };
     // Set JWT as an HttpOnly cookie — never exposed to frontend JavaScript
-    res.cookie('token', token, COOKIE_OPTIONS);
-    res.json({ user: hydratedUser });
+    await respondWithSession(req, res, sessionUser);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Server error' });
@@ -200,23 +414,42 @@ router.post('/register', authLimiter, async (req, res) => {
 });
 
 // Login
-router.post('/login', authLimiter, async (req, res) => {
-  const { email, password } = req.body;
+router.post('/login', loginLimiter, authSlowDown, validateRequest({ body: authSchemas.login }), async (req, res) => {
+  const { password } = req.body;
+  const email = normalizeEmail(req.body.email);
   try {
-    const userRes = await req.pool.query('SELECT * FROM users WHERE email = $1', [email]);
-    if (userRes.rows.length === 0) return res.status(400).json({ error: 'Invalid credentials' });
+    const userRes = await findUserByEmail(req.pool, email);
+    if (userRes.rows.length === 0) {
+      await bcrypt.compare(password, DUMMY_PASSWORD_HASH);
+      securityLog('login_failed', req, { reason: 'invalid_credentials' });
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
 
     const user = userRes.rows[0];
-    if (!user.password_hash) return res.status(400).json({ error: 'Invalid credentials' });
+    if (user.locked_until && new Date(user.locked_until).getTime() > Date.now()) {
+      const retryAfter = Math.ceil((new Date(user.locked_until).getTime() - Date.now()) / 1000);
+      res.set('Retry-After', String(retryAfter));
+      securityLog('login_locked', req, { retryAfter });
+      return res.status(423).json({ error: 'Account temporarily locked. Try again later.', retryAfter });
+    }
+    if (!user.password_hash) {
+      await bcrypt.compare(password, DUMMY_PASSWORD_HASH);
+      securityLog('login_failed', req, { reason: 'invalid_credentials' });
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
 
     const isMatch = await bcrypt.compare(password, user.password_hash);
-    if (!isMatch) return res.status(400).json({ error: 'Invalid credentials' });
+    if (!isMatch) {
+      const lockSeconds = await recordLoginFailure(req.pool, user.id, user.failed_login_attempts);
+      securityLog('login_failed', req, { reason: 'invalid_credentials', lockSeconds });
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
 
     // Cancel any scheduled deletion — logging in means the user wants to keep the account
     let deletionCancelled = false;
     if (user.scheduled_deletion_at) {
       await req.pool.query('UPDATE users SET scheduled_deletion_at = NULL WHERE id = $1', [user.id]);
-      console.log(`[Deletion Cancelled] User ${user.id} logged in, scheduled deletion cancelled`);
+      securityLog('account_deletion_cancelled_on_login', req, {}, 'info');
       deletionCancelled = true;
     }
 
@@ -225,13 +458,16 @@ router.post('/login', authLimiter, async (req, res) => {
       id: user.id, email: user.email, name: user.name, points, streak,
       profile: user.profile, isPremium: user.is_premium,
       subscriptionExpiresAt: user.subscription_expires_at, imageScansUsed: user.image_scans_used,
-      subscriptionPlan: user.subscription_plan
+      subscriptionPlan: user.subscription_plan,
+      ...buildQuotaFields(user),
     });
 
-    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '30d' });
+    await clearLoginFailures(req.pool, user.id);
+
+    const sessionUser = { ...hydratedUser, token_version: user.token_version || 0 };
     // Set JWT as an HttpOnly cookie — never exposed to frontend JavaScript
-    res.cookie('token', token, COOKIE_OPTIONS);
-    res.json({ user: hydratedUser, deletionCancelled });
+    securityLog('login_succeeded', req, {}, 'info');
+    await respondWithSession(req, res, sessionUser, { deletionCancelled });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Server error' });
@@ -239,24 +475,47 @@ router.post('/login', authLimiter, async (req, res) => {
 });
 
 // Google OAuth
-router.post('/google', authLimiter, async (req, res) => {
-  const { email, name, googleId } = req.body;
+//
+// The client sends the Google ID token (`credential`) and the server verifies it
+// against Google's public keys. The identity therefore comes from Google's signed
+// claims, never from the request body — posting an arbitrary `email` cannot log
+// anyone in.
+router.post('/google', loginLimiter, authSlowDown, validateRequest({ body: authSchemas.google }), async (req, res) => {
+  let email;
+  let name;
+  let googleId;
+
   try {
-    let userRes = await req.pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    const identity = await verifyGoogleIdentity(req.body);
+    email = identity.email;
+    name = identity.name;
+    googleId = identity.googleId;
+  } catch (verifyErr) {
+    console.warn('[Google Auth] Identity verification failed:', verifyErr.message);
+    return res.status(401).json({ error: verifyErr.publicMessage || 'Google sign-in failed' });
+  }
+
+  try {
+    let userRes = await findUserByEmail(req.pool, email);
     let user;
     if (userRes.rows.length === 0) {
       const insertRes = await req.pool.query(
-        'INSERT INTO users (email, name, google_id) VALUES ($1, $2, $3) RETURNING id, email, name, profile, is_premium, subscription_expires_at, image_scans_used, subscription_plan',
+        'INSERT INTO users (email, name, google_id) VALUES ($1, $2, $3) RETURNING id, email, name, profile, is_premium, subscription_expires_at, image_scans_used, subscription_plan, token_version',
         [email, name, googleId]
       );
       user = insertRes.rows[0];
     } else {
       user = userRes.rows[0];
+      // Link the Google identity to the pre-existing email/password account
+      // rather than creating a second row for the same person.
+      if (googleId && !user.google_id) {
+        await req.pool.query('UPDATE users SET google_id = $1 WHERE id = $2', [googleId, user.id]);
+      }
       // Cancel any scheduled deletion — logging in means the user wants to keep the account
       var deletionCancelled = false;
       if (user.scheduled_deletion_at) {
         await req.pool.query('UPDATE users SET scheduled_deletion_at = NULL WHERE id = $1', [user.id]);
-        console.log(`[Deletion Cancelled] User ${user.id} (Google) logged in, scheduled deletion cancelled`);
+        securityLog('account_deletion_cancelled_on_google_login', req, {}, 'info');
         deletionCancelled = true;
       }
     }
@@ -266,22 +525,180 @@ router.post('/google', authLimiter, async (req, res) => {
       id: user.id, email: user.email, name: user.name, points, streak,
       profile: user.profile, isPremium: user.is_premium,
       subscriptionExpiresAt: user.subscription_expires_at, imageScansUsed: user.image_scans_used,
-      subscriptionPlan: user.subscription_plan
+      subscriptionPlan: user.subscription_plan,
+      ...buildQuotaFields(user),
     });
 
-    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '30d' });
+    const sessionUser = { ...hydratedUser, token_version: user.token_version || 0 };
     // Set JWT as an HttpOnly cookie — never exposed to frontend JavaScript
-    res.cookie('token', token, COOKIE_OPTIONS);
-    res.json({ user: hydratedUser, deletionCancelled: typeof deletionCancelled !== 'undefined' ? deletionCancelled : false });
+    await respondWithSession(
+      req,
+      res,
+      sessionUser,
+      { deletionCancelled: typeof deletionCancelled !== 'undefined' ? deletionCancelled : false },
+    );
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Google login failed' });
   }
 });
 
+// ── Password reset ──
+
+const RESET_TOKEN_TTL_MINUTES = 30;
+
+const hashResetToken = (token) =>
+  crypto.createHash('sha256').update(token).digest('hex');
+
+const resolveResetBaseUrl = () => {
+  const configured = process.env.FRONTEND_URL || process.env.APP_URL;
+  return (configured || 'http://localhost:5173').replace(/\/+$/, '');
+};
+
+// Request a reset link.
+//
+// Always answers 200 with the same message whether or not the address exists —
+// otherwise this endpoint becomes a way to enumerate registered users.
+router.post('/forgot-password', passwordResetLimiter, authSlowDown, validateRequest({ body: authSchemas.forgotPassword }), async (req, res) => {
+  const email = normalizeEmail(req.body?.email);
+  const genericResponse = {
+    success: true,
+    message: 'If an account exists for that email, a reset link is on its way.',
+  };
+
+  if (!email || !email.includes('@')) {
+    return res.status(400).json({ error: 'A valid email address is required' });
+  }
+
+  try {
+    const userRes = await findUserByEmail(req.pool, email);
+
+    if (userRes.rows.length === 0) {
+      securityLog('password_reset_requested', req, { accountFound: false }, 'info');
+      return res.json(genericResponse);
+    }
+
+    const user = userRes.rows[0];
+
+    // Google-only accounts have no password to reset.
+    if (!user.password_hash && user.google_id) {
+      securityLog('password_reset_requested', req, { accountType: 'google_only' }, 'info');
+      return res.json(genericResponse);
+    }
+
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + RESET_TOKEN_TTL_MINUTES * 60 * 1000);
+
+    await req.pool.query(
+      'UPDATE users SET reset_token_hash = $1, reset_token_expires_at = $2 WHERE id = $3',
+      [hashResetToken(rawToken), expiresAt, user.id]
+    );
+
+    const resetUrl = `${resolveResetBaseUrl()}/reset-password?token=${rawToken}&email=${encodeURIComponent(email)}`;
+
+    try {
+      await sendPasswordResetEmail({
+        to: email,
+        name: user.name,
+        resetUrl,
+        expiresInMinutes: RESET_TOKEN_TTL_MINUTES,
+      });
+    } catch (mailErr) {
+      // The token is already stored; surface the delivery failure so the user is
+      // not left waiting for an email that will never arrive.
+      console.error('[Password Reset] Failed to send email:', mailErr.message);
+      return res.status(502).json({ error: 'Could not send the reset email. Please try again shortly.' });
+    }
+
+    res.json(genericResponse);
+  } catch (error) {
+    console.error('[Password Reset] Request failed:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Complete the reset using the emailed token.
+router.post('/reset-password', passwordResetLimiter, authSlowDown, validateRequest({ body: authSchemas.resetPassword }), async (req, res) => {
+  const { token, password } = req.body || {};
+
+  if (!token || typeof token !== 'string') {
+    return res.status(400).json({ error: 'A reset token is required' });
+  }
+  try {
+    const userRes = await req.pool.query(
+      `SELECT id, email, reset_token_expires_at
+       FROM users
+       WHERE reset_token_hash = $1`,
+      [hashResetToken(token)]
+    );
+
+    if (userRes.rows.length === 0) {
+      return res.status(400).json({ error: 'This reset link is invalid or has already been used.' });
+    }
+
+    const user = userRes.rows[0];
+    if (!user.reset_token_expires_at || new Date(user.reset_token_expires_at) < new Date()) {
+      // Clear the stale token so a expired link cannot be retried.
+      await req.pool.query(
+        'UPDATE users SET reset_token_hash = NULL, reset_token_expires_at = NULL WHERE id = $1',
+        [user.id]
+      );
+      return res.status(400).json({ error: 'This reset link has expired. Please request a new one.' });
+    }
+
+    const passwordHash = await bcrypt.hash(password, BCRYPT_COST);
+    await req.pool.query(
+      `UPDATE users
+       SET password_hash = $1,
+           reset_token_hash = NULL,
+           reset_token_expires_at = NULL,
+           failed_login_attempts = 0,
+           locked_until = NULL,
+           token_version = token_version + 1
+       WHERE id = $2`,
+      [passwordHash, user.id]
+    );
+    await revokeUserSessions(req.pool, user.id);
+
+    securityLog('password_reset_completed', req, {}, 'info');
+    res.json({ success: true, message: 'Your password has been updated. You can now log in.' });
+  } catch (error) {
+    console.error('[Password Reset] Completion failed:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // Logout — clears the HttpOnly auth cookie
-router.post('/logout', (req, res) => {
+router.get('/csrf', (req, res) => {
+  const csrfToken = issueCsrfToken(req, res);
+  res.json({ csrfToken });
+});
+
+router.post('/refresh', loginLimiter, validateRequest({ body: authSchemas.refresh }), async (req, res) => {
+  const rawRefreshToken = getRefreshToken(req);
+  if (!rawRefreshToken) return res.status(401).json({ error: 'Refresh token required' });
+
+  try {
+    const session = await rotateRefreshToken(req.pool, rawRefreshToken, req);
+    setSessionCookies(res, session);
+    issueCsrfToken(req, res);
+    return res.json(withMobileTokens(req, { success: true }, session));
+  } catch (error) {
+    securityLog('refresh_failed', req, { reason: error.code || 'invalid' });
+    res.clearCookie('token', createClearAuthCookieOptions());
+    res.clearCookie('refresh_token', createClearRefreshCookieOptions());
+    return res.status(401).json({ error: 'Session expired. Please sign in again.' });
+  }
+});
+
+router.post('/logout', validateRequest({ body: authSchemas.refresh }), async (req, res) => {
+  try {
+    await revokeRefreshToken(req.pool, getRefreshToken(req));
+  } catch (_error) {
+    securityLog('logout_revoke_failed', req, { reason: 'database_error' }, 'error');
+  }
   res.clearCookie('token', createClearAuthCookieOptions());
+  res.clearCookie('refresh_token', createClearRefreshCookieOptions());
   res.json({ success: true });
 });
 
@@ -289,7 +706,7 @@ router.post('/logout', (req, res) => {
 router.get('/me', authenticate, async (req, res) => {
   try {
     const userRes = await req.pool.query(
-      'SELECT id, email, name, points, streak, profile, scheduled_deletion_at, is_premium, subscription_expires_at, image_scans_used, subscription_plan FROM users WHERE id = $1',
+      'SELECT id, email, name, points, streak, profile, scheduled_deletion_at, is_premium, subscription_expires_at, image_scans_used, subscription_plan, scans_used, scan_limit, plan FROM users WHERE id = $1',
       [req.userId]
     );
     if (userRes.rows.length === 0) {
@@ -305,6 +722,10 @@ router.get('/me', authenticate, async (req, res) => {
     user.subscriptionExpiresAt = row.subscription_expires_at;
     user.imageScansUsed = row.image_scans_used;
     user.subscriptionPlan = row.subscription_plan;
+    // Scan quota. The shell header and sidebar read these to render "used/limit";
+    // they were previously absent from this payload, which is why the counter was
+    // permanently stuck on its 0/20 fallback.
+    Object.assign(user, buildQuotaFields(row));
     res.json({ user });
   } catch (error) {
     console.error(error);
@@ -404,11 +825,8 @@ router.put('/details', authenticate, validateDetailsUpdate, async (req, res) => 
 });
 
 // Save compressed profile picture directly in profile JSON
-router.put('/profile-picture', authenticate, async (req, res) => {
+router.put('/profile-picture', authenticate, validateRequest({ body: authSchemas.profilePicture }), async (req, res) => {
   const { imageBase64 } = req.body;
-  console.log('━━━ PUT /auth/profile-picture ━━━');
-  console.log('  User id:', req.userId);
-  console.log('  Payload:', imageBase64 ? `${typeof imageBase64} (${imageBase64.length} chars)` : 'MISSING');
 
   if (!imageBase64 || typeof imageBase64 !== 'string') {
     console.error('  ✗ Profile picture upload failed: imageBase64 is missing or invalid');
@@ -430,8 +848,6 @@ router.put('/profile-picture', authenticate, async (req, res) => {
       return res.status(400).json({ error: 'Profile picture must be an image data URL' });
     }
 
-    console.log('  → Saving compressed Base64 profile image to database...');
-
     const currentProfile = userRes.rows[0].profile || {};
     const nextProfile = {
       ...currentProfile,
@@ -445,8 +861,6 @@ router.put('/profile-picture', authenticate, async (req, res) => {
       'UPDATE users SET profile = $1 WHERE id = $2',
       [JSON.stringify(nextProfile), req.userId]
     );
-    console.log('  ✓ Profile image saved in user profile JSON');
-
     const updatedRes = await req.pool.query(
       'SELECT id, email, name, points, streak, profile FROM users WHERE id = $1',
       [req.userId]
@@ -484,7 +898,7 @@ router.get('/leaderboard', authenticate, async (req, res) => {
 });
 
 // Schedule Account Deletion — marks account for permanent removal after 7 days
-router.delete('/account', authenticate, async (req, res) => {
+router.delete('/account', authenticate, validateRequest({ body: emptyBody }), async (req, res) => {
   try {
     const userId = req.userId;
 
@@ -498,11 +912,17 @@ router.delete('/account', authenticate, async (req, res) => {
     deletionDate.setDate(deletionDate.getDate() + 7);
 
     await req.pool.query(
-      'UPDATE users SET scheduled_deletion_at = $1 WHERE id = $2',
+      `UPDATE users
+       SET scheduled_deletion_at = $1,
+           token_version = token_version + 1
+       WHERE id = $2`,
       [deletionDate, userId]
     );
+    await revokeUserSessions(req.pool, userId);
+    res.clearCookie('token', createClearAuthCookieOptions());
+    res.clearCookie('refresh_token', createClearRefreshCookieOptions());
 
-    console.log(`[Account Scheduled] User ${userId} scheduled for deletion on ${deletionDate.toISOString()}`);
+    securityLog('account_deletion_scheduled', req, {}, 'info');
     res.json({
       success: true,
       message: 'Account scheduled for deletion',
@@ -515,7 +935,7 @@ router.delete('/account', authenticate, async (req, res) => {
 });
 
 // Cancel Scheduled Deletion
-router.post('/cancel-deletion', authenticate, async (req, res) => {
+router.post('/cancel-deletion', authenticate, validateRequest({ body: emptyBody }), async (req, res) => {
   try {
     const userId = req.userId;
 
@@ -530,7 +950,7 @@ router.post('/cancel-deletion', authenticate, async (req, res) => {
 
     await req.pool.query('UPDATE users SET scheduled_deletion_at = NULL WHERE id = $1', [userId]);
 
-    console.log(`[Deletion Cancelled] User ${userId} cancelled scheduled deletion`);
+    securityLog('account_deletion_cancelled', req, {}, 'info');
     res.json({ success: true, message: 'Account deletion cancelled' });
   } catch (error) {
     console.error('[Cancel Deletion Error]', error);

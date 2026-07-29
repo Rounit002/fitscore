@@ -12,6 +12,13 @@
 
 const hasDOM = typeof window !== 'undefined' && typeof document !== 'undefined';
 
+/**
+ * Set to "true" only by the Cordova build (`vite build --mode cordova`), so the
+ * packaged bundle is unambiguously identified regardless of origin or UA. The
+ * origin/UA sniffing below is kept as a fallback for older bundles.
+ */
+const buildTargetIsCordova = import.meta.env.VITE_BUILD_TARGET === 'cordova';
+
 function isLocalAppShellOrigin() {
   if (!hasDOM) return false;
   const { protocol, hostname } = window.location;
@@ -32,7 +39,7 @@ const notDesktopUA = (() => {
 })();
 
 // True only inside the packaged mobile app shell.
-export const isCordova = Boolean(isLocalAppShellOrigin() && notDesktopUA);
+export const isCordova = buildTargetIsCordova || Boolean(isLocalAppShellOrigin() && notDesktopUA);
 
 // True for the public web build and the Vite dev server.
 export const isWeb = !isCordova;

@@ -1,8 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Search, BrainCircuit, Activity, Sparkles, CheckCircle, Leaf, X } from 'lucide-react';
+import { Search, BrainCircuit, Sparkles, CheckCircle, Leaf, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-// Step thresholds in seconds: step advances when elapsed crosses these values
+/* ------------------------------------------------------------------ */
+/*  Image Analyzing screen                                            */
+/* ------------------------------------------------------------------ */
+
+/* Redesigned for a calmer, more legible wait. The previous version stacked a
+   112px floating hero tile, two blurred background blobs, an elapsed-time badge
+   and a four-row step list with per-row progress bars — a lot of motion for a
+   screen whose only job is to say "hang on". This version keeps a single focal
+   ring with the live step icon at its centre, one horizontal progress track that
+   fills as the steps advance, and a compact three-dot step indicator. */
+
+// Step thresholds in seconds: step advances when elapsed crosses these values.
 const STEP_THRESHOLDS = [0, 12, 28, 44];
 
 function stepFromElapsed(elapsed) {
@@ -21,7 +32,7 @@ function formatElapsed(s) {
 
 export default function LoadingState({ elapsedSeconds, onCancel }) {
   const { t } = useTranslation();
-  // Fallback internal timer when used without props (e.g. tests / standalone)
+  // Fallback internal timer when used without props (e.g. tests / standalone).
   const [internalElapsed, setInternalElapsed] = useState(0);
   const elapsed = elapsedSeconds !== undefined ? elapsedSeconds : internalElapsed;
 
@@ -32,125 +43,128 @@ export default function LoadingState({ elapsedSeconds, onCancel }) {
   }, [elapsedSeconds]);
 
   const steps = [
-    { text: t('ocr_extraction'),     icon: Search,      color: 'var(--ns-tertiary)' },
-    { text: t('profile_matching'),   icon: Activity,    color: 'var(--ns-secondary-con)' },
-    { text: t('health_impact'),      icon: BrainCircuit,color: 'var(--ns-primary)' },
-    { text: t('verdict_generation'), icon: Sparkles,    color: 'var(--ns-primary)' },
+    { text: t('ocr_extraction'), icon: Search },
+    { text: t('profile_matching'), icon: Leaf },
+    { text: t('health_impact'), icon: BrainCircuit },
+    { text: t('verdict_generation'), icon: Sparkles },
   ];
 
   const step = stepFromElapsed(elapsed);
   const CurrentIcon = steps[step].icon;
   const showCancel = onCancel && elapsed >= 10;
+  // Progress across the whole run, so the single track fills smoothly rather
+  // than resetting per step.
+  const progressPercent = Math.round(((step + 1) / steps.length) * 100);
 
-  // Contextual hint copy that changes with elapsed time
   const hint =
-    elapsed < 8  ? t('ai_processing') :
+    elapsed < 8 ? t('ai_processing') :
     elapsed < 22 ? t('health_impact') :
     elapsed < 40 ? t('high_demand') :
-                   t('almost_done', 'Almost done, hang tight…');
+    t('almost_done', 'Almost done, hang tight…');
 
   return (
     <div
-      className="fixed inset-0 z-[300] flex flex-col items-center justify-center px-6 py-12 animate-fade-in-up gap-8"
+      className="fixed inset-0 z-[300] flex flex-col items-center justify-center gap-8 px-6 py-12 animate-fade-in-up"
       style={{ background: 'var(--ns-surface)', fontFamily: 'var(--font-main)' }}
     >
-      {/* Background blobs */}
-      <div className="absolute top-0 right-0 w-72 h-72 rounded-full pointer-events-none"
-        style={{ background: 'rgba(16, 185, 129, 0.07)' }} />
-      <div className="absolute bottom-0 left-0 w-56 h-56 rounded-full pointer-events-none"
-        style={{ background: 'rgba(35, 172, 241, 0.06)' }} />
-
-      {/* Animated icon */}
-      <div className="relative">
-        <div className="absolute inset-0 rounded-full pointer-events-none"
-          style={{ background: 'rgba(16, 185, 129,0.12)', filter: 'blur(40px)', transform: 'scale(1.5)' }} />
-        <div
-          className="w-28 h-28 rounded-3xl flex items-center justify-center relative z-10 animate-float"
-          style={{ background: '#10B981', boxShadow: '0 16px 48px rgba(16, 185, 129,0.3)' }}
+      {/* Focal ring: a single rotating accent arc around the current step icon.
+          One piece of motion instead of the old tile + blobs + spinner chip. */}
+      <div className="relative grid place-items-center" style={{ width: 132, height: 132 }}>
+        <svg
+          className="absolute inset-0 animate-spin"
+          style={{ animationDuration: '2.4s' }}
+          width="132"
+          height="132"
+          viewBox="0 0 132 132"
+          aria-hidden="true"
         >
-          <CurrentIcon size={52} color="white" />
-        </div>
+          <circle cx="66" cy="66" r="60" fill="none" stroke="var(--ns-surface-high)" strokeWidth="4" />
+          <circle
+            cx="66"
+            cy="66"
+            r="60"
+            fill="none"
+            stroke="var(--ns-primary)"
+            strokeWidth="4"
+            strokeLinecap="round"
+            strokeDasharray="94 283"
+          />
+        </svg>
         <div
-          className="absolute -bottom-3 -right-3 w-10 h-10 rounded-xl flex items-center justify-center"
-          style={{ background: '#ffffff', boxShadow: 'var(--shadow-md)', border: '1px solid var(--ns-outline-var)' }}
+          className="grid h-24 w-24 place-items-center rounded-full"
+          style={{ background: 'color-mix(in srgb, var(--ns-primary) 12%, transparent)' }}
         >
-          <div className="w-5 h-5 rounded-full animate-spin"
-            style={{ border: '2.5px solid var(--ns-surface-high)', borderTopColor: 'var(--ns-primary)' }} />
+          <CurrentIcon size={40} style={{ color: 'var(--ns-primary)' }} className="animate-pulse" />
         </div>
       </div>
 
-      {/* Title + elapsed timer */}
-      <div className="text-center space-y-1.5">
+      {/* Title, live hint and elapsed time. */}
+      <div className="space-y-2 text-center">
         <h2
           className="text-2xl font-bold"
           style={{ fontFamily: 'var(--font-headline)', color: 'var(--ns-on-surface)', letterSpacing: '-0.01em' }}
         >
           {t('analyzing')}
         </h2>
-        <div className="flex items-center justify-center gap-1.5">
-          <Leaf size={13} style={{ color: 'var(--ns-primary)' }} />
-          <p className="text-xs font-semibold" style={{ color: 'var(--ns-outline)' }}>{hint}</p>
+        <p className="text-sm font-medium" style={{ color: 'var(--ns-outline)' }}>{hint}</p>
+      </div>
+
+      {/* Single progress track + elapsed time. */}
+      <div className="flex w-full max-w-xs flex-col gap-2">
+        <div className="h-2 w-full overflow-hidden rounded-full" style={{ background: 'var(--ns-surface-high)' }}>
+          <div
+            className="h-full rounded-full transition-all duration-700 ease-out"
+            style={{ width: `${progressPercent}%`, background: 'var(--ns-primary)' }}
+          />
         </div>
-        {/* Elapsed time badge */}
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full mt-1"
-          style={{ background: 'var(--ns-surface-high)', border: '1px solid var(--ns-outline-var)' }}>
-          <div className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse" />
-          <span className="text-[11px] font-bold tabular-nums" style={{ color: 'var(--ns-outline)' }}>
-            {formatElapsed(elapsed)}
-          </span>
+        <div className="flex items-center justify-end text-xs font-semibold" style={{ color: 'var(--ns-outline)' }}>
+          <span className="tabular-nums">{formatElapsed(elapsed)}</span>
         </div>
       </div>
 
-      {/* Step list */}
-      <div className="flex flex-col gap-3 w-full max-w-xs">
+      {/* Step list. Compact single-line rows: a leading marker (tick when done,
+          filled dot when active, hollow otherwise) and the label. The active row
+          carries full contrast; the rest recede. All four stay on screen so the
+          user can see what is coming, not just where they are. */}
+      <ul className="flex w-full max-w-xs flex-col gap-2.5">
         {steps.map((s, idx) => {
-          const isActive = idx === step;
           const isDone = idx < step;
+          const isActive = idx === step;
           return (
-            <div
-              key={idx}
-              className="flex items-center gap-3 transition-all duration-500"
-              style={{
-                opacity: isActive || isDone ? 1 : 0.35,
-                transform: isActive ? 'scale(1.03)' : 'scale(1)',
-                transformOrigin: 'left',
-              }}
-            >
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all"
+            <li key={idx} className="flex items-center gap-2.5" style={{ opacity: isDone || isActive ? 1 : 0.4 }}>
+              <span
+                className="grid h-5 w-5 shrink-0 place-items-center rounded-full transition-all"
                 style={{
-                  background: isDone ? 'rgba(16, 185, 129,0.12)' : isActive ? s.color + '18' : 'var(--ns-surface-con)',
-                  border: `1.5px solid ${isDone ? 'rgba(16, 185, 129,0.3)' : isActive ? s.color + '55' : 'var(--ns-outline-var)'}`,
+                  background: isDone || isActive ? 'var(--ns-primary)' : 'transparent',
+                  border: isDone || isActive ? 'none' : '1.5px solid var(--ns-outline-var)',
                 }}
               >
-                {isDone
-                  ? <CheckCircle size={18} style={{ color: '#5BAD4E' }} />
-                  : <s.icon size={18} style={{ color: isActive ? s.color : 'var(--ns-outline)' }} className={isActive ? 'animate-pulse' : ''} />}
-              </div>
-              <div className="flex flex-col flex-1 min-w-0">
-                <span
-                  className="text-sm font-semibold"
-                  style={{ color: isActive ? 'var(--ns-on-surface)' : 'var(--ns-outline)', fontFamily: 'var(--font-main)' }}
-                >
-                  {s.text}
-                </span>
-                {isActive && (
-                  <div className="h-1 w-full rounded-full mt-1 overflow-hidden" style={{ background: 'var(--ns-surface-high)' }}>
-                    <div className="h-full rounded-full" style={{ background: s.color, animation: 'ns-loading 2.2s ease-in-out infinite' }} />
-                  </div>
-                )}
-              </div>
-            </div>
+                {isDone ? (
+                  <CheckCircle size={12} style={{ color: 'var(--ns-on-primary)' }} />
+                ) : isActive ? (
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full" style={{ background: 'var(--ns-on-primary)' }} />
+                ) : null}
+              </span>
+              <span
+                className="text-sm"
+                style={{
+                  color: isActive ? 'var(--ns-on-surface)' : 'var(--ns-outline)',
+                  fontWeight: isActive ? 600 : 500,
+                }}
+              >
+                {s.text}
+              </span>
+            </li>
           );
         })}
-      </div>
+      </ul>
 
-      {/* Cancel button — appears after 10s */}
+      {/* Cancel appears after 10s so a genuinely stuck scan has an exit. */}
       {showCancel && (
         <button
           type="button"
           onClick={onCancel}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all animate-fade-in-up"
+          className="flex items-center gap-2 rounded-xl px-5 py-2.5 transition-all animate-fade-in-up"
           style={{
             border: '1.5px solid var(--ns-outline-var)',
             background: 'transparent',
@@ -161,18 +175,10 @@ export default function LoadingState({ elapsedSeconds, onCancel }) {
             cursor: 'pointer',
           }}
         >
-          <X size={15} />
+          <X size={16} />
           Cancel scan
         </button>
       )}
-
-      <style dangerouslySetInnerHTML={{ __html: `
-        @keyframes ns-loading {
-          0%   { width: 0%;  margin-left: 0; }
-          50%  { width: 70%; margin-left: 15%; }
-          100% { width: 0%;  margin-left: 100%; }
-        }
-      ` }} />
     </div>
   );
 }

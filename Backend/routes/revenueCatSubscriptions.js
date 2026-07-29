@@ -24,7 +24,10 @@
  */
 
 const express = require('express');
+const crypto = require('crypto');
 const authenticate = require('../middleware/auth');
+const { validateRequest } = require('../middleware/validateRequest');
+const { payments: paymentSchemas } = require('../validation/schemas');
 
 const router = express.Router();
 
@@ -66,7 +69,7 @@ async function fetchEntitlement(appUserId) {
  * POST /api/subscriptions/revenuecat/sync
  * Body: { appUserId, customerInfo }  (customerInfo is advisory only)
  */
-router.post('/sync', authenticate, async (req, res) => {
+router.post('/sync', authenticate, validateRequest({ body: paymentSchemas.revenueCatSync }), async (req, res) => {
   try {
     const userId = req.userId;
     const expectedAppUserId = `${APP_USER_ID_PREFIX}${userId}`;
@@ -112,18 +115,61 @@ router.post('/sync', authenticate, async (req, res) => {
  * NOTE: mount this BEFORE any auth middleware — webhooks are server-to-server.
  */
 router.post('/webhook', async (req, res) => {
+  let eventId;
   try {
     const expected = process.env.REVENUECAT_WEBHOOK_AUTH;
-    if (expected && req.headers.authorization !== expected) {
+    const suppliedAuth = req.headers.authorization || '';
+    if (!expected || suppliedAuth.length !== expected.length || !crypto.timingSafeEqual(Buffer.from(suppliedAuth), Buffer.from(expected))) {
       return res.status(401).json({ error: 'unauthorized' });
     }
 
+    const signingSecret = process.env.REVENUECAT_WEBHOOK_SIGNING_SECRET;
+    const signatureHeader = req.headers['x-revenuecat-webhook-signature'];
+    if (!signingSecret || typeof signatureHeader !== 'string' || !req.rawBody) {
+      return res.status(401).json({ error: 'webhook signature required' });
+    }
+    const parts = Object.fromEntries(signatureHeader.split(',').map((part) => part.trim().split('=', 2)));
+    const timestamp = Number(parts.t);
+    const suppliedSignature = parts.v1 || '';
+    if (!Number.isFinite(timestamp) || Math.abs(Date.now() / 1000 - timestamp) > 300) {
+      return res.status(401).json({ error: 'stale webhook signature' });
+    }
+    const expectedSignature = crypto
+      .createHmac('sha256', signingSecret)
+      .update(`${parts.t}.`)
+      .update(req.rawBody)
+      .digest('hex');
+    if (
+      suppliedSignature.length !== expectedSignature.length
+      || !crypto.timingSafeEqual(Buffer.from(suppliedSignature), Buffer.from(expectedSignature))
+    ) {
+      return res.status(401).json({ error: 'invalid webhook signature' });
+    }
+
     const event = req.body?.event;
+    eventId = event?.id;
+    if (!eventId || typeof eventId !== 'string' || eventId.length > 200) {
+      return res.status(400).json({ error: 'invalid event id' });
+    }
+    const allowedAppIds = new Set((process.env.REVENUECAT_APP_IDS || '').split(',').map((v) => v.trim()).filter(Boolean));
+    if (allowedAppIds.size > 0 && event.app_id && !allowedAppIds.has(event.app_id)) {
+      return res.status(403).json({ error: 'unexpected RevenueCat app id' });
+    }
     const appUserId = event?.app_user_id || '';
     if (!appUserId.startsWith(APP_USER_ID_PREFIX)) {
-      return res.status(200).json({ ok: true }); // ignore unrelated ids
+      return res.status(200).json({ ok: true, ignored: true });
     }
     const userId = appUserId.slice(APP_USER_ID_PREFIX.length);
+    if (!/^\d+$/.test(userId)) return res.status(400).json({ error: 'invalid app user id' });
+
+    const claimed = await req.pool.query(
+      `INSERT INTO webhook_events (provider, event_id, status)
+       VALUES ('revenuecat', $1, 'processing')
+       ON CONFLICT (provider, event_id) DO NOTHING
+       RETURNING event_id`,
+      [eventId],
+    );
+    if (claimed.rows.length === 0) return res.status(200).json({ ok: true, duplicate: true });
 
     const entitlement = await fetchEntitlement(appUserId);
     const isPremium = Boolean(entitlement);
@@ -136,10 +182,21 @@ router.post('/webhook', async (req, res) => {
       [isPremium, isPremium ? 'premium' : 'free', entitlement?.expires ?? null, userId],
     );
 
+    await req.pool.query(
+      "UPDATE webhook_events SET status = 'processed', processed_at = NOW() WHERE provider = 'revenuecat' AND event_id = $1",
+      [eventId],
+    );
+
     return res.status(200).json({ ok: true });
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error('[revenuecat/webhook] failed:', err);
+    if (eventId) {
+      await req.pool.query(
+        "DELETE FROM webhook_events WHERE provider = 'revenuecat' AND event_id = $1",
+        [eventId],
+      ).catch(() => {});
+    }
     return res.status(500).json({ error: 'webhook processing failed' });
   }
 });

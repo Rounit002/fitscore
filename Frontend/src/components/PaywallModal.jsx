@@ -84,7 +84,7 @@ const PaywallModal = ({ isOpen, onClose, onSubscribed }) => {
 
         {/* Header */}
         <div className="text-center pt-12 pb-8 px-6 bg-emerald-50 dark:bg-gray-900">
-          <div className="inline-flex items-center justify-center w-16 h-16 mb-4 bg-ns-primary rounded-full">
+          <div className="inline-flex items-center justify-center w-16 h-16 mb-4 bg-ns-primary rounded-full edge-hairline elev-rest">
             <Crown className="w-8 h-8 text-white" />
           </div>
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
@@ -108,7 +108,7 @@ const PaywallModal = ({ isOpen, onClose, onSubscribed }) => {
               onClick={() => setSelectedPlan(plan.id)}
             >
               {plan.popular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-ns-primary text-white text-sm font-semibold rounded-full">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-ns-primary text-white text-sm font-semibold rounded-full edge-hairline elev-rest">
                   Most Popular
                 </div>
               )}

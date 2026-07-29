@@ -1,0 +1,98 @@
+<?xml version='1.0' encoding='utf-8'?>
+<widget id="com.nutriscan.app" version="1.0.0" android-versionCode="10000"
+        xmlns="http://www.w3.org/ns/widgets"
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:cdv="http://cordova.apache.org/ns/1.0">
+    <name>NutriScan</name>
+    <description>AI nutrition label scanning and analysis.</description>
+    <author email="dev@nutriscan.app" href="https://nutriscan.app">NutriScan Team</author>
+
+    <!-- The SPA is bundled into www/ from Frontend/dist (npm run sync:www). -->
+    <content src="index.html" />
+
+    <!-- XHR/fetch targets. The API is reached cross-origin from the app shell. -->
+    <allow-navigation href="https://localhost/*" />
+    <access origin="https://fitscore-rqgb.onrender.com/*" />
+    <access origin="https://world.openfoodfacts.org/*" />
+    <access origin="https://images.openfoodfacts.org/*" />
+    <access origin="https://api.revenuecat.com/*" />
+    <access origin="https://res.cloudinary.com/*" />
+    <access origin="https://www.googleapis.com/*" />
+
+    <!-- Open external links in the system browser, not the app WebView. -->
+    <allow-intent href="https://fitscore-6hqp.onrender.com/*" />
+    <allow-intent href="https://play.google.com/*" />
+    <allow-intent href="https://accounts.google.com/*" />
+    <allow-intent href="tel:*" />
+    <allow-intent href="mailto:*" />
+    <allow-intent href="market:*" />
+
+    <preference name="Orientation" value="portrait" />
+    <preference name="Fullscreen" value="false" />
+    <!-- cordova-android 15 expects a #AARRGGBB literal; the legacy 0x form
+         fails Android resource linking. -->
+    <preference name="BackgroundColor" value="#ffffffff" />
+    <!-- Camera preview + barcode scanning run through getUserMedia in the WebView. -->
+    <preference name="AndroidInsecureFileModeEnabled" value="false" />
+
+    <!-- Android 12+ draws a system splash screen from these values; older
+         releases fall back to a plain window background. Regenerate the PNGs
+         with `npm run gen:res` after changing the logo. -->
+    <preference name="AndroidWindowSplashScreenBackground" value="#F5F5F5" />
+    <preference name="AndroidWindowSplashScreenAnimatedIcon" value="res/android/splash/splash-icon.png" />
+
+    <platform name="android">
+        <preference name="android-minSdkVersion" value="24" />
+        <preference name="android-targetSdkVersion" value="36" />
+        <preference name="android-compileSdkVersion" value="36" />
+        <preference name="AndroidXEnabled" value="true" />
+
+        <!-- Release transport and data-extraction policy. The network security
+             file also protects devices whose vendor defaults are permissive. -->
+        <edit-config file="app/src/main/AndroidManifest.xml" mode="merge" target="/manifest/application">
+            <application android:usesCleartextTraffic="false"
+                         android:allowBackup="false"
+                         android:fullBackupContent="false"
+                         android:networkSecurityConfig="@xml/network_security_config" />
+        </edit-config>
+        <resource-file src="resources/android/xml/network_security_config.xml"
+                       target="app/src/main/res/xml/network_security_config.xml" />
+        <resource-file src="resources/android/build-extras.gradle"
+                       target="app/build-extras.gradle" />
+        <resource-file src="resources/android/proguard-rules.pro"
+                       target="app/proguard-rules.pro" />
+
+        <!-- Launcher icons. `foreground`+`background` build the adaptive icon
+             used from Android 8; `src` is the legacy square fallback.
+             `background` must be an image, not a colour: cordova-android emits
+             @mipmap/ic_launcher_background, which a colour literal can't satisfy. -->
+        <icon density="ldpi" src="res/android/icon/ldpi.png"
+              foreground="res/android/adaptive/ldpi-foreground.png"
+              background="res/android/adaptive/ldpi-background.png" />
+        <icon density="mdpi" src="res/android/icon/mdpi.png"
+              foreground="res/android/adaptive/mdpi-foreground.png"
+              background="res/android/adaptive/mdpi-background.png" />
+        <icon density="hdpi" src="res/android/icon/hdpi.png"
+              foreground="res/android/adaptive/hdpi-foreground.png"
+              background="res/android/adaptive/hdpi-background.png" />
+        <icon density="xhdpi" src="res/android/icon/xhdpi.png"
+              foreground="res/android/adaptive/xhdpi-foreground.png"
+              background="res/android/adaptive/xhdpi-background.png" />
+        <icon density="xxhdpi" src="res/android/icon/xxhdpi.png"
+              foreground="res/android/adaptive/xxhdpi-foreground.png"
+              background="res/android/adaptive/xxhdpi-background.png" />
+        <icon density="xxxhdpi" src="res/android/icon/xxxhdpi.png"
+              foreground="res/android/adaptive/xxxhdpi-foreground.png"
+              background="res/android/adaptive/xxxhdpi-background.png" />
+        <!-- Serve the bundled SPA from https://localhost so the Cordova bridge
+             is injected and getUserMedia is treated as a secure context. -->
+        <preference name="scheme" value="https" />
+        <preference name="hostname" value="localhost" />
+
+        <config-file target="AndroidManifest.xml" parent="/manifest">
+            <uses-permission android:name="android.permission.CAMERA" />
+            <uses-permission android:name="android.permission.INTERNET" />
+            <uses-feature android:name="android.hardware.camera" android:required="false" />
+        </config-file>
+    </platform>
+</widget>

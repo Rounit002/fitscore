@@ -110,16 +110,21 @@ describe('POST /api/analyze/text', () => {
 });
 
 describe('GET /api/analyze/status/:jobId', () => {
+  it('does not expose job status without authentication', async () => {
+    const res = await request(createApp()).get('/api/analyze/status/job_123');
+    expect(res.status).toBe(401);
+  });
+
   it('returns job status', async () => {
     getJobStatus.mockResolvedValue({ id: 'job_123', status: 'completed', result: { score: 80 } });
-    const res = await request(createApp()).get('/api/analyze/status/job_123');
+    const res = await request(createApp()).get('/api/analyze/status/job_123').set('Cookie', 'token=valid');
     expect(res.status).toBe(200);
     expect(res.body.status || res.body.job?.status).toBeDefined();
   });
 
   it('returns 404 for unknown job', async () => {
     getJobStatus.mockResolvedValue(null);
-    const res = await request(createApp()).get('/api/analyze/status/unknown_job');
+    const res = await request(createApp()).get('/api/analyze/status/unknown_job').set('Cookie', 'token=valid');
     expect(res.status).toBe(404);
   });
 });

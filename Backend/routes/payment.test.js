@@ -26,7 +26,7 @@ let mockPool;
 const originalEnv = process.env;
 
 beforeEach(() => {
-  mockPool = { query: jest.fn() };
+  mockPool = { query: jest.fn().mockResolvedValue({ rows: [] }) };
   jwt.verify.mockReturnValue({ userId: 1 });
   process.env = { ...originalEnv, RAZORPAY_KEY_ID: 'key_test', RAZORPAY_KEY_SECRET: 'secret_test', JWT_SECRET: 'jwt_secret' };
 });
@@ -62,7 +62,10 @@ describe('POST /api/payment/create-order', () => {
 describe('POST /api/payment/verify', () => {
   it('verifies payment and updates user', async () => {
     const signature = crypto.createHmac('sha256', 'secret_test').update('order_1|pay_1').digest('hex');
-    mockPool.query.mockResolvedValue({});
+    mockPool.query
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ rows: [{ user_id: 1, status: 'created' }] })
+      .mockResolvedValue({ rows: [] });
     const res = await request(createApp())
       .post('/api/payment/verify')
       .set('Cookie', 'token=valid')
@@ -76,8 +79,21 @@ describe('POST /api/payment/verify', () => {
     const res = await request(createApp())
       .post('/api/payment/verify')
       .set('Cookie', 'token=valid')
-      .send({ razorpay_order_id: 'order_1', razorpay_payment_id: 'pay_1', razorpay_signature: 'bad_sig' });
+      .send({ razorpay_order_id: 'order_1', razorpay_payment_id: 'pay_1', razorpay_signature: '0'.repeat(64) });
     expect(res.status).toBe(400);
+  });
+
+  it('rejects a valid payment for an order owned by another account', async () => {
+    const signature = crypto.createHmac('sha256', 'secret_test').update('order_1|pay_1').digest('hex');
+    mockPool.query
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ rows: [{ user_id: 999, status: 'created' }] })
+      .mockResolvedValue({ rows: [] });
+    const res = await request(createApp())
+      .post('/api/payment/verify')
+      .set('Cookie', 'token=valid')
+      .send({ razorpay_order_id: 'order_1', razorpay_payment_id: 'pay_1', razorpay_signature: signature });
+    expect(res.status).toBe(403);
   });
 
   it('returns 500 when secret not configured', async () => {
@@ -85,7 +101,7 @@ describe('POST /api/payment/verify', () => {
     const res = await request(createApp())
       .post('/api/payment/verify')
       .set('Cookie', 'token=valid')
-      .send({ razorpay_order_id: 'o', razorpay_payment_id: 'p', razorpay_signature: 's' });
+      .send({ razorpay_order_id: 'order_1', razorpay_payment_id: 'pay_1', razorpay_signature: '0'.repeat(64) });
     expect(res.status).toBe(500);
   });
 });

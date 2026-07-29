@@ -3,9 +3,12 @@ const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const helmet = require('helmet');
-const { analyzeLimiter, authLimiter } = require('./middleware/rateLimiter');
+const crypto = require('crypto');
+const { analyzeIpLimiter, apiSlowDown, globalLimiter } = require('./middleware/rateLimiter');
 const { Pool } = require('pg');
 const { createCorsOptions, getAllowedOrigins } = require('./config/cors');
+const { csrfProtection } = require('./middleware/csrf');
+const { getJwtSecret } = require('./utils/tokens');
 
 const authRoutes = require('./routes/auth');
 const scansRoutes = require('./routes/scans');
@@ -14,6 +17,7 @@ const featuresRoutes = require('./routes/features');
 const paymentRoutes = require('./routes/payment');
 const userRoutes = require('./routes/user');
 const billingRoutes = require('./routes/billing');
+const revenueCatRoutes = require('./routes/revenueCatSubscriptions');
 
 // Initialize Async Job Queue Worker
 require('./config/worker');
@@ -21,8 +25,39 @@ require('./config/worker');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Enable Helmet to secure Express app by setting various HTTP headers
-app.use(helmet());
+app.disable('x-powered-by');
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+  getJwtSecret();
+}
+
+app.use((req, res, next) => {
+  req.id = req.get('x-request-id')?.slice(0, 100) || crypto.randomUUID();
+  res.set('X-Request-ID', req.id);
+  next();
+});
+
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'none'"],
+      baseUri: ["'none'"],
+      frameAncestors: ["'none'"],
+      formAction: ["'none'"],
+    },
+  },
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  hsts: process.env.NODE_ENV === 'production'
+    ? { maxAge: 31536000, includeSubDomains: true, preload: true }
+    : false,
+}));
+
+app.use((req, res, next) => {
+  if (process.env.NODE_ENV === 'production' && !req.secure) {
+    return res.status(400).json({ error: 'HTTPS is required' });
+  }
+  return next();
+});
 
 // Setup PostgreSQL connection pool with discrete credentials
 const pool = new Pool({
@@ -31,6 +66,9 @@ const pool = new Pool({
   host: process.env.DB_HOST,
   port: process.env.DB_PORT,
   database: process.env.DB_NAME,
+  ssl: process.env.NODE_ENV === 'production' && process.env.DB_SSL !== 'false'
+    ? { rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false' }
+    : undefined,
 });
 
 const refreshFoodDatabaseFlags = async () => {
@@ -184,6 +222,14 @@ const initDb = async () => {
     await addColumnIfMissing('scans', 'nutriments', 'JSONB');
     await addColumnIfMissing('scans', 'raw_product_data', 'JSONB');
     await addColumnIfMissing('scans', 'servings', 'REAL DEFAULT 1');
+    // Consumption log: a scan is only counted towards Health Progress once the
+    // user says they actually ate it. NULL = undecided (scanned, not answered),
+    // true = eaten, false = explicitly not eaten.
+    await addColumnIfMissing('scans', 'eaten', 'BOOLEAN');
+    await addColumnIfMissing('scans', 'eaten_at', 'TIMESTAMP');
+    // Non-food items (medicine strips, tablets, cosmetics) are rejected at
+    // analysis time, but the flag is stored so historic rows can be filtered.
+    await addColumnIfMissing('scans', 'is_food', 'BOOLEAN DEFAULT true');
     await addColumnIfMissing('product_database', 'ingredients_analysis', 'JSONB');
     await addColumnIfMissing('product_database', 'nutriments', 'JSONB');
     await addColumnIfMissing('product_database', 'raw_product_data', 'JSONB');
@@ -206,8 +252,83 @@ const initDb = async () => {
     await addColumnIfMissing('users', 'scan_limit', 'INTEGER DEFAULT 5');
     await addColumnIfMissing('users', 'plan', "VARCHAR(50) DEFAULT 'free'");
     await addColumnIfMissing('users', 'plan_expires_at', 'TIMESTAMP');
+    await addColumnIfMissing('users', 'reset_token_hash', 'VARCHAR(255)');
+    await addColumnIfMissing('users', 'reset_token_expires_at', 'TIMESTAMP');
+    await addColumnIfMissing('users', 'failed_login_attempts', 'INTEGER NOT NULL DEFAULT 0');
+    await addColumnIfMissing('users', 'last_failed_login_at', 'TIMESTAMP');
+    await addColumnIfMissing('users', 'locked_until', 'TIMESTAMP');
+    await addColumnIfMissing('users', 'token_version', 'INTEGER NOT NULL DEFAULT 0');
     await addColumnIfMissing('user_medical_conditions', 'severity', "VARCHAR(20) NOT NULL DEFAULT 'Medium'");
     await addColumnIfMissing('user_medical_conditions', 'updated_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP');
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS refresh_tokens (
+        token_hash CHAR(64) PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        family_id UUID NOT NULL,
+        expires_at TIMESTAMP NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        rotated_at TIMESTAMP,
+        revoked_at TIMESTAMP,
+        replaced_by_hash CHAR(64),
+        ip_hash VARCHAR(64),
+        user_agent_hash VARCHAR(64)
+      )
+    `);
+    await pool.query('CREATE INDEX IF NOT EXISTS refresh_tokens_user_id_idx ON refresh_tokens (user_id)');
+    await pool.query('CREATE INDEX IF NOT EXISTS refresh_tokens_family_id_idx ON refresh_tokens (family_id)');
+    await pool.query('CREATE INDEX IF NOT EXISTS refresh_tokens_expires_at_idx ON refresh_tokens (expires_at)');
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS webhook_events (
+        provider VARCHAR(40) NOT NULL,
+        event_id VARCHAR(255) NOT NULL,
+        status VARCHAR(30) NOT NULL,
+        received_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        processed_at TIMESTAMP,
+        PRIMARY KEY (provider, event_id)
+      )
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS payment_orders (
+        order_id VARCHAR(100) PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        amount INTEGER NOT NULL CHECK (amount > 0),
+        currency VARCHAR(3) NOT NULL,
+        status VARCHAR(20) NOT NULL DEFAULT 'created',
+        payment_id VARCHAR(100) UNIQUE,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        verified_at TIMESTAMP
+      )
+    `);
+    await pool.query('CREATE INDEX IF NOT EXISTS payment_orders_user_id_idx ON payment_orders (user_id)');
+
+    // Normalise stored emails to lowercase so the case-insensitive unique index
+    // below can be created, and so logins match regardless of typed casing.
+    // Rows that would collide after lowering are left untouched and reported.
+    try {
+      const collisionRes = await pool.query(`
+        SELECT LOWER(email) AS normalized, COUNT(*)::int AS count
+        FROM users
+        GROUP BY LOWER(email)
+        HAVING COUNT(*) > 1
+      `);
+
+      if (collisionRes.rows.length > 0) {
+        console.warn(
+          '[Migration] Cannot enforce unique emails yet — these addresses have duplicate accounts differing only by case:',
+          collisionRes.rows.map((row) => `${row.normalized} (x${row.count})`).join(', ')
+        );
+      } else {
+        await pool.query('UPDATE users SET email = LOWER(email) WHERE email <> LOWER(email)');
+        await pool.query(
+          'CREATE UNIQUE INDEX IF NOT EXISTS users_email_lower_unique_idx ON users (LOWER(email))'
+        );
+      }
+    } catch (emailMigrationErr) {
+      console.error('[Migration] Email normalisation failed:', emailMigrationErr.message);
+    }
 
     // Backfill products from older scans so Food Database is not empty after migration.
     await pool.query(`
@@ -268,6 +389,7 @@ const initDb = async () => {
     console.log('Database tables initialized successfully');
   } catch (err) {
     console.error('Error initializing database:', err);
+    throw err;
   }
 };
 
@@ -292,10 +414,10 @@ const purgeScheduledDeletions = async () => {
         await client.query('UPDATE product_database SET last_scanned_by = NULL WHERE last_scanned_by = $1', [userId]);
         await client.query('DELETE FROM users WHERE id = $1', [userId]);
         await client.query('COMMIT');
-        console.log(`[Scheduled Deletion] User ${userId} permanently purged after grace period`);
+        console.log('[Scheduled Deletion] An expired account was permanently purged');
       } catch (innerErr) {
         await client.query('ROLLBACK');
-        console.error(`[Scheduled Deletion] Failed to purge user ${userId}:`, innerErr);
+        console.error('[Scheduled Deletion] Failed to purge an expired account:', innerErr.message);
       }
     }
   } catch (err) {
@@ -310,8 +432,15 @@ const purgeScheduledDeletions = async () => {
 const corsOptions = createCorsOptions();
 app.use(cors(corsOptions));
 console.log(`[CORS] Allowed origins: ${Array.from(getAllowedOrigins()).join(', ')}`);
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ limit: '10mb', extended: true }));
+app.use(express.json({
+  limit: process.env.JSON_BODY_LIMIT || '6mb',
+  verify: (req, _res, buffer) => {
+    if (req.originalUrl.startsWith('/api/subscriptions/revenuecat/webhook')) {
+      req.rawBody = Buffer.from(buffer);
+    }
+  },
+}));
+app.use(express.urlencoded({ limit: '1mb', extended: false }));
 app.use(cookieParser()); // must come before routes so req.cookies is populated
 
 // Pass pool to routes
@@ -320,36 +449,53 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use('/auth', authLimiter, authRoutes);
+app.use(globalLimiter);
+app.use(apiSlowDown);
+app.use(csrfProtection);
+
+app.use('/auth', authRoutes);
 app.use('/scans', scansRoutes);
 app.use('/api/user', userRoutes);
-app.use('/api/analyze', analyzeLimiter, analyzeRoutes.router);
+app.use('/api/analyze', analyzeIpLimiter, analyzeRoutes.router);
 app.use('/features', featuresRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/billing', billingRoutes); // Billing routes - webhook does NOT require auth
+app.use('/api/subscriptions/revenuecat', revenueCatRoutes);
 
 app.get('/', (req, res) => {
   res.send('FitScan API is running');
 });
 
 app.use((req, res) => {
-  console.error(`[404] ${req.method} ${req.originalUrl}`);
-  res.status(404).json({ error: `Route not found: ${req.method} ${req.originalUrl}` });
+  console.error(`[404] ${req.method} ${req.path}`);
+  res.status(404).json({ error: `Route not found: ${req.method} ${req.path}` });
 });
 
-app.listen(PORT, async () => {
-  console.log(`Server running on port ${PORT}`);
-  try {
-    await initDb();
-    // Refresh flags on startup is already done inside initDb() line 216
-    // Just start the interval for subsequent refreshes
-    setInterval(refreshFoodDatabaseFlags, 5 * 60 * 1000);
-    // Run scheduled-deletion cleanup every hour
-    await purgeScheduledDeletions();
-    setInterval(purgeScheduledDeletions, 60 * 60 * 1000);
-  } catch (error) {
-    console.error('Critical failure during server startup:', error);
-  }
+app.use((error, req, res, _next) => {
+  console.error(`[${req.id}] Unhandled request error:`, error.message);
+  res.status(error.status || 500).json({ error: error.status ? error.message : 'Internal server error' });
 });
 
-module.exports = { pool };
+const startServer = async () => {
+  // Fail closed: do not accept traffic until required tables and security
+  // migrations are available.
+  await initDb();
+  await purgeScheduledDeletions();
+  const server = app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  const databaseRefreshTimer = setInterval(refreshFoodDatabaseFlags, 5 * 60 * 1000);
+  const deletionTimer = setInterval(purgeScheduledDeletions, 60 * 60 * 1000);
+  server.on('close', () => {
+    clearInterval(databaseRefreshTimer);
+    clearInterval(deletionTimer);
+  });
+  return server;
+};
+
+if (require.main === module) {
+  startServer().catch((error) => {
+    console.error('Critical failure during server startup:', error.message);
+    process.exitCode = 1;
+  });
+}
+
+module.exports = { app, initDb, pool, startServer };

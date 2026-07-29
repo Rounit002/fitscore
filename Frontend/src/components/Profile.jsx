@@ -25,6 +25,7 @@ import {
   X,
 } from 'lucide-react';
 import { API } from '../api/client.js';
+import { LANGUAGES } from '../utils/languages.js';
 
 const healthIssues = [
   'Acid Reflux / GERD',
@@ -148,16 +149,10 @@ const normalizeCondition = (condition) => {
   };
 };
 
-const profileLanguages = [
-  { code: 'en', label: 'English' },
-  { code: 'fr', label: 'FranÃ§ais' },
-  { code: 'ar', label: 'Ø¹Ø±Ø¨ÙŠ' },
-  { code: 'ur', label: 'Ø§Ø±Ø¯Ùˆ' },
-  { code: 'ne', label: 'à¤¨à¥‡à¤ªà¤¾à¤²à¥€' },
-  { code: 'hi', label: 'à¤¹à¤¿à¤¨à¥à¤¦à¥€' },
-  { code: 'de', label: 'Deutsch' },
-  { code: 'es', label: 'EspaÃ±ol' },
-];
+// Sourced from the shared list rather than redeclared: this copy had been saved
+// with its UTF-8 bytes decoded as latin1, so six of the eight labels rendered as
+// mojibake in the profile language picker while the header switcher was correct.
+const profileLanguages = LANGUAGES;
 
 function ProfileSection({ title, children }) {
   return (
@@ -168,12 +163,21 @@ function ProfileSection({ title, children }) {
   );
 }
 
-function ProfileAction({ label, icon: Icon, onClick, danger = false }) {
+// `area` selects the row's group accent (DESIGN_TOKENS.md 14.4). It is emitted as
+// data-area so the stylesheet derives the badge tint, the glyph colour and the
+// hover fill from one --edge-accent, rather than each being set independently.
+// The accent is per functional group, not per row: eleven rows in eleven colours
+// would be a paint chart, and eleven identical emerald badges (the previous
+// state) made the badge column carry no information at all.
+// A danger row ignores its group — "this deletes your data" outranks "this is an
+// account setting" — so it takes --ns-error via .is-danger.
+function ProfileAction({ label, icon: Icon, onClick, danger = false, area }) {
   return (
     <button
       className={`profile-menu-action${danger ? ' is-danger' : ''}`}
       type="button"
       onClick={onClick}
+      data-area={danger ? undefined : area}
     >
       {Icon && (
         <span className="profile-action-icon" aria-hidden="true">
@@ -181,7 +185,7 @@ function ProfileAction({ label, icon: Icon, onClick, danger = false }) {
         </span>
       )}
       <span>{label}</span>
-      <ChevronRight size={15} />
+      <ChevronRight size={16} />
     </button>
   );
 }
@@ -227,21 +231,22 @@ function compressProfileImage(file, maxSize = 320, quality = 0.76) {
   });
 }
 
+// Mirrors the 13+ policy in Backend/utils/ageCheck.js. Onboarding collects age
+// directly (date of birth is no longer asked), so editing it here has to respect
+// the same floor.
+const MINIMUM_AGE = 13;
+const MAXIMUM_AGE = 100;
+
 const personalFields = [
   { key: 'name', label: 'Name', type: 'text', source: 'user' },
   { key: 'height', label: 'Height', type: 'number', suffix: 'cm' },
-  { key: 'dateOfBirth', label: 'Date of Birth', type: 'date' },
+  { key: 'age', label: 'Age', type: 'number', min: MINIMUM_AGE, max: MAXIMUM_AGE },
   { key: 'weight', label: 'Weight', type: 'number', suffix: 'kg' },
   { key: 'gender', label: 'Gender', type: 'select', options: ['Male', 'Female', 'Other', 'Prefer not to say'] },
 ];
 
 function formatPersonalValue(field, value) {
   if (value === null || value === undefined || value === '') return 'N/A';
-  if (field.key === 'dateOfBirth') {
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) return value;
-    return new Intl.DateTimeFormat('en-GB').format(parsed);
-  }
   return field.suffix ? `${value} ${field.suffix}` : value;
 }
 
@@ -255,7 +260,7 @@ export function PersonalDetailsPage({
   const [details, setDetails] = useState(() => ({
     name: userAuth?.name || '',
     height: userProfile?.height || '',
-    dateOfBirth: userProfile?.dateOfBirth || userProfile?.dob || '',
+    age: userProfile?.age || '',
     weight: userProfile?.weight || '',
     gender: userProfile?.gender || '',
   }));
@@ -277,6 +282,16 @@ export function PersonalDetailsPage({
   };
 
   const saveField = async (field) => {
+    // The 13+ gate. Checked before the request so the user gets the specific
+    // message rather than the generic save failure; the server enforces it too.
+    if (field.key === 'age' && draftValue !== '') {
+      const parsedAge = Number(draftValue);
+      if (!Number.isInteger(parsedAge) || parsedAge < MINIMUM_AGE || parsedAge > MAXIMUM_AGE) {
+        setError(`Age must be between ${MINIMUM_AGE} and ${MAXIMUM_AGE}.`);
+        return;
+      }
+    }
+
     const nextDetails = { ...details, [field.key]: draftValue };
     const profilePatch = {};
     if (field.source !== 'user') {
@@ -356,6 +371,8 @@ export function PersonalDetailsPage({
                       ) : (
                         <input
                           type={field.type}
+                          min={field.min}
+                          max={field.max}
                           value={draftValue}
                           onChange={(event) => setDraftValue(event.target.value)}
                           onKeyDown={(event) => handleKeyDown(event, field)}
@@ -368,17 +385,17 @@ export function PersonalDetailsPage({
                         disabled={savingKey === field.key}
                         aria-label={`Save ${field.label}`}
                       >
-                        <Check size={15} />
+                        <Check size={16} />
                       </button>
                       <button type="button" onClick={cancelEditing} aria-label={`Cancel ${field.label}`}>
-                        <X size={15} />
+                        <X size={16} />
                       </button>
                     </>
                   ) : (
                     <>
                       <strong>{formatPersonalValue(field, value)}</strong>
                       <button type="button" onClick={() => startEditing(field)} aria-label={`Edit ${field.label}`}>
-                        <Edit3 size={15} />
+                        <Edit3 size={16} />
                       </button>
                     </>
                   )}
@@ -515,7 +532,7 @@ export function MedicalProfilePage({
                 <button key={issue.name} type="button" onClick={() => toggleIssue(issue.name)}>
                   {issue.name}
                   <span>{issue.severity}</span>
-                  <X size={13} />
+                  <X size={14} />
                 </button>
               ))}
             </div>
@@ -684,7 +701,7 @@ export function HealthGoalsPage({
               {selectedGoals.map((goal) => (
                 <button key={goal} type="button" onClick={() => toggleGoal(goal)}>
                   {goal}
-                  <X size={13} />
+                  <X size={14} />
                 </button>
               ))}
             </div>
@@ -1066,21 +1083,21 @@ export default function Profile({ userProfile, userAuth, authToken, onBack, onDe
           </div>
           {userAuth?.isPremium ? (
             <button className="profile-upgrade-button premium" type="button" onClick={() => setModal('family')}>
-              <Crown size={17} />
+              <Crown size={16} />
               <span>Premium Active</span>
             </button>
           ) : (
             <button className="profile-upgrade-button" type="button" onClick={() => setModal('family')}>
-              <Crown size={17} />
+              <Crown size={16} />
               <span>{t('upgrade')}</span>
             </button>
           )}
         </section>
 
         <ProfileSection title={t('account')}>
-          <ProfileAction label={t('personal_detail')} icon={User} onClick={() => setView('personal')} />
-          <ProfileAction label={`${t('language')}: ${profileLanguages.find((option) => option.code === language)?.label || 'English'}`} icon={Languages} onClick={() => setModal('language')} />
-          <div className="profile-theme-toggle" onClick={toggleTheme} role="button" tabIndex={0} aria-label={t('dark_mode')}>
+          <ProfileAction label={t('personal_detail')} icon={User} onClick={() => setView('personal')} area="account" />
+          <ProfileAction label={`${t('language')}: ${profileLanguages.find((option) => option.code === language)?.label || 'English'}`} icon={Languages} onClick={() => setModal('language')} area="account" />
+          <div className="profile-theme-toggle" data-area="account" onClick={toggleTheme} role="button" tabIndex={0} aria-label={t('dark_mode')}>
             <span className="profile-action-icon" aria-hidden="true">
               <Moon size={18} />
             </span>
@@ -1090,20 +1107,20 @@ export default function Profile({ userProfile, userAuth, authToken, onBack, onDe
         </ProfileSection>
 
         <ProfileSection title={t('goals_tracking')}>
-          <ProfileAction label={t('edit_medical_profile')} icon={HeartPulse} onClick={() => setView('medical')} />
-          <ProfileAction label={t('edit_health_goal')} icon={Sparkles} onClick={() => setView('goals')} />
-          <ProfileAction label={userAuth?.isPremium ? t('manage_subscription', 'Manage Subscription') : t('upgrade')} icon={Crown} onClick={() => setModal('family')} />
+          <ProfileAction label={t('edit_medical_profile')} icon={HeartPulse} onClick={() => setView('medical')} area="health" />
+          <ProfileAction label={t('edit_health_goal')} icon={Sparkles} onClick={() => setView('goals')} area="health" />
+          <ProfileAction label={userAuth?.isPremium ? t('manage_subscription', 'Manage Subscription') : t('upgrade')} icon={Crown} onClick={() => setModal('family')} area="premium" />
         </ProfileSection>
 
         <ProfileSection title={t('support_legal')}>
-          <ProfileAction label={t('request_feature')} icon={Globe2} onClick={onNavigateFeatures} />
-          <ProfileAction label={t('support_email')} icon={Mail} onClick={mailSupport} />
-          <ProfileAction label={t('terms_condition')} icon={ShieldCheck} onClick={() => setModal('terms')} />
-          <ProfileAction label={t('privacy_policy')} icon={LifeBuoy} onClick={() => setModal('privacy')} />
+          <ProfileAction label={t('request_feature')} icon={Globe2} onClick={onNavigateFeatures} area="support" />
+          <ProfileAction label={t('support_email')} icon={Mail} onClick={mailSupport} area="support" />
+          <ProfileAction label={t('terms_condition')} icon={ShieldCheck} onClick={() => setModal('terms')} area="support" />
+          <ProfileAction label={t('privacy_policy')} icon={LifeBuoy} onClick={() => setModal('privacy')} area="support" />
         </ProfileSection>
 
         <ProfileSection title={t('account_action')}>
-          <ProfileAction label={t('logout')} icon={LogOut} onClick={onLogout} />
+          <ProfileAction label={t('logout')} icon={LogOut} onClick={onLogout} area="account" />
           <ProfileAction label={scheduledDeletionAt ? 'Deletion Scheduled' : t('delete_account')} icon={Trash2} onClick={() => { setDeleteError(''); setShowDeleteConfirm(true); }} danger />
         </ProfileSection>
 
@@ -1157,7 +1174,7 @@ export default function Profile({ userProfile, userAuth, authToken, onBack, onDe
           ) : (
             <div className="profile-active-plan">
               <div className="active-plan-header">
-                <Crown size={24} color="var(--ns-primary)" />
+                <Crown size={20} color="var(--ns-primary)" />
                 <h3>You are on the Premium Plan!</h3>
               </div>
               <div className="active-plan-stats">

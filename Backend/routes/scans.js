@@ -1,23 +1,12 @@
 const express = require('express');
-const jwt = require('jsonwebtoken');
 const { uploadImage } = require('../config/cloudinary');
+// Shared middleware: accepts the auth cookie (web) or an Authorization: Bearer
+// header (Cordova build, where the WebView blocks the third-party cookie).
+const authenticate = require('../middleware/auth');
+const { validateRequest } = require('../middleware/validateRequest');
+const { scans: scanSchemas } = require('../validation/schemas');
 
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key';
-
-// Middleware to authenticate
-const authenticate = (req, res, next) => {
-  const token = req.cookies?.token;
-  if (!token) return res.status(401).json({ error: 'Unauthorized' });
-
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    req.userId = decoded.userId;
-    next();
-  } catch (error) {
-    res.status(401).json({ error: 'Invalid token' });
-  }
-};
 
 router.use(authenticate);
 
@@ -348,8 +337,8 @@ const searchOpenFoodFacts = async (search) => {
 };
 
 // Shared product database: products scanned by everyone on the platform.
-router.get('/database', async (req, res) => {
-  const search = (req.query.search || '').trim();
+router.get('/database', validateRequest({ query: scanSchemas.databaseQuery }), async (req, res) => {
+  const search = req.validatedQuery.search;
 
   try {
     const values = [];
@@ -449,16 +438,12 @@ router.get('/', async (req, res) => {
 });
 
 // Save a new scan
-router.post('/', async (req, res) => {
+router.post('/', validateRequest({ body: scanSchemas.create }), async (req, res) => {
   const { productName, brand, score, ingredients, verdict, explanation, alternatives, sideEffects, productData, imageUrl } = req.body;
   const productNutriments = normalizeNutrimentsForServing(productData);
 
   // ── Debug logging ──
   console.log('━━━ POST /scans ━━━');
-  console.log('  Product:', productName);
-  console.log('  Brand:', brand);
-  console.log('  Score:', score);
-  console.log('  imageUrl received:', imageUrl ? `${typeof imageUrl} (${imageUrl.length} chars, starts with: ${imageUrl.substring(0, 50)}...)` : 'NULL / undefined');
 
   let finalImageUrl = imageUrl;
 
@@ -468,7 +453,6 @@ router.post('/', async (req, res) => {
       console.log('  → Uploading to Cloudinary...');
       try {
         finalImageUrl = await uploadImage(imageUrl);
-        console.log('  ✓ Cloudinary URL:', finalImageUrl);
       } catch (uploadErr) {
         console.error('  ✗ Cloudinary upload failed, falling back to original:', uploadErr.message);
         // Fallback to original if upload fails (though Cloudinary is preferred)
@@ -520,7 +504,7 @@ router.post('/', async (req, res) => {
 });
 
 // Update servings count for a scan
-router.patch('/:id/servings', async (req, res) => {
+router.patch('/:id/servings', validateRequest({ params: scanSchemas.idParams, body: scanSchemas.servings }), async (req, res) => {
   const scanId = req.params.id;
   const { servings } = req.body;
 
@@ -550,8 +534,41 @@ router.patch('/:id/servings', async (req, res) => {
   }
 });
 
+// Mark a scan as eaten / not eaten.
+//
+// A scan only counts towards Health Progress once the user confirms they ate it.
+// `eaten` accepts true (ate it), false (did not), or null (undecided / reset).
+router.patch('/:id/eaten', validateRequest({ params: scanSchemas.idParams, body: scanSchemas.eaten }), async (req, res) => {
+  const scanId = req.params.id;
+  const { eaten } = req.body;
+
+  if (eaten !== true && eaten !== false && eaten !== null) {
+    return res.status(400).json({ error: 'eaten must be true, false, or null' });
+  }
+
+  try {
+    const scanRes = await req.pool.query('SELECT user_id FROM scans WHERE id = $1', [scanId]);
+    if (scanRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Scan not found' });
+    }
+
+    const { requireOwnership } = require('../utils/ownershipCheck');
+    requireOwnership(scanRes.rows[0].user_id, req.userId);
+
+    const result = await req.pool.query(
+      'UPDATE scans SET eaten = $1, eaten_at = $2 WHERE id = $3 RETURNING *',
+      [eaten, eaten === true ? new Date() : null, scanId]
+    );
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Failed to update eaten status:', error);
+    res.status(error.status || 500).json({ error: error.message || 'Failed to update eaten status' });
+  }
+});
+
 // GET a single scan by ID (with ownership check)
-router.get('/:id', async (req, res) => {
+router.get('/:id', validateRequest({ params: scanSchemas.idParams }), async (req, res) => {
   const scanId = req.params.id;
   try {
     const scanRes = await req.pool.query(
@@ -584,7 +601,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // DELETE a scan by ID (with ownership check)
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', validateRequest({ params: scanSchemas.idParams }), async (req, res) => {
   const scanId = req.params.id;
   try {
     const scanRes = await req.pool.query('SELECT user_id FROM scans WHERE id = $1', [scanId]);

@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const jwt = require('jsonwebtoken');
 const authenticate = require('../middleware/auth');
 const { validateBody, imageAnalysisSchema, textAnalysisSchema } = require('../middleware/validator');
+const { validateRequest } = require('../middleware/validateRequest');
+const { analyze: analyzeSchemas } = require('../validation/schemas');
+const { analyzeUserLimiter } = require('../middleware/rateLimiter');
 const requirePlan = require('../middleware/requirePlan');
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
 
 const formatUserConditions = (conditions) => {
   if (!Array.isArray(conditions) || conditions.length === 0) return 'None';
@@ -257,6 +257,87 @@ function normalizeResult(result) {
 
 const { addAnalysisJob, getJobStatus } = require('../config/queue');
 
+/**
+ * Human-readable copy for each non-food category the model can return.
+ */
+const NON_FOOD_MESSAGES = {
+  medicine: 'This looks like a medicine or tablet strip. FitScan only analyses food and drink — please scan a food product instead.',
+  supplement: 'This looks like a medicinal supplement rather than a food product. FitScan only analyses food and drink.',
+  cosmetic: 'This looks like a cosmetic or personal care product. FitScan only analyses food and drink.',
+  household: 'This looks like a household or cleaning product. FitScan only analyses food and drink.',
+  not_a_product: 'No food product was detected in this image. Point the camera at a food label and try again.',
+  other: 'This does not look like a food or drink product. FitScan only analyses food and drink.',
+};
+
+const nonFoodMessage = (reason) =>
+  NON_FOOD_MESSAGES[reason] || NON_FOOD_MESSAGES.other;
+
+/** Marker prefix used to carry the rejection through the job queue's error string. */
+const NON_FOOD_ERROR_PREFIX = 'NON_FOOD::';
+
+/**
+ * Keyword guard for the barcode / database path.
+ *
+ * Open Food Facts also carries medicine and para-pharmacy entries, so a barcode
+ * lookup can return a tablet strip without the AI ever seeing an image. This
+ * inspects the product's own category tags and name before spending a scan.
+ */
+const NON_FOOD_CATEGORY_PATTERNS = [
+  /\bmedicament/i,
+  /\bmedicine\b/i,
+  /\bpharmac/i,
+  /\bpara-?pharmac/i,
+  /\bdrugs?\b/i,
+  /\btablets?\b/i,
+  /\bcapsules?\b/i,
+  /\bblister\b/i,
+  /\bcosmetic/i,
+  /\bshampoo\b/i,
+  /\bdetergent/i,
+  /\bsoap\b/i,
+  /\btoothpaste\b/i,
+  /\bpet-?food\b/i,
+];
+
+const detectNonFoodProduct = (productData = {}) => {
+  const haystack = [
+    productData.categories,
+    Array.isArray(productData.categories_tags) ? productData.categories_tags.join(' ') : '',
+    productData.product_name,
+    productData.generic_name,
+    productData.quantity,
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  if (!haystack) return null;
+
+  const matched = NON_FOOD_CATEGORY_PATTERNS.find((pattern) => pattern.test(haystack));
+  if (!matched) return null;
+
+  return /cosmetic|shampoo|detergent|soap|toothpaste/i.test(haystack)
+    ? 'cosmetic'
+    : 'medicine';
+};
+
+/**
+ * Throws a client-facing error when the model reported a non-food item.
+ * `nonFood` is set on the error so the route/worker can answer 422 rather than
+ * treating it as an internal failure.
+ */
+const assertFoodResult = (result) => {
+  if (result && result.isFood === false) {
+    const reason = typeof result.rejectionReason === 'string' ? result.rejectionReason : 'other';
+    // The queue only propagates `err.message` to the status endpoint, so the
+    // marker travels in the string. The frontend strips it before display and
+    // uses it to show a rejection notice instead of a generic scan failure.
+    const error = new Error(`${NON_FOOD_ERROR_PREFIX}${nonFoodMessage(reason)}`);
+    error.nonFood = true;
+    error.rejectionReason = reason;
+    throw error;
+  }
+};
+
 // Core task processor for Image Analysis — executed in the background worker
 async function processImageAnalysis({ imageBase64, userProfile, userId, lang = 'en' }) {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -280,6 +361,27 @@ async function processImageAnalysis({ imageBase64, userProfile, userId, lang = '
   const targetLanguage = languageNames[lang] || 'English';
 
   const prompt = `You are "Nutri Scan", a brutally honest nutrition analyst for the Indian health market.
+
+STEP 1 — CLASSIFY BEFORE ANALYSING. Decide what the image actually shows.
+This app analyses FOOD AND DRINK ONLY. The following are NOT food and must be rejected:
+- Medicines and pharmaceuticals: tablets, capsules, pills, blister/strip packs, syrups, ointments, injections, inhalers, medical devices
+- Supplements sold as medication: prescription vitamins, drug packaging with a composition/Rx panel
+- Cosmetics, skincare, soap, shampoo, detergents, cleaning products
+- Pet food, tobacco, alcohol-free-labelled chemicals, and any non-edible object
+- Images with no product in them at all (people, scenery, blank surfaces, screenshots)
+
+Signals that the item is medicine, not food: blister foil with punched-out cavities, "Rx",
+"mg"/"mcg" strengths per tablet, "composition", "dosage", "consult your physician",
+batch/expiry with a manufacturing licence number, or a salt/generic drug name.
+
+If the image is NOT food or drink, respond ONLY with this JSON and nothing else:
+{ "isFood": false, "rejectionReason": "medicine" }
+Use one of these values for rejectionReason: "medicine", "supplement", "cosmetic",
+"household", "not_a_product", "other". Do not invent nutrition data for a non-food item.
+
+STEP 2 — Only if the image IS food or drink, continue with the analysis below and
+include "isFood": true in your response.
+
 Analyze this packaged food product image for a user with:
 - Age: ${userProfile?.age || 'Not specified'}
 - Goal: ${formatUserGoals(userProfile)}
@@ -303,6 +405,7 @@ Keep all structural JSON keys (brand, productName, score, nutrition, verdict, si
 
 Respond ONLY with valid JSON, no markdown:
 {
+  "isFood": true,
   "brand": "Brand",
   "productName": "Product",
   "score": 7,
@@ -337,6 +440,10 @@ Respond ONLY with valid JSON, no markdown:
   const text = await generateWithFallback(apiKey, geminiBody);
   const result = parseResponse(text);
 
+  // Reject medicines/cosmetics before the scan is counted — a rejected scan is
+  // not a scan the user got value from, so it must not consume their quota.
+  assertFoodResult(result);
+
   // Increment scan count in database
   const { pool } = require('../server');
   await pool.query(
@@ -365,6 +472,18 @@ async function processTextAnalysis({ productData, userProfile, userId, lang = 'e
   const targetLanguage = languageNames[lang] || 'English';
 
   const prompt = `You are "FitScan", a brutally honest nutrition analyst for the Indian health market.
+
+STEP 1 — CLASSIFY BEFORE ANALYSING. This app analyses FOOD AND DRINK ONLY.
+If the product described below is a medicine (tablets, capsules, pills, syrups, blister
+strips, prescription drugs), a medicinal supplement, a cosmetic/personal-care item, a
+household or cleaning product, pet food, or any other non-edible item, respond ONLY with:
+{ "isFood": false, "rejectionReason": "medicine" }
+Allowed rejectionReason values: "medicine", "supplement", "cosmetic", "household",
+"not_a_product", "other". Never invent nutrition data for a non-food item.
+
+STEP 2 — Only if it IS food or drink, continue with the analysis below and include
+"isFood": true in your response.
+
 Analyze this product for a user with:
 - Age: ${userProfile?.age || 'Not specified'}
 - Goal: ${formatUserGoals(userProfile)}
@@ -393,6 +512,7 @@ Keep all structural JSON keys (brand, productName, score, verdict, sideEffects, 
 
 Respond ONLY with valid JSON, no markdown:
 {
+  "isFood": true,
   "brand": "${productData.brands || 'Unknown'}",
   "productName": "${productData.product_name || 'Unknown'}",
   "score": 7,
@@ -414,6 +534,9 @@ Respond ONLY with valid JSON, no markdown:
   const text = await generateWithFallback(apiKey, geminiBody);
   const result = parseResponse(text);
 
+  // Reject medicines/cosmetics before the scan is counted.
+  assertFoodResult(result);
+
   // Increment scan count in database if user is authenticated
   if (userId) {
     const { pool } = require('../server');
@@ -425,8 +548,9 @@ Respond ONLY with valid JSON, no markdown:
   return result;
 }
 
-// Free plan scan allowance
-const FREE_SCAN_LIMIT = 5;
+// Free plan scan allowance — single source of truth shared with routes/user.js
+// and the quota fields returned by the auth routes.
+const { FREE_SCAN_LIMIT, resolveScanLimit } = require('../utils/scanQuota');
 
 // Quota checking helper
 const checkQuota = async (pool, userId) => {
@@ -441,7 +565,7 @@ const checkQuota = async (pool, userId) => {
 
   // Auto downgrade expired plan
   if (user.plan_expires_at && new Date(user.plan_expires_at) < new Date()) {
-    console.log(`Plan expired for user ${userId}, downgrading to free...`);
+    console.log('An expired plan was downgraded to free');
     await pool.query(
       `UPDATE users SET plan = 'free', scan_limit = ${FREE_SCAN_LIMIT}, is_premium = false WHERE id = $1`,
       [userId]
@@ -457,7 +581,7 @@ const checkQuota = async (pool, userId) => {
   const scans_used = user.scans_used ?? 0;
   const currentPlan = user.plan || 'free';
   // Free users are capped at FREE_SCAN_LIMIT regardless of what scan_limit column says
-  const scan_limit = currentPlan === 'free' ? FREE_SCAN_LIMIT : (user.scan_limit ?? FREE_SCAN_LIMIT);
+  const scan_limit = resolveScanLimit(user);
 
   if (scans_used >= scan_limit) {
     throw {
@@ -476,7 +600,7 @@ const checkQuota = async (pool, userId) => {
 };
 
 // POST /api/analyze/image
-router.post('/image', authenticate, validateBody(imageAnalysisSchema), async (req, res) => {
+router.post('/image', authenticate, analyzeUserLimiter, validateBody(imageAnalysisSchema), async (req, res) => {
   const { imageBase64, userProfile, lang } = req.body;
   const userId = req.userId;
   const targetLang = lang || req.headers['accept-language'] || 'en';
@@ -507,10 +631,22 @@ router.post('/image', authenticate, validateBody(imageAnalysisSchema), async (re
 });
 
 // POST /api/analyze/text
-router.post('/text', authenticate, validateBody(textAnalysisSchema), async (req, res) => {
+router.post('/text', authenticate, analyzeUserLimiter, validateBody(textAnalysisSchema), async (req, res) => {
   const { productData, userProfile, lang } = req.body;
   const userId = req.userId;
   const targetLang = lang || req.headers['accept-language'] || 'en';
+
+  // Barcode lookups can return pharmacy items from Open Food Facts. Reject them
+  // from the product's own category tags before spending a scan or an AI call.
+  const nonFoodReason = detectNonFoodProduct(productData);
+  if (nonFoodReason) {
+    console.log(`[FitScan AI] Rejected non-food product (${nonFoodReason}): ${productData?.product_name || 'unnamed'}`);
+    return res.status(422).json({
+      error: nonFoodMessage(nonFoodReason),
+      nonFood: true,
+      rejectionReason: nonFoodReason,
+    });
+  }
 
   try {
     await checkQuota(req.pool, userId);
@@ -547,7 +683,7 @@ router.post('/text', authenticate, validateBody(textAnalysisSchema), async (req,
         
         // Register a pre-completed background job directly into the status store
         const { addPreCompletedJob } = require('../config/queue');
-        const jobInfo = addPreCompletedJob(cachedResult);
+        const jobInfo = addPreCompletedJob(cachedResult, userId);
         return res.json(jobInfo);
       }
     }
@@ -565,10 +701,10 @@ router.post('/text', authenticate, validateBody(textAnalysisSchema), async (req,
 });
 
 // GET /api/analyze/status/:jobId
-router.get('/status/:jobId', async (req, res) => {
+router.get('/status/:jobId', authenticate, validateRequest({ params: analyzeSchemas.jobParams }), async (req, res) => {
   const { jobId } = req.params;
   try {
-    const statusInfo = await getJobStatus(jobId);
+    const statusInfo = await getJobStatus(jobId, req.userId);
     if (!statusInfo) {
       return res.status(404).json({ error: 'Job not found.' });
     }
@@ -583,4 +719,7 @@ module.exports = {
   router,
   processImageAnalysis,
   processTextAnalysis,
+  detectNonFoodProduct,
+  nonFoodMessage,
+  NON_FOOD_ERROR_PREFIX,
 };

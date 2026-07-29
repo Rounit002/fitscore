@@ -244,7 +244,7 @@ export default function FeatureRequests({ userAuth, authToken, onBack }) {
         ) : filteredFeatures.length === 0 ? (
           <div className="fr-empty">
             <div className="fr-empty-icon">
-              <MessageSquarePlus size={64} />
+              <MessageSquarePlus size={32} />
             </div>
             <h3>{t('no_requests')}</h3>
             <p>{t('no_requests_desc')}</p>
@@ -263,7 +263,7 @@ export default function FeatureRequests({ userAuth, authToken, onBack }) {
                       onClick={() => handleVote(feature.id, myVote)}
                       className={`vote-btn ${myVote === 'up' ? 'active' : ''}`}
                     >
-                      <ChevronUp size={24} />
+                      <ChevronUp size={22} />
                       <span>{feature.upvotes - (feature.downvotes || 0)}</span>
                     </button>
                   </div>
@@ -275,7 +275,7 @@ export default function FeatureRequests({ userAuth, authToken, onBack }) {
                           {feature.status || 'Under Review'}
                         </span>
                         <span className="badge-category">
-                          <Tag size={10} />
+                          <Tag size={14} />
                           {feature.category || 'Feature'}
                         </span>
                       </div>
@@ -286,12 +286,12 @@ export default function FeatureRequests({ userAuth, authToken, onBack }) {
 
                     <div className="fr-card-footer">
                       <div className="fr-user">
-                        <User size={12} />
+                        <User size={14} />
                         <span>{feature.author_name || 'Anonymous'}</span>
                       </div>
                       <div className="fr-dot" />
                       <div className="fr-time">
-                        <Clock size={12} />
+                        <Clock size={14} />
                         <span>{timeAgo(feature.created_at)}</span>
                       </div>
                     </div>

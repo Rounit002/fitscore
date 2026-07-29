@@ -21,8 +21,8 @@ describe('SignUp', () => {
     const user = userEvent.setup();
     await user.type(screen.getByLabelText(/full name/i), 'John');
     await user.type(screen.getByLabelText(/email address/i), 'a@b.com');
-    await user.type(screen.getByLabelText(/^password$/i), 'pass1');
-    await user.type(screen.getByLabelText(/confirm password/i), 'pass2');
+    await user.type(screen.getByLabelText(/^password$/i), 'StrongPass123!');
+    await user.type(screen.getByLabelText(/confirm password/i), 'OtherPass123!');
     await user.click(screen.getByRole('button', { name: /sign up|create/i }));
     expect(screen.getByText(/passwords do not match|password.*match/i)).toBeInTheDocument();
   });
@@ -33,8 +33,8 @@ describe('SignUp', () => {
     const user = userEvent.setup();
     await user.type(screen.getByLabelText(/full name/i), 'John');
     await user.type(screen.getByLabelText(/email address/i), 'a@b.com');
-    await user.type(screen.getByLabelText(/^password$/i), 'pass123');
-    await user.type(screen.getByLabelText(/confirm password/i), 'pass123');
+    await user.type(screen.getByLabelText(/^password$/i), 'StrongPass123!');
+    await user.type(screen.getByLabelText(/confirm password/i), 'StrongPass123!');
     await user.click(screen.getByRole('button', { name: /sign up|create/i }));
     expect(onSignUpPending).toHaveBeenCalled();
   });

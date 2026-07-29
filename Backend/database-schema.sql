@@ -25,6 +25,12 @@ CREATE TABLE IF NOT EXISTS users (
   scan_limit INTEGER DEFAULT 5,
   plan VARCHAR(50) DEFAULT 'free',
   plan_expires_at TIMESTAMP,
+  reset_token_hash VARCHAR(255),
+  reset_token_expires_at TIMESTAMP,
+  failed_login_attempts INTEGER NOT NULL DEFAULT 0,
+  last_failed_login_at TIMESTAMP,
+  locked_until TIMESTAMP,
+  token_version INTEGER NOT NULL DEFAULT 0,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -44,6 +50,9 @@ CREATE TABLE IF NOT EXISTS scans (
   nutriments JSONB,
   raw_product_data JSONB,
   servings REAL DEFAULT 1,
+  eaten BOOLEAN,
+  eaten_at TIMESTAMP,
+  is_food BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -95,6 +104,39 @@ CREATE TABLE IF NOT EXISTS user_health_goals (
   UNIQUE (user_id, goal_name)
 );
 
+CREATE TABLE IF NOT EXISTS refresh_tokens (
+  token_hash CHAR(64) PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  family_id UUID NOT NULL,
+  expires_at TIMESTAMP NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  rotated_at TIMESTAMP,
+  revoked_at TIMESTAMP,
+  replaced_by_hash CHAR(64),
+  ip_hash VARCHAR(64),
+  user_agent_hash VARCHAR(64)
+);
+
+CREATE TABLE IF NOT EXISTS webhook_events (
+  provider VARCHAR(40) NOT NULL,
+  event_id VARCHAR(255) NOT NULL,
+  status VARCHAR(30) NOT NULL,
+  received_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  processed_at TIMESTAMP,
+  PRIMARY KEY (provider, event_id)
+);
+
+CREATE TABLE IF NOT EXISTS payment_orders (
+  order_id VARCHAR(100) PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  amount INTEGER NOT NULL CHECK (amount > 0),
+  currency VARCHAR(3) NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'created',
+  payment_id VARCHAR(100) UNIQUE,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  verified_at TIMESTAMP
+);
+
 -- Application indexes.
 CREATE UNIQUE INDEX IF NOT EXISTS product_database_product_key_idx
   ON product_database (product_key);
@@ -128,5 +170,12 @@ CREATE INDEX IF NOT EXISTS idx_scans_food_db_flag
 
 CREATE INDEX IF NOT EXISTS idx_feature_requests_user_id
   ON feature_requests (user_id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS users_email_lower_unique_idx
+  ON users (LOWER(email));
+CREATE INDEX IF NOT EXISTS refresh_tokens_user_id_idx ON refresh_tokens (user_id);
+CREATE INDEX IF NOT EXISTS refresh_tokens_family_id_idx ON refresh_tokens (family_id);
+CREATE INDEX IF NOT EXISTS refresh_tokens_expires_at_idx ON refresh_tokens (expires_at);
+CREATE INDEX IF NOT EXISTS payment_orders_user_id_idx ON payment_orders (user_id);
 
 COMMIT;

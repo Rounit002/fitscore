@@ -1,0 +1,10 @@
+# Local env files — real values must never be committed.
+# Commit only the *.example templates.
+.env
+.env.local
+.env.cordova
+.env.*.local
+
+dist
+node_modules
+coverage

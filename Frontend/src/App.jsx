@@ -8,6 +8,7 @@ import Compare from './components/Compare';
 import LoadingState from './components/LoadingState';
 import Login from './components/Login';
 import SignUp from './components/SignUp';
+import ResetPassword from './components/ResetPassword';
 import Dashboard from './components/Dashboard';
 import Onboarding from './components/Onboarding';
 import BarcodeScanner from './components/BarcodeScanner';
@@ -32,7 +33,7 @@ import {
   Trophy,
   User,
 } from 'lucide-react';
-import { API } from './api/client.js';
+import { API, setAuthToken, clearAuthToken, getRefreshToken } from './api/client.js';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import MobileBottomNav from './components/MobileBottomNav.jsx';
 import { RevenueCatProvider } from './context/RevenueCatContext.jsx';
@@ -102,7 +103,7 @@ function DesktopAppShell({ userAuth, userProfile, onNavigate, onLogout }) {
     .map((part) => part[0]?.toUpperCase())
     .join('') || 'FS';
   const quotaUsed = Number(userAuth?.scansUsed ?? userAuth?.scanCount ?? userAuth?.scans_used ?? 0);
-  const quotaLimit = userAuth?.isPremium ? '∞' : Number(userAuth?.scanLimit ?? userAuth?.scan_limit ?? 20);
+  const quotaLimit = userAuth?.isPremium ? '∞' : Number(userAuth?.scanLimit ?? userAuth?.scan_limit ?? 5);
   const quotaPercent = userAuth?.isPremium ? 100 : Math.max(0, Math.min((quotaUsed / quotaLimit) * 100, 100));
 
   return (
@@ -201,14 +202,17 @@ function DesktopAppShell({ userAuth, userProfile, onNavigate, onLogout }) {
           </button>
         </header>
 
-        <main className="fitscan-app-main" style={{ paddingBottom: 'calc(88px + env(safe-area-inset-bottom, 0px))' }}>
+        {/* The bottom nav floats clear of the viewport edge, so it is taller than
+            the flush bar it replaced: reserve its height plus its bottom offset
+            so the last card is never trapped underneath it. */}
+        <main className="fitscan-app-main" style={{ paddingBottom: 'calc(104px + env(safe-area-inset-bottom, 0px))' }}>
           <ErrorBoundary>
             <Outlet />
           </ErrorBoundary>
         </main>
 
         {/* Persistent mobile bottom navigation */}
-        <MobileBottomNav onNavigate={onNavigate} />
+        <MobileBottomNav onNavigate={onNavigate} initials={initials} />
       </div>
     </div>
   );
@@ -216,7 +220,7 @@ function DesktopAppShell({ userAuth, userProfile, onNavigate, onLogout }) {
 
 export default function App() {
   const { t, i18n } = useTranslation();
-  const { isDark, toggle: toggleTheme } = useTheme();
+  const { isDark, mode: themeMode, toggle: toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   // Manage RTL/LTR document direction and lang attributes
@@ -332,6 +336,8 @@ export default function App() {
             navigate(data.user.profile ? '/dashboard' : '/onboarding', { replace: true });
           }
         } else {
+          // Token/cookie is stale — drop it so the next login starts clean.
+          clearAuthToken();
           localStorage.removeItem('nutriscan_auth');
           localStorage.removeItem('nutriscan_profile');
           navigate('/login', { replace: true });
@@ -354,7 +360,10 @@ export default function App() {
     if (path) navigate(path);
   };
 
-  const handleLogin = (user, _token, deletionCancelled = false) => {
+  const handleLogin = (user, token, deletionCancelled = false, refreshToken = null) => {
+    // Mobile only: the WebView blocks the cross-origin auth cookie, so the JWT
+    // returned by the login response is replayed as a Bearer header. No-op on web.
+    setAuthToken(token, refreshToken);
     setUserAuth(user);
     setUserProfile(user.profile);
     localStorage.setItem('nutriscan_auth', JSON.stringify(user));
@@ -368,10 +377,16 @@ export default function App() {
 
   const handleLogout = async () => {
     try {
-      await fetch(`${API}/auth/logout`, { method: 'POST', credentials: 'include' });
+      await fetch(`${API}/auth/logout`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: getRefreshToken() || undefined }),
+      });
     } catch {
       // cookie will expire naturally
     }
+    clearAuthToken();
     setUserAuth(null);
     setUserProfile(null);
     setPendingSignUp(null);
@@ -692,6 +707,9 @@ export default function App() {
             />
           }
         />
+        {/* Password reset landing page (target of the emailed link). Public so a
+            logged-out user can complete it. */}
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route
           path="/onboarding"
           element={
@@ -726,8 +744,6 @@ export default function App() {
                 authToken={authToken}
                 onNavigate={handleNavigate}
                 onViewDetail={(result) => { setAnalysisResult(result); navigate('/results'); }}
-                isDark={isDark}
-                toggleTheme={toggleTheme}
                 onLogout={handleLogout}
               />
             }
@@ -735,13 +751,10 @@ export default function App() {
           <Route
             path="/scan"
             element={
-              <Home
-                onImageSelected={handleImageSelected}
-                onNavigateProfile={() => navigate('/profile')}
-                onBack={() => navigate('/dashboard')}
-                onNavigateBarcode={() => navigate('/scan/barcode')}
-                onNavigateHistory={() => navigate('/history')}
-              />
+              /* The scan screen is only a camera now: no back, barcode, history
+                 or profile links, so it takes nothing but the image handler. The
+                 shell's nav is the way out. */
+              <Home onImageSelected={handleImageSelected} />
             }
           />
           <Route
@@ -751,25 +764,18 @@ export default function App() {
           <Route
             path="/history"
             element={
+              /* No onBack: History is a permanent bottom-nav tab, so the shell's
+                 chrome is the way out. */
               <History
-                authToken={authToken}
-                onBack={() => navigate('/dashboard')}
                 onViewDetail={(result) => { setAnalysisResult(result); navigate('/results'); }}
               />
             }
           />
-          <Route
-            path="/compare"
-            element={<Compare authToken={authToken} onBack={() => navigate('/dashboard')} />}
-          />
+          <Route path="/compare" element={<Compare />} />
           <Route
             path="/food-database"
             element={
-              <FoodDatabase
-                authToken={authToken}
-                onBack={() => navigate('/dashboard')}
-                onSelectProduct={handleDatabaseProductSelected}
-              />
+              <FoodDatabase onSelectProduct={handleDatabaseProductSelected} />
             }
           />
           <Route
@@ -795,6 +801,7 @@ export default function App() {
                 onDetailsSaved={handleUserDetailsUpdated}
                 onNavigateFeatures={() => navigate('/features')}
                 isDark={isDark}
+                themeMode={themeMode}
                 toggleTheme={toggleTheme}
               />
             }

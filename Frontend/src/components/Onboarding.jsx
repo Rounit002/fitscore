@@ -1,45 +1,54 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Leaf, ArrowLeft } from 'lucide-react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { Leaf, ArrowLeft, Venus, Mars, Transgender, Check } from 'lucide-react';
 import { MedicalProfilePage, HealthGoalsPage } from './Profile';
-import { API } from '../api/client.js';
+import { API, setAuthToken } from '../api/client.js';
 
-/* â”€â”€â”€ Stepper â”€â”€â”€ */
+const TOTAL_STEPS = 6;
+
+// 13+ policy, mirrored from the backend (Backend/utils/ageCheck.js) so the
+// client cannot offer an under-age value and the server rejects any that slip
+// through. The wheel starts at MINIMUM_AGE, so there is no under-13 value to
+// pick in the first place.
+const MINIMUM_AGE = 13;
+const MAXIMUM_AGE = 100;
+
+function clampAge(age) {
+  if (!Number.isFinite(age)) return MINIMUM_AGE;
+  return Math.max(MINIMUM_AGE, Math.min(MAXIMUM_AGE, age));
+}
+
+/* ─── Stepper ───
+   Was seven numbered circles. At seven steps that is seven competing figures for
+   one piece of information, and the number of a step is not something the user
+   needs to act on — the progress is. Now a segmented bar plus one text readout,
+   which also gives assistive tech a single sentence instead of seven digits. */
 function StepIndicator({ current, total }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 0, marginBottom: 32 }}>
-      {Array.from({ length: total }, (_, i) => {
-        const step = i + 1;
-        const done = step <= current;
-        return (
-          <React.Fragment key={step}>
-            <div style={{
-              width: 28, height: 28, borderRadius: '50%',
-              background: done ? '#10B981' : '#e8e8e8',
-              color: done ? '#fff' : '#bbb',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '0.75rem', fontWeight: 700, flexShrink: 0,
-              transition: 'all 0.3s',
-            }}>{step}</div>
-            {step < total && (
-              <div style={{
-                flex: 1, height: 2, minWidth: 20,
-                background: step < current ? '#10B981' : '#e0e0e0',
-                borderStyle: step < current ? 'solid' : 'dashed',
-                borderWidth: 0, transition: 'all 0.3s',
-              }} />
-            )}
-          </React.Fragment>
-        );
-      })}
-    </div>
+    <>
+      <div
+        className="ob-steps"
+        role="progressbar"
+        aria-valuemin={1}
+        aria-valuemax={total}
+        aria-valuenow={current}
+        aria-label={`Step ${current} of ${total}`}
+      >
+        {Array.from({ length: total }, (_, i) => (
+          <span key={i} className={`ob-step${i < current ? ' is-done' : ''}`} />
+        ))}
+      </div>
+      <div className="ob-step-label">Step {current} of {total}</div>
+    </>
   );
 }
 
-/* â”€â”€â”€ Age Picker (scroll wheel) â”€â”€â”€ */
+/* ─── Age Picker (scroll wheel) ─── */
 function AgePicker({ value, onChange }) {
   const containerRef = useRef(null);
-  const ITEM_H = 64;
-  const ages = Array.from({ length: 80 }, (_, i) => i + 10); // 10-89
+  const ITEM_H = 52;
+  // 13-100. The list itself is the age gate: the lowest selectable value is the
+  // minimum age, so an under-age answer is not reachable.
+  const ages = Array.from({ length: MAXIMUM_AGE - MINIMUM_AGE + 1 }, (_, i) => i + MINIMUM_AGE);
   const idx = ages.indexOf(value);
   const [scrolling, setScrolling] = useState(false);
   const scrollTimer = useRef(null);
@@ -50,6 +59,8 @@ function AgePicker({ value, onChange }) {
       containerRef.current.scrollTo({ top: target, behavior: 'smooth' });
     }
   }, [value]);
+
+  useEffect(() => () => clearTimeout(scrollTimer.current), []);
 
   const handleScroll = useCallback(() => {
     setScrolling(true);
@@ -66,42 +77,33 @@ function AgePicker({ value, onChange }) {
   }, [ages, onChange]);
 
   return (
-    <div style={{ position: 'relative', height: ITEM_H * 5, overflow: 'hidden', width: '100%', maxWidth: 220, margin: '0 auto' }}>
-      {/* Selection highlight */}
-      <div style={{
-        position: 'absolute', top: ITEM_H * 2, left: '50%', transform: 'translateX(-50%)',
-        width: 80, height: ITEM_H, borderRadius: 16, background: '#10B981',
-        zIndex: 0, transition: 'all 0.2s',
-      }} />
-      {/* Scrollable list */}
-      <div ref={containerRef} onScroll={handleScroll}
-        style={{ height: '100%', overflowY: 'auto', scrollSnapType: 'y mandatory', paddingTop: ITEM_H * 2, paddingBottom: ITEM_H * 2, scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch', position: 'relative', zIndex: 1 }}>
-        <style>{`.nf-age-scroll::-webkit-scrollbar { display: none; }`}</style>
-        <div className="nf-age-scroll" style={{ display: 'contents' }}>
-          {ages.map((age, i) => {
-            const isSelected = age === value;
-            const dist = Math.abs(ages.indexOf(value) - i);
-            return (
-              <div key={age} onClick={() => onChange(age)}
-                style={{
-                  height: ITEM_H, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  scrollSnapAlign: 'center', cursor: 'pointer', transition: 'all 0.2s',
-                  fontSize: isSelected ? '2.2rem' : dist === 1 ? '1.5rem' : '1.2rem',
-                  fontWeight: isSelected ? 800 : 500,
-                  color: isSelected ? '#fff' : dist <= 1 ? '#999' : '#ccc',
-                  opacity: isSelected ? 1 : dist <= 1 ? 0.8 : 0.4,
-                }}>
-                {age}
-              </div>
-            );
-          })}
-        </div>
+    <div className="ob-wheel">
+      {/* Selected value reads as the bold-outline state, not a solid emerald
+          block. The old fill forced the number to white, so the value changed
+          colour as it scrolled through the highlight. */}
+      <div className="ob-wheel-marker" aria-hidden="true" />
+      <div className="ob-wheel-scroll" ref={containerRef} onScroll={handleScroll}>
+        {ages.map((age) => {
+          const dist = Math.abs(idx - ages.indexOf(age));
+          const state = age === value ? ' is-selected' : dist === 1 ? ' is-near' : '';
+          return (
+            <button
+              type="button"
+              key={age}
+              className={`ob-wheel-item${state}`}
+              onClick={() => onChange(age)}
+              aria-pressed={age === value}
+            >
+              {age}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
 }
 
-/* â”€â”€â”€ Weight Picker (ruler slider) â”€â”€â”€ */
+/* ─── Weight Picker (ruler slider) ─── */
 function WeightPicker({ value, onChange, unit, onUnitChange }) {
   const rulerRef = useRef(null);
   const TICK_W = 8;
@@ -129,79 +131,86 @@ function WeightPicker({ value, onChange, unit, onUnitChange }) {
   const displayUnit = unit === 'lbs' ? 'Lbs' : 'Kg';
 
   return (
-    <div style={{ textAlign: 'center', width: '100%' }}>
-      {/* Unit toggle */}
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 0, marginBottom: 28, borderRadius: 50, overflow: 'hidden', border: '2px solid #e0e0e0', width: 'fit-content', margin: '0 auto 28px' }}>
-        {['kg', 'lbs'].map(u => (
-          <button key={u} onClick={() => onUnitChange(u)}
-            style={{
-              padding: '10px 32px', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '0.95rem',
-              background: unit === u ? '#10B981' : 'transparent',
-              color: unit === u ? '#fff' : '#10B981', transition: 'all 0.2s',
-            }}>
+    <div className="ob-body">
+      <div className="ob-unit-toggle" role="group" aria-label="Weight unit">
+        {['kg', 'lbs'].map((u) => (
+          <button
+            type="button"
+            key={u}
+            className={unit === u ? 'is-selected' : ''}
+            onClick={() => onUnitChange(u)}
+            aria-pressed={unit === u}
+          >
             {u === 'kg' ? 'Kg' : 'Lbs'}
           </button>
         ))}
       </div>
-      {/* Display */}
-      <div style={{ fontSize: '3rem', fontWeight: 800, color: '#1a1a1a', marginBottom: 24 }}>
-        {displayValue} <span style={{ fontSize: '1.5rem', fontWeight: 600, color: '#888' }}>{displayUnit}</span>
+
+      <div className="ob-readout" aria-live="polite">
+        {displayValue}
+        <span>{displayUnit}</span>
       </div>
-      {/* Ruler */}
-      <div style={{ position: 'relative', width: '100%', height: 70, overflow: 'hidden' }}>
-        {/* Center indicator */}
-        <div style={{ position: 'absolute', left: '50%', top: 0, transform: 'translateX(-50%)', width: 3, height: 45, background: '#10B981', borderRadius: 2, zIndex: 2 }} />
-        <div ref={rulerRef} onScroll={handleScroll}
-          onTouchStart={() => setDragging(true)} onTouchEnd={() => setDragging(false)}
-          onMouseDown={() => setDragging(true)} onMouseUp={() => setDragging(false)}
-          style={{ overflowX: 'auto', height: '100%', scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch', whiteSpace: 'nowrap', paddingTop: 4 }}>
-          <div style={{ display: 'inline-flex', alignItems: 'flex-end', paddingLeft: '50%', paddingRight: '50%', height: 50 }}>
+
+      <div className="ob-ruler">
+        <div className="ob-ruler-needle" aria-hidden="true" />
+        <div
+          className="ob-ruler-scroll"
+          ref={rulerRef}
+          onScroll={handleScroll}
+          onTouchStart={() => setDragging(true)}
+          onTouchEnd={() => setDragging(false)}
+          onMouseDown={() => setDragging(true)}
+          onMouseUp={() => setDragging(false)}
+        >
+          <div className="ob-ruler-track">
             {Array.from({ length: ticks + 1 }, (_, i) => {
               const v = MIN + i;
               const isMajor = v % 5 === 0;
               return (
-                <div key={v} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: TICK_W }}>
-                  <div style={{
-                    width: isMajor ? 2 : 1, height: isMajor ? 36 : 20,
-                    background: isMajor ? '#666' : '#ccc', borderRadius: 1,
-                  }} />
-                  {isMajor && <span style={{ fontSize: '0.6rem', color: '#999', marginTop: 3, fontWeight: 600 }}>{v}</span>}
+                <div key={v} className={`ob-tick${isMajor ? ' is-major' : ''}`}>
+                  <div className="ob-tick-mark" />
+                  {isMajor && <span className="ob-tick-value">{v}</span>}
                 </div>
               );
             })}
           </div>
         </div>
       </div>
+
+      {/* The ruler is drag-only, so it is unusable by keyboard. A number field
+          gives the same value a reachable control. */}
+      <label className="ob-manual">
+        <span className="ob-manual-label">Manual</span>
+        <input
+          type="number"
+          min={MIN}
+          max={MAX}
+          value={value}
+          onChange={(event) => {
+            const next = Number(event.target.value);
+            if (!Number.isNaN(next)) onChange(Math.max(MIN, Math.min(MAX, next)));
+          }}
+          aria-label="Weight in kilograms"
+        />
+        <span className="ob-manual-unit">kg</span>
+      </label>
     </div>
   );
 }
 
-/* â”€â”€â”€ Gender Picker â”€â”€â”€ */
+/* ─── Height Picker ─── */
 function HeightPicker({ value, onChange }) {
   const heightValue = Number(value) || 170;
 
   return (
-    <div style={{ width: '100%', maxWidth: 340, textAlign: 'center' }}>
-      <div style={{
-        width: 132,
-        height: 132,
-        margin: '0 auto 26px',
-        borderRadius: '50%',
-        background: '#ECFDF5',
-        border: '2px solid #4CAF50',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        boxShadow: '0 14px 34px rgba(76, 175, 80, 0.14)',
-      }}>
-        <strong style={{ fontSize: '2.65rem', lineHeight: 1, color: '#1a1a1a', fontWeight: 800 }}>
-          {heightValue}
-        </strong>
-        <span style={{ marginTop: 6, color: '#10B981', fontSize: '0.95rem', fontWeight: 700 }}>cm</span>
+    <div className="ob-body">
+      <div className="ob-readout" aria-live="polite">
+        {heightValue}
+        <span>cm</span>
       </div>
 
       <input
+        className="ob-slider"
         type="range"
         min="100"
         max="230"
@@ -209,56 +218,64 @@ function HeightPicker({ value, onChange }) {
         value={heightValue}
         onChange={(event) => onChange(Number(event.target.value))}
         aria-label="Select height in centimeters"
-        style={{ width: '100%', accentColor: '#10B981', cursor: 'pointer' }}
       />
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10, color: '#999', fontSize: '0.78rem', fontWeight: 700 }}>
+      <div className="ob-scale-row">
         <span>100 cm</span>
         <span>230 cm</span>
       </div>
 
-      <label style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 28, padding: '14px 16px', borderRadius: 16, border: '2px solid #e8e8e8', background: '#fff' }}>
-        <span style={{ color: '#888', fontSize: '0.9rem', fontWeight: 700 }}>Manual</span>
+      <label className="ob-manual">
+        <span className="ob-manual-label">Manual</span>
         <input
           type="number"
           min="100"
           max="230"
           value={heightValue}
           onChange={(event) => onChange(Number(event.target.value))}
-          style={{ flex: 1, minWidth: 0, border: 0, outline: 0, textAlign: 'right', fontSize: '1rem', fontWeight: 800, color: '#1a1a1a', background: 'transparent' }}
+          aria-label="Height in centimeters"
         />
-        <span style={{ color: '#10B981', fontSize: '0.9rem', fontWeight: 800 }}>cm</span>
+        <span className="ob-manual-unit">cm</span>
       </label>
     </div>
   );
 }
 
+/* ─── Gender Picker ───
+   The three options were emoji, and the bytes had additionally been mis-decoded
+   on disk, so they rendered as latin1 mojibake rather than the intended glyph.
+   Emoji are not an icon system regardless: they ignore colour mode, share no
+   stroke weight with lucide, and render differently per platform. Replaced with
+   lucide glyphs. */
+const GENDERS = [
+  { key: 'Female', label: 'Female', icon: Venus },
+  { key: 'Male', label: 'Male', icon: Mars },
+  { key: 'Other', label: 'Other', icon: Transgender },
+];
+
 function GenderPicker({ value, onChange }) {
-  const genders = [
-    { key: 'Female', emoji: 'ðŸ‘©', label: 'Female' },
-    { key: 'Male', emoji: 'ðŸ‘¨', label: 'Male' },
-    { key: 'Other', emoji: 'ðŸ§‘', label: 'Other' },
-  ];
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 14, width: '100%', maxWidth: 340 }}>
-      {genders.map(g => {
-        const sel = value === g.key;
+    <div className="ob-choices">
+      {GENDERS.map(({ key, label, icon: Icon }) => {
+        const selected = value === key;
         return (
-          <button key={g.key} onClick={() => onChange(g.key)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 14,
-              padding: '16px 20px', borderRadius: 16,
-              border: sel ? '2px solid #4CAF50' : '2px solid #e8e8e8',
-              background: sel ? '#ECFDF5' : '#fff',
-              cursor: 'pointer', transition: 'all 0.2s', width: '100%',
-            }}>
-            <span style={{ fontSize: '1.6rem', width: 44, height: 44, borderRadius: 12, background: '#f5f5f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{g.emoji}</span>
-            <span style={{ flex: 1, fontSize: '1.05rem', fontWeight: 600, color: '#1a1a1a', textAlign: 'left' }}>{g.label}</span>
-            <div style={{
-              width: 24, height: 24, borderRadius: '50%',
-              border: sel ? '7px solid #4CAF50' : '2px solid #ccc',
-              background: '#fff', transition: 'all 0.2s', flexShrink: 0,
-            }} />
+          <button
+            type="button"
+            key={key}
+            className={`ob-choice${selected ? ' is-selected' : ''}`}
+            onClick={() => onChange(key)}
+            aria-pressed={selected}
+          >
+            <span className="ob-choice-figure">
+              <Icon size={20} />
+            </span>
+            <span className="ob-choice-label">{label}</span>
+            {/* Paired with the outline so the state survives greyscale. */}
+            {selected && (
+              <span className="ob-choice-check" aria-hidden="true">
+                <Check size={14} />
+              </span>
+            )}
           </button>
         );
       })}
@@ -266,37 +283,28 @@ function GenderPicker({ value, onChange }) {
   );
 }
 
-/* â”€â”€â”€ Main Onboarding Component â”€â”€â”€ */
-function DateOfBirthPicker({ value, onChange }) {
-  return (
-    <div style={{ width: '100%', maxWidth: 340 }}>
-      <label style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '18px', borderRadius: 18, border: '2px solid #e8e8e8', background: '#fff', boxShadow: '0 10px 26px rgba(0,0,0,0.04)' }}>
-        <span style={{ color: '#888', fontSize: '0.85rem', fontWeight: 700 }}>Date of Birth</span>
-        <input
-          type="date"
-          value={value || ''}
-          onChange={(event) => onChange(event.target.value)}
-          max={new Date().toISOString().split('T')[0]}
-          style={{ width: '100%', border: 0, outline: 0, background: 'transparent', color: '#1a1a1a', fontSize: '1.05rem', fontWeight: 800, fontFamily: 'inherit' }}
-        />
-      </label>
-      <p style={{ margin: '14px 6px 0', color: '#999', fontSize: '0.82rem', lineHeight: 1.45, fontWeight: 600, textAlign: 'center' }}>
-        This helps NutriScore personalize nutrition feedback more accurately.
-      </p>
-    </div>
-  );
-}
+const QUESTIONS = {
+  1: "What's your age?",
+  2: "What's your height?",
+  3: "What's your current weight right now?",
+  4: "What's your gender?",
+};
 
 export default function Onboarding({ onComplete, initialProfile, authToken, onBack, pendingSignUp, onLogin }) {
-  const TOTAL_STEPS = 7;
   const [step, setStep] = useState(1);
   const [error, setError] = useState('');
   const [profile, setProfile] = useState(() => ({
-    age: parseInt(initialProfile?.age) || 25,
+    // Clamped into the 13-100 range so a stale/invalid stored value can never
+    // seed an under-age answer.
+    age: clampAge(parseInt(initialProfile?.age, 10) || 25),
     height: parseInt(initialProfile?.height) || 170,
-    weight: parseInt(initialProfile?.weight) || 62,
+    // The weight step starts at a neutral mid-scale position purely so the ruler
+    // has somewhere to sit; it is not a real answer until the user moves it. The
+    // old hardcoded 62 was silently saved as the user's actual weight when they
+    // skipped the step. `weightTouched` tracks whether it reflects a real choice.
+    weight: parseInt(initialProfile?.weight) || 70,
+    weightTouched: initialProfile?.weight != null,
     weightUnit: 'kg',
-    dateOfBirth: initialProfile?.dateOfBirth || initialProfile?.dob || '',
     gender: initialProfile?.gender || 'Female',
     conditions: initialProfile?.conditions || [],
     goals: initialProfile?.goals || [],
@@ -305,6 +313,20 @@ export default function Onboarding({ onComplete, initialProfile, authToken, onBa
   const updateProfile = (fields) => setProfile(prev => ({ ...prev, ...fields }));
 
   const handleNext = () => {
+    // Per-step gating so a user cannot advance past a step that still holds a
+    // placeholder rather than a real answer.
+    if (step === 3 && !profile.weightTouched) {
+      setError('Please set your weight to continue.');
+      return;
+    }
+    // Defence in depth: the wheel cannot produce an under-13 value, but the
+    // 13+ policy is enforced here too rather than relying on the widget alone.
+    if (step === 1 && Number(profile.age) < MINIMUM_AGE) {
+      setError(`You must be at least ${MINIMUM_AGE} years old to use FitScan.`);
+      return;
+    }
+
+    setError('');
     if (step < TOTAL_STEPS) {
       setStep(step + 1);
     }
@@ -319,12 +341,15 @@ export default function Onboarding({ onComplete, initialProfile, authToken, onBa
     if (updatedUser?.profile) {
       updateProfile({ conditions: updatedUser.profile.conditions });
     }
-    setStep(7);
+    setStep(6);
   };
 
   const handleGoalsSaved = async (updatedUser) => {
     const finalGoals = updatedUser?.profile?.goals || profile.goals;
-    const finalProfile = { ...profile, goals: finalGoals };
+    // Strip UI-only bookkeeping fields (weightTouched, weightUnit) so they are
+    // never persisted into the profile JSON.
+    const { weightTouched, weightUnit, ...profileToSave } = profile;
+    const finalProfile = { ...profileToSave, goals: finalGoals };
     updateProfile({ goals: finalGoals });
 
     if (pendingSignUp) {
@@ -345,12 +370,17 @@ export default function Onboarding({ onComplete, initialProfile, authToken, onBa
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
 
-        // Cookie is now set â€” save profile details using cookie auth
+        // Mobile: persist the returned JWT *before* the authenticated
+        // /auth/details call below, since the WebView won't hold the cookie.
+        // No-op on web (data.token is undefined there).
+        setAuthToken(data.token ?? null, data.refreshToken ?? null);
+
+        // Cookie is now set — save profile details using cookie auth
         const sanitizedProfile = {
           gender: finalProfile.gender,
           weight: Number(finalProfile.weight) || null,
           height: Number(finalProfile.height) || null,
-          dateOfBirth: finalProfile.dateOfBirth || '',
+          age: Number(finalProfile.age) || null,
           conditions: finalProfile.conditions || [],
           goals: finalProfile.goals || [],
         };
@@ -368,7 +398,9 @@ export default function Onboarding({ onComplete, initialProfile, authToken, onBa
         if (!detailsRes.ok) {
           throw new Error(detailsData.error || detailsData.message || 'Failed to save profile details.');
         }
-        onLogin(detailsData.user, null); // token is null â€” it lives in the cookie
+        // On web the token is null (it lives in the cookie); on mobile we pass
+        // the JWT from the register/google response through to be stored.
+        onLogin(detailsData.user, data.token ?? null, false, data.refreshToken ?? null);
       } catch (err) {
         console.error('Registration failed:', err);
         setError(err.message || 'Registration failed');
@@ -379,130 +411,76 @@ export default function Onboarding({ onComplete, initialProfile, authToken, onBa
   };
 
   return (
-    <div className="nf-onboarding">
-      <style>{`
-        .nf-onboarding {
-          min-height: 100vh; background: #ffffff !important; font-family: var(--font-main, 'Inter', sans-serif);
-          display: flex; flex-direction: column;
-        }
-        .nf-ob-content {
-          flex: 1; display: flex; flex-direction: column; align-items: center;
-          padding: 50px 28px 24px; box-sizing: border-box;
-        }
-        .nf-ob-brand { display: flex; align-items: center; gap: 4px; align-self: flex-start; margin-bottom: 16px; }
-        .nf-ob-brand-nutri { font-family: 'Georgia', serif; font-style: italic; color: #bbb; font-size: 1.25rem; }
-        .nf-ob-brand-scan { font-family: 'Georgia', serif; font-weight: 700; color: #10B981; font-size: 1.25rem; }
-        .nf-ob-brand-leaf { color: #10B981; margin-left: -2px; }
-        .nf-ob-question { font-size: 1.6rem; font-weight: 700; color: #1a1a1a; text-align: center; margin: 24px 0 32px; letter-spacing: -0.01em; }
-        .nf-ob-footer { padding: 20px 28px 36px; }
-        .nf-ob-next-btn {
-          width: 100%; padding: 16px; border-radius: 50px; border: none;
-          background: #4CAF50; color: #fff; font-size: 1.05rem; font-weight: 600;
-          cursor: pointer; transition: all 0.2s; letter-spacing: 0.01em;
-          box-shadow: 0 4px 16px rgba(76, 175, 80, 0.25);
-        }
-        .nf-ob-next-btn:hover { background: #43A047; transform: translateY(-1px); }
-        .nf-ob-next-btn:active { transform: translateY(0); }
-        .nf-ob-skip-btn {
-          display: block; margin: 16px auto 0; background: none; border: none;
-          color: #888; font-size: 0.95rem; font-weight: 600; cursor: pointer;
-        }
-        .nf-ob-skip-btn:hover { color: #555; }
-        /* Override styles for medical/goals pages embedded in onboarding */
-        .medical-profile-page, .health-goals-page { background: #fff !important; color: #1a1a1a !important; }
-        .medical-profile-shell, .health-goals-shell { border: none !important; background: transparent !important; box-shadow: none !important; padding-top: 20px !important; }
-        .medical-profile-header h1, .health-goals-header h1 { color: #1a1a1a !important; font-weight: 700 !important; }
-        .medical-save-button, .health-goals-save-button {
-          height: 56px !important; border-radius: 50px !important;
-          background: #4CAF50 !important; box-shadow: 0 4px 16px rgba(76,175,80,0.25) !important;
-          font-size: 1rem !important; font-weight: 600 !important; color: white !important;
-        }
-        .medical-issue-item.is-selected, .health-goals-list button.is-selected {
-          border-color: #4CAF50 !important; background: #F0FFF0 !important; color: #4CAF50 !important;
-        }
-        .medical-selected-strip button, .health-goals-selected-strip button {
-          background: #F0FFF0 !important; color: #4CAF50 !important; border: 1px solid #4CAF50 !important;
-        }
-      `}</style>
-
-      {step <= 5 && (
+    <div className="ob-page page-transition">
+      {step <= 4 && (
         <>
-          <div className="nf-ob-content">
-            <div style={{ display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <button type="button" onClick={handleStepBack} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1a1a1a', display: 'flex', alignItems: 'center', padding: 0 }} aria-label="Back">
-                <ArrowLeft size={24} />
+          <div className="ob-content">
+            <div className="ob-topbar">
+              <button type="button" className="ob-back" onClick={handleStepBack} aria-label="Back">
+                <ArrowLeft size={20} />
               </button>
-              {/* Brand */}
-              <div className="nf-ob-brand" style={{ marginBottom: 0 }}>
-                <span className="nf-ob-brand-nutri">Nutri</span>
-                <span className="nf-ob-brand-scan">Score</span>
-                <Leaf size={14} className="nf-ob-brand-leaf" />
+              <div className="ob-brand">
+                <span className="ob-brand-a">Nutri</span>
+                <span className="ob-brand-b">Score</span>
+                <Leaf size={14} className="ob-brand-leaf" />
               </div>
-              <div style={{ width: 24 }} /> {/* Spacer to center the brand */}
+              {/* Balances the back button so the brand stays optically centred. */}
+              <div className="ob-topbar-spacer" />
             </div>
-            {/* Stepper */}
+
             <StepIndicator current={step} total={TOTAL_STEPS} />
 
-            {/* Step 1: Age */}
+            <h2 className="ob-question">{QUESTIONS[step]}</h2>
+
             {step === 1 && (
-              <>
-                <h2 className="nf-ob-question">What's your Age?</h2>
-                <AgePicker value={profile.age} onChange={(v) => updateProfile({ age: v })} />
-              </>
+              <AgePicker value={profile.age} onChange={(v) => updateProfile({ age: v })} />
             )}
 
-            {/* Step 2: Height */}
             {step === 2 && (
-              <>
-                <h2 className="nf-ob-question">What's your height?</h2>
-                <HeightPicker value={profile.height} onChange={(v) => updateProfile({ height: v })} />
-              </>
+              <HeightPicker value={profile.height} onChange={(v) => updateProfile({ height: v })} />
             )}
 
-            {/* Step 3: Weight */}
             {step === 3 && (
-              <>
-                <h2 className="nf-ob-question">What's your current weight right now?</h2>
-                <WeightPicker value={profile.weight} onChange={(v) => updateProfile({ weight: v })}
-                  unit={profile.weightUnit} onUnitChange={(u) => updateProfile({ weightUnit: u })} />
-              </>
+              <WeightPicker
+                value={profile.weight}
+                onChange={(v) => updateProfile({ weight: v, weightTouched: true })}
+                unit={profile.weightUnit}
+                onUnitChange={(u) => updateProfile({ weightUnit: u })}
+              />
             )}
 
-            {/* Step 4: Gender */}
             {step === 4 && (
-              <>
-                <h2 className="nf-ob-question">What's your gender?</h2>
-                <GenderPicker value={profile.gender} onChange={(v) => updateProfile({ gender: v })} />
-              </>
+              <GenderPicker value={profile.gender} onChange={(v) => updateProfile({ gender: v })} />
             )}
 
-            {/* Step 5: Date of Birth */}
-            {step === 5 && (
-              <>
-                <h2 className="nf-ob-question">What's your date of birth?</h2>
-                <DateOfBirthPicker value={profile.dateOfBirth} onChange={(v) => updateProfile({ dateOfBirth: v })} />
-              </>
-            )}
           </div>
 
-          <div className="nf-ob-footer">
-            <button className="nf-ob-next-btn" onClick={handleNext}>Next</button>
+          <div className="ob-footer">
+            {error && <p className="ob-error" role="alert">{error}</p>}
+            <button type="button" className="ob-next edge-highlight" onClick={handleNext}>
+              Next
+            </button>
           </div>
         </>
       )}
 
-      {step === 6 && (
-        <MedicalProfilePage
-          userProfile={profile}
-          authToken={authToken}
-          isOnboarding={true}
-          onBack={handleStepBack}
-          onDetailsSaved={handleMedicalSaved}
-        />
+      {/* Steps 5-6 host the Medical / Health Goals screens, which already carry
+          their own polish. Onboarding only strips their standalone page chrome
+          (see .ob-embed) instead of repainting them. */}
+      {step === 5 && (
+        <div className="ob-embed">
+          <MedicalProfilePage
+            userProfile={profile}
+            authToken={authToken}
+            isOnboarding={true}
+            onBack={handleStepBack}
+            onDetailsSaved={handleMedicalSaved}
+          />
+        </div>
       )}
 
-      {step === 7 && (
-        <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100%' }}>
+      {step === 6 && (
+        <div className="ob-embed">
           <HealthGoalsPage
             userProfile={profile}
             authToken={authToken}
@@ -510,7 +488,7 @@ export default function Onboarding({ onComplete, initialProfile, authToken, onBa
             onBack={handleStepBack}
             onDetailsSaved={handleGoalsSaved}
           />
-          {error && <p style={{ color: 'red', textAlign: 'center', margin: '16px' }}>{error}</p>}
+          {error && <p className="ob-error" role="alert">{error}</p>}
         </div>
       )}
     </div>

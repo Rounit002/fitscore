@@ -13,7 +13,7 @@ const requirePlan = (allowedPlans) => async (req, res, next) => {
 
     // Check expiration and auto downgrade if expired
     if (user.plan_expires_at && new Date(user.plan_expires_at) < new Date()) {
-      console.log(`[Gatekeeper] Plan expired for user ${req.userId}, downgrading to free...`);
+      console.log('[Gatekeeper] An expired plan was downgraded to free');
       await req.pool.query(
         "UPDATE users SET plan = 'free', scan_limit = 5, is_premium = false WHERE id = $1",
         [req.userId]

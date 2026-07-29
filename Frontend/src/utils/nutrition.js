@@ -161,14 +161,19 @@ const formatNumber = (value, decimals = 0) => {
   return Number.isInteger(parsed) ? String(parsed) : parsed.toFixed(decimals);
 };
 
+/* No `icon` field: these were emoji, which ignore colour mode, share no stroke
+   weight with the app's lucide set, and render as a different picture on every
+   platform. The glyph and the accent for each category now come from
+   `utils/macroMeta.js`, keyed by the same `key` returned here, so a consumer
+   looks the category up rather than being handed a hardcoded character. */
 export const getNutritionChips = (item = {}, servings = 1) => {
   const nutrition = getServingNutrition(item, servings);
 
   return [
-    { key: 'calories', icon: 'ðŸ”¥', label: 'Calories', value: `${formatNumber(nutrition.calories)} kcal` },
-    { key: 'protein', icon: 'ðŸ’ª', label: 'Protein', value: `${formatNumber(nutrition.protein, 1)}g` },
-    { key: 'carbs', icon: 'ðŸŒ¾', label: 'Carbs', value: `${formatNumber(nutrition.carbs, 1)}g` },
-    { key: 'sodium', icon: 'ðŸ§‚', label: 'Sodium', value: `${formatNumber(nutrition.sodium)}mg` },
-    { key: 'fats', icon: 'ðŸ«™', label: 'Fats', value: `${formatNumber(nutrition.fats, 1)}g` },
+    { key: 'calories', label: 'Calories', value: `${formatNumber(nutrition.calories)} kcal` },
+    { key: 'protein', label: 'Protein', value: `${formatNumber(nutrition.protein, 1)}g` },
+    { key: 'carbs', label: 'Carbs', value: `${formatNumber(nutrition.carbs, 1)}g` },
+    { key: 'sodium', label: 'Sodium', value: `${formatNumber(nutrition.sodium)}mg` },
+    { key: 'fats', label: 'Fats', value: `${formatNumber(nutrition.fats, 1)}g` },
   ];
 };

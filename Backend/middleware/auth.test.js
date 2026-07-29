@@ -23,7 +23,7 @@ describe('authenticate middleware', () => {
     jwt.verify.mockImplementation(() => { throw new Error('invalid'); });
     authenticate(req, res, next);
     expect(res.status).toHaveBeenCalledWith(401);
-    expect(res.json).toHaveBeenCalledWith({ error: 'Invalid token' });
+    expect(res.json).toHaveBeenCalledWith({ error: 'Invalid or expired token' });
   });
 
   it('sets req.userId and calls next for valid token', () => {

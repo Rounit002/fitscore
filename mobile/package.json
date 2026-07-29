@@ -1,0 +1,36 @@
+{
+  "name": "nutriscan-mobile",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Apache Cordova Android wrapper for the NutriScan SPA",
+  "scripts": {
+    "build:web": "npm --prefix ../Frontend run build:cordova",
+    "sync:www": "node scripts/sync-www.js",
+    "gen:res": "node scripts/generate-resources.js",
+    "prepare:android": "npm run build:web && npm run sync:www",
+    "build:android": "npm run prepare:android && cordova build android -- --packageType=apk",
+    "build:android:release": "npm run prepare:android && cordova build android --release -- --packageType=apk",
+    "build:aab": "npm run prepare:android && cordova build android --release -- --packageType=bundle",
+    "run:android": "npm run prepare:android && cordova run android"
+  },
+  "dependencies": {
+    "cordova-android": "15.1.0",
+    "cordova-plugin-android-permissions": "1.1.5",
+    "cordova-plugin-purchases": "8.0.7",
+    "cordova-plugin-secure-storage-echo": "5.1.1"
+  },
+  "devDependencies": {
+    "cordova": "13.0.0",
+    "sharp": "0.34.4"
+  },
+  "cordova": {
+    "platforms": [
+      "android"
+    ],
+    "plugins": {
+      "cordova-plugin-android-permissions": {},
+      "cordova-plugin-secure-storage-echo": {},
+      "cordova-plugin-purchases": {}
+    }
+  }
+}

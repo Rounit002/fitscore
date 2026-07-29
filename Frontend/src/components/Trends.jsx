@@ -22,11 +22,34 @@ import {
   Dot
 } from 'recharts';
 import { API } from '../api/client.js';
+import { scoreColor } from '../utils/scoreColor.js';
+import ProgressRing from './ProgressRing.jsx';
+
+// One definition per trend state, so the icon, the label and the colour class
+// cannot disagree between the stat card and the chip (brief finding 6). Colour
+// itself lives in the semantic map in tailwind.css, never inline here.
+const TREND_META = {
+  improving: {
+    labelKey: 'improving',
+    iconClass: 'trend-improving',
+    icon: <TrendingUp size={16} />,
+  },
+  declining: {
+    labelKey: 'declining',
+    iconClass: 'trend-declining',
+    icon: <TrendingUp size={16} style={{ transform: 'rotate(180deg)' }} />,
+  },
+  stable: {
+    labelKey: 'stable',
+    iconClass: 'trend-stable',
+    icon: <Minus size={16} />,
+  },
+};
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
-    const color = data.score >= 8 ? '#10B981' : data.score >= 5 ? '#F59E0B' : '#EF4444';
+    const color = scoreColor(data.score);
 
     return (
       <div className="trends-tooltip">
@@ -62,7 +85,7 @@ const CustomDot = (props) => {
           d="M-4 4 L0 0 L4 4"
           transform={`translate(${cx}, ${cy - 12})`}
           fill="none"
-          stroke="#10B981"
+          stroke="var(--sem-trend-improving)"
           strokeWidth="2.5"
           strokeLinecap="round"
         />
@@ -72,7 +95,7 @@ const CustomDot = (props) => {
           d="M-4 -4 L0 0 L4 -4"
           transform={`translate(${cx}, ${cy + 12})`}
           fill="none"
-          stroke="#EF4444"
+          stroke="var(--sem-trend-declining)"
           strokeWidth="2.5"
           strokeLinecap="round"
         />
@@ -134,6 +157,11 @@ export default function Trends({ authToken, onNavigate }) {
 
     // Fill with scan data
     history.forEach(scan => {
+      // Health Progress reflects what was actually eaten. A scan counts only once
+      // the user marks it "Eaten"; explicitly "Not eaten" and still-undecided
+      // scans are excluded so browsing a label never inflates the daily score.
+      if (scan.eaten !== true) return;
+
       const scanDate = new Date(scan.created_at || scan.date);
       if (Number.isNaN(scanDate.getTime()) || scanDate < startDate || scanDate > endDate) return;
 
@@ -202,9 +230,9 @@ export default function Trends({ authToken, onNavigate }) {
   }, [processedData]);
 
   const latest = processedData.length ? processedData[processedData.length - 1] : null;
-  const latestColor = latest
-    ? (latest.score >= 8 ? '#5BAD4E' : latest.score >= 5 ? '#F59E0B' : '#EF4444')
-    : 'var(--ns-outline)';
+  const latestColor = latest ? scoreColor(latest.score) : 'var(--ns-outline)';
+  // `stats.trend` is the display-independent state; TREND_META is keyed by it.
+  const trendKey = (stats?.trend ?? 'Stable').toLowerCase();
 
   if (loading) return <div className="trends-loading"><Activity className="animate-spin" /></div>;
 
@@ -240,10 +268,15 @@ export default function Trends({ authToken, onNavigate }) {
             </div>
           </div>
           <div className="stat-card-premium">
-            <div className="stat-card-icon trend"><TrendingUp size={18} /></div>
+            {/* Icon class and glyph both track the trend state. It was hardcoded
+                `trend` (always blue) while the chip below inherited an amber
+                score colour, so the same word rendered in two colours. */}
+            <div className={`stat-card-icon ${TREND_META[trendKey].iconClass}`}>
+              {TREND_META[trendKey].icon}
+            </div>
             <div className="stat-card-info">
               <span>{t('overall_trend')}</span>
-              <strong>{stats?.trend === 'Improving' ? t('improving') : stats?.trend === 'Declining' ? t('declining') : t('stable')}</strong>
+              <strong>{t(TREND_META[trendKey].labelKey)}</strong>
               <small>{t('last_n_days', { count: processedData.length })}</small>
             </div>
           </div>
@@ -291,20 +324,41 @@ export default function Trends({ authToken, onNavigate }) {
         {/* Graph Section */}
         <div className="trends-graph-container ns-card">
           <div className="graph-header">
-            <div className="graph-heading">
-              <span className="graph-eyebrow">{t('daily_health_score')}</span>
+            {/* The score is a value against a fixed ceiling (out of 10), so it
+                gets the same radial arc the calorie goal uses instead of a flat
+                figure. The number stays beside the ring rather than inside it —
+                the trend chip sits on this line and would not fit in a 56px
+                circle. */}
+            <div className="graph-heading-row">
+              {/* Arc only, no number inside: the figure is already stated beside
+                  it, and putting it in both places would be the same
+                  data-shown-twice defect this pass removed from the dashboard.
+                  The ring's job here is the proportion, not the value. */}
               {latest && (
-                <div className="graph-score" style={{ color: latestColor }}>
-                  <strong>{latest.score.toFixed(1)}</strong>
-                  <span className="graph-score-max">/ 10</span>
-                  {stats && (
-                    <span className={`graph-trend-chip ${stats.trend.toLowerCase()}`}>
-                      {stats.trend === 'Improving' ? <TrendingUp size={13} /> : stats.trend === 'Declining' ? <TrendingUp size={13} style={{ transform: 'rotate(180deg)' }} /> : <Minus size={13} />}
-                      {stats.trend === 'Improving' ? t('improving') : stats.trend === 'Declining' ? t('declining') : t('stable')}
-                    </span>
-                  )}
-                </div>
+                <ProgressRing
+                  value={latest.score}
+                  max={10}
+                  size="52px"
+                  stroke={10}
+                  color={latestColor}
+                  trackColor="var(--ns-border-light)"
+                />
               )}
+              <div className="graph-heading">
+                <span className="graph-eyebrow">{t('daily_health_score')}</span>
+                {latest && (
+                  <div className="graph-score" style={{ color: latestColor }}>
+                    <strong>{latest.score.toFixed(1)}</strong>
+                    <span className="graph-score-max">/ 10</span>
+                    {stats && (
+                      <span className={`graph-trend-chip ${trendKey}`}>
+                        {TREND_META[trendKey].icon}
+                        {t(TREND_META[trendKey].labelKey)}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
             <div className="graph-legend">
               <span className="dot good"></span> {t('good')}
@@ -360,7 +414,7 @@ export default function Trends({ authToken, onNavigate }) {
               </ResponsiveContainer>
             ) : (
               <div className="trends-empty">
-                <AlertCircle size={40} />
+                <AlertCircle size={32} />
                 <p>{t('no_scans_period')}</p>
               </div>
             )}
@@ -377,13 +431,13 @@ export default function Trends({ authToken, onNavigate }) {
               <div>
                 <h2>{new Date(selectedDay.date).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</h2>
                 <span className="sheet-score-pill" style={{
-                  background: selectedDay.score >= 8 ? 'rgba(91, 173, 78,0.1)' : selectedDay.score >= 5 ? 'rgba(245,158,11,0.1)' : 'rgba(239,68,68,0.1)',
-                  color: selectedDay.score >= 8 ? '#5BAD4E' : selectedDay.score >= 5 ? '#F59E0B' : '#EF4444'
+                  background: `color-mix(in srgb, ${scoreColor(selectedDay.score)} 12%, transparent)`,
+                  color: scoreColor(selectedDay.score)
                 }}>
                   {selectedDay.score.toFixed(1)} / 10
                 </span>
               </div>
-              <button onClick={() => setSelectedDay(null)} className="sheet-close-btn"><XCircle size={24} /></button>
+              <button onClick={() => setSelectedDay(null)} className="sheet-close-btn"><XCircle size={22} /></button>
             </header>
 
             <div className="sheet-stats">

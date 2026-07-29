@@ -25,7 +25,7 @@ function createApp(pool) {
 }
 
 function mockPool() {
-  return { query: jest.fn() };
+  return { query: jest.fn().mockResolvedValue({ rows: [] }) };
 }
 
 describe('Auth Routes', () => {
@@ -42,36 +42,51 @@ describe('Auth Routes', () => {
     it('registers successfully', async () => {
       pool.query
         .mockResolvedValueOnce({ rows: [] }) // SELECT user
-        .mockResolvedValueOnce({ rows: [{ id: 1, email: 'a@b.c', name: 'A', profile: null, is_premium: false, subscription_expires_at: null, image_scans_used: 0, subscription_plan: null }] }) // INSERT
+        .mockResolvedValueOnce({ rows: [{ id: 1, email: 'a@b.co', name: 'A', profile: null, is_premium: false, subscription_expires_at: null, image_scans_used: 0, subscription_plan: null }] }) // INSERT
         .mockResolvedValueOnce({ rows: [{ points: 0, streak: 0, last_login_at: null }] }) // updateStreak SELECT
         .mockResolvedValueOnce({}) // updateStreak UPDATE
         .mockResolvedValueOnce({ rows: [] }) // getMedicalConditions
         .mockResolvedValueOnce({ rows: [] }); // getHealthGoals
       bcrypt.hash.mockResolvedValue('hashed');
 
-      const res = await request(app).post('/auth/register').send({ email: 'a@b.c', password: 'pass', name: 'A' });
+      const res = await request(app).post('/auth/register').send({ email: 'a@b.co', password: 'StrongPassword123!', name: 'A' });
       expect(res.status).toBe(200);
       expect(res.body.user).toBeDefined();
     });
 
-    it('returns 400 for duplicate email', async () => {
+    it('returns 409 for duplicate email', async () => {
       pool.query.mockResolvedValueOnce({ rows: [{ id: 1 }] });
-      const res = await request(app).post('/auth/register').send({ email: 'a@b.c', password: 'p', name: 'A' });
+      const res = await request(app).post('/auth/register').send({ email: 'a@b.co', password: 'StrongPassword123!', name: 'A' });
+      expect(res.status).toBe(409);
+    });
+
+    it('returns 400 for a password that does not meet policy', async () => {
+      const res = await request(app).post('/auth/register').send({ email: 'a@b.co', password: 'short', name: 'A' });
       expect(res.status).toBe(400);
+    });
+
+    it('returns 400 when the user is under 13', async () => {
+      const currentYear = new Date().getFullYear();
+      const res = await request(app).post('/auth/register').send({
+        email: 'kid@b.co', password: 'StrongPassword123!', name: 'Kid',
+        dateOfBirth: `${currentYear - 8}-01-01`,
+      });
+      expect(res.status).toBe(400);
+      expect(res.body.field).toBe('dateOfBirth');
     });
   });
 
   describe('POST /auth/login', () => {
     it('logs in successfully', async () => {
       pool.query
-        .mockResolvedValueOnce({ rows: [{ id: 1, email: 'a@b.c', name: 'A', password_hash: 'h', profile: null, is_premium: false, subscription_expires_at: null, image_scans_used: 0, subscription_plan: null, scheduled_deletion_at: null }] })
+        .mockResolvedValueOnce({ rows: [{ id: 1, email: 'a@b.co', name: 'A', password_hash: 'h', profile: null, is_premium: false, subscription_expires_at: null, image_scans_used: 0, subscription_plan: null, scheduled_deletion_at: null }] })
         .mockResolvedValueOnce({ rows: [{ points: 5, streak: 1, last_login_at: null }] })
         .mockResolvedValueOnce({}) // updateStreak UPDATE
         .mockResolvedValueOnce({ rows: [] }) // conditions
         .mockResolvedValueOnce({ rows: [] }); // goals
       bcrypt.compare.mockResolvedValue(true);
 
-      const res = await request(app).post('/auth/login').send({ email: 'a@b.c', password: 'p' });
+      const res = await request(app).post('/auth/login').send({ email: 'a@b.co', password: 'p' });
       expect(res.status).toBe(200);
       expect(res.body.user).toBeDefined();
     });
@@ -79,14 +94,14 @@ describe('Auth Routes', () => {
     it('returns 400 for wrong password', async () => {
       pool.query.mockResolvedValueOnce({ rows: [{ id: 1, password_hash: 'h' }] });
       bcrypt.compare.mockResolvedValue(false);
-      const res = await request(app).post('/auth/login').send({ email: 'a@b.c', password: 'wrong' });
-      expect(res.status).toBe(400);
+      const res = await request(app).post('/auth/login').send({ email: 'a@b.co', password: 'wrong' });
+      expect(res.status).toBe(401);
     });
 
     it('returns 400 for user not found', async () => {
       pool.query.mockResolvedValueOnce({ rows: [] });
-      const res = await request(app).post('/auth/login').send({ email: 'x@y.z', password: 'p' });
-      expect(res.status).toBe(400);
+      const res = await request(app).post('/auth/login').send({ email: 'x@y.co', password: 'p' });
+      expect(res.status).toBe(401);
     });
   });
 
@@ -141,7 +156,8 @@ describe('Auth Routes', () => {
 
     it('logs in existing user via google', async () => {
       pool.query
-        .mockResolvedValueOnce({ rows: [{ id: 2, email: 'g@g.com', name: 'G', profile: null, is_premium: false, subscription_expires_at: null, image_scans_used: 0, subscription_plan: null, scheduled_deletion_at: null }] }) // SELECT - found
+        // SELECT - found, already linked (has google_id) so no link UPDATE fires
+        .mockResolvedValueOnce({ rows: [{ id: 2, email: 'g@g.com', name: 'G', google_id: 'gid1', profile: null, is_premium: false, subscription_expires_at: null, image_scans_used: 0, subscription_plan: null, scheduled_deletion_at: null }] })
         .mockResolvedValueOnce({ rows: [{ points: 5, streak: 1, last_login_at: null }] }) // updateStreak SELECT
         .mockResolvedValueOnce({}) // updateStreak UPDATE
         .mockResolvedValueOnce({ rows: [] }) // conditions
@@ -152,9 +168,24 @@ describe('Auth Routes', () => {
       expect(res.body.deletionCancelled).toBe(false);
     });
 
+    it('links google to an existing email/password account', async () => {
+      pool.query
+        // SELECT - found, no google_id yet, so the link UPDATE fires
+        .mockResolvedValueOnce({ rows: [{ id: 2, email: 'g@g.com', name: 'G', google_id: null, profile: null, is_premium: false, subscription_expires_at: null, image_scans_used: 0, subscription_plan: null, scheduled_deletion_at: null }] })
+        .mockResolvedValueOnce({}) // UPDATE users SET google_id
+        .mockResolvedValueOnce({ rows: [{ points: 5, streak: 1, last_login_at: null }] }) // updateStreak SELECT
+        .mockResolvedValueOnce({}) // updateStreak UPDATE
+        .mockResolvedValueOnce({ rows: [] }) // conditions
+        .mockResolvedValueOnce({ rows: [] }); // goals
+
+      const res = await request(app).post('/auth/google').send({ email: 'g@g.com', name: 'G', googleId: 'gid1' });
+      expect(res.status).toBe(200);
+      expect(res.body.user).toBeDefined();
+    });
+
     it('cancels scheduled deletion on google login', async () => {
       pool.query
-        .mockResolvedValueOnce({ rows: [{ id: 2, email: 'g@g.com', name: 'G', profile: null, is_premium: false, subscription_expires_at: null, image_scans_used: 0, subscription_plan: null, scheduled_deletion_at: '2026-07-01' }] })
+        .mockResolvedValueOnce({ rows: [{ id: 2, email: 'g@g.com', name: 'G', google_id: 'gid1', profile: null, is_premium: false, subscription_expires_at: null, image_scans_used: 0, subscription_plan: null, scheduled_deletion_at: '2026-07-01' }] })
         .mockResolvedValueOnce({}) // cancel deletion UPDATE
         .mockResolvedValueOnce({ rows: [{ points: 5, streak: 1, last_login_at: null }] })
         .mockResolvedValueOnce({}) // updateStreak UPDATE

@@ -13,7 +13,7 @@ describe('validateBody middleware', () => {
     const middleware = validateBody(imageAnalysisSchema);
 
     it('calls next for valid body', () => {
-      req.body = { imageBase64: 'abc123' };
+      req.body = { imageBase64: 'data:image/png;base64,abc123' };
       middleware(req, res, next);
       expect(next).toHaveBeenCalledWith();
     });
@@ -32,13 +32,13 @@ describe('validateBody middleware', () => {
     });
 
     it('accepts optional userProfile', () => {
-      req.body = { imageBase64: 'x', userProfile: { gender: 'Male', goals: ['lose weight'] } };
+      req.body = { imageBase64: 'data:image/jpeg;base64,abc123', userProfile: { gender: 'Male', goals: ['lose weight'] } };
       middleware(req, res, next);
       expect(next).toHaveBeenCalled();
     });
 
     it('accepts null userProfile', () => {
-      req.body = { imageBase64: 'x', userProfile: null };
+      req.body = { imageBase64: 'data:image/webp;base64,abc123', userProfile: null };
       middleware(req, res, next);
       expect(next).toHaveBeenCalled();
     });

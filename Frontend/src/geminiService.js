@@ -6,6 +6,20 @@ import { API as BACKEND_URL } from './api/client.js';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// Mirror of the backend marker (Backend/routes/analyze.js). A non-food rejection
+// travels through the job queue as a plain error string prefixed with this, so
+// the caller can tell "you scanned a tablet" apart from a genuine failure.
+const NON_FOOD_ERROR_PREFIX = 'NON_FOOD::';
+
+function buildNonFoodError(message) {
+  const clean = message.startsWith(NON_FOOD_ERROR_PREFIX)
+    ? message.slice(NON_FOOD_ERROR_PREFIX.length)
+    : message;
+  const error = new Error(clean);
+  error.nonFood = true;
+  return error;
+}
+
 // Transparently polls the backend job status endpoint until completed or failed
 async function pollJobStatus(jobId, signal) {
   const maxAttempts = 40; // 60 seconds total timeout
@@ -30,7 +44,11 @@ async function pollJobStatus(jobId, signal) {
       return job.result;
     }
     if (job.status === 'failed') {
-      throw new Error(job.error || 'Background nutrition analysis failed.');
+      const message = job.error || 'Background nutrition analysis failed.';
+      if (message.startsWith(NON_FOOD_ERROR_PREFIX)) {
+        throw buildNonFoodError(message);
+      }
+      throw new Error(message);
     }
 
     attempts++;
@@ -60,6 +78,9 @@ export async function analyzeFoodImage(imageBase64, userProfile, signal) {
       quotaError.quotaExceeded = true;
       throw quotaError;
     }
+    if (response.status === 422 && err.nonFood) {
+      throw buildNonFoodError(err.error || 'This is not a food product.');
+    }
     throw new Error(err.error || `Server error: ${response.status}`);
   }
 
@@ -86,6 +107,9 @@ export async function analyzeFoodText(productData, userProfile, signal) {
       const quotaError = new Error(err.error || 'Scan limit reached. Please upgrade your plan.');
       quotaError.quotaExceeded = true;
       throw quotaError;
+    }
+    if (response.status === 422 && err.nonFood) {
+      throw buildNonFoodError(err.error || 'This is not a food product.');
     }
     throw new Error(err.error || `Server error: ${response.status}`);
   }
