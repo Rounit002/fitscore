@@ -806,7 +806,7 @@ export function HealthGoalsPage({
   );
 }
 
-export default function Profile({ userProfile, userAuth, authToken, onBack, onDelete, onLogout, onDetailsSaved, onNavigateFeatures, isDark, toggleTheme }) {
+export default function Profile({ userProfile, userAuth, authToken, onBack, onLogout, onDetailsSaved, onNavigateFeatures, isDark, toggleTheme }) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [modal, setModal] = useState(null);
@@ -814,10 +814,12 @@ export default function Profile({ userProfile, userAuth, authToken, onBack, onDe
   const [language, setLanguage] = useState(() => i18n.resolvedLanguage || i18n.language || 'en');
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [photoError, setPhotoError] = useState('');
+  // Kept only as a defensive fallback for any stale rendered state during a
+  // hot update. The visible Profile action now routes directly to the page.
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState('');
-  const [deleteScheduledSuccess, setDeleteScheduledSuccess] = useState(false);
+  const [isDeleting] = useState(false);
+  const [deleteError] = useState('');
+  const [deleteScheduledSuccess] = useState(false);
   const [scheduledDeletionAt, setScheduledDeletionAt] = useState(() => userAuth?.scheduledDeletionAt || null);
   const [isCancellingDeletion, setIsCancellingDeletion] = useState(false);
   const fileInputRef = useRef(null);
@@ -1009,34 +1011,9 @@ export default function Profile({ userProfile, userAuth, authToken, onBack, onDe
     localStorage.setItem('fitscan_language', nextLanguageCode);
   };
 
-  const handleDeleteAccount = async () => {
-    setIsDeleting(true);
-    setDeleteError('');
-    try {
-      const response = await fetch(
-        `${API}/auth/account`,
-        {
-          method: 'DELETE',
-          credentials: 'include',
-        }
-      );
-      const body = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(body.error || 'Deletion failed');
-      }
-      // Show the success popup briefly, then log out
-      setShowDeleteConfirm(false);
-      setDeleteScheduledSuccess(true);
-      setTimeout(() => {
-        setDeleteScheduledSuccess(false);
-        onDelete();
-      }, 4000);
-    } catch (err) {
-      console.error('[Account deletion error]', err);
-      setDeleteError(err.message || 'Could not schedule account deletion. Please try again.');
-    } finally {
-      setIsDeleting(false);
-    }
+  const handleDeleteAccount = () => {
+    setShowDeleteConfirm(false);
+    navigate('/delete-account');
   };
 
   const handleCancelDeletion = async () => {
@@ -1236,7 +1213,7 @@ export default function Profile({ userProfile, userAuth, authToken, onBack, onDe
 
         <ProfileSection title={t('account_action')}>
           <ProfileAction label={t('logout')} icon={LogOut} onClick={onLogout} area="account" />
-          <ProfileAction label={scheduledDeletionAt ? 'Deletion Scheduled' : t('delete_account')} icon={Trash2} onClick={() => { setDeleteError(''); setShowDeleteConfirm(true); }} danger />
+          <ProfileAction label={scheduledDeletionAt ? 'Deletion Scheduled' : t('delete_account')} icon={Trash2} onClick={() => navigate('/delete-account')} danger />
         </ProfileSection>
 
         {scheduledDeletionAt && deletionCountdown && (

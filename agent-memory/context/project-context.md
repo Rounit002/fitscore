@@ -1136,3 +1136,25 @@ Also confirmed absent from cordova-android 15: `SplashShowOnlyFirstTime`,
 - Native Play Integrity tests passed (4/4). Remaining release configuration warning:
   `PlayIntegrityCloudProjectNumber` is still `0`; the real Google Cloud project number and the
   Play Console/RevenueCat configuration must match `com.bitezsnap.app` before production use.
+
+## 2026-08-03 - Added public account-deletion page and canonical API endpoint
+- Added the public SPA route `/delete-account`. It remains directly reachable without a session,
+  so the deployed URL can be supplied to Google Play and opened or refreshed as a deep link.
+- Changed the Profile "Delete Account" action to navigate to the new page instead of submitting
+  deletion from the old inline confirmation dialog.
+- Added an accessible account-deletion request flow with authenticated-account identification,
+  a seven-day grace-period explanation, an acknowledgement checkbox, exact `DELETE` confirmation,
+  actionable API errors, retention disclosures, and a scheduled-deletion success screen.
+- Added canonical authenticated endpoint `POST /api/auth/account/deletion`. It schedules deletion,
+  increments the token version, revokes every active session, clears auth cookies, and returns the
+  deletion deadline. Repeated requests are idempotent and do not extend an existing deadline.
+- Retained legacy `DELETE /api/auth/account` as a compatibility alias for older clients.
+- Updated session restoration so `/delete-account`, privacy-policy, and reset-password public links
+  are not redirected to login before their public content can render.
+- Verification: frontend deletion-page tests passed (4/4), backend auth tests passed (30/30),
+  targeted ESLint passed, `git diff --check` passed, and the Vite production build completed.
+  `Frontend/dist/_redirects` contains the SPA fallback. The build retains the pre-existing large
+  JavaScript chunk warning only.
+- Deployment URL format: `https://<deployed-web-domain>/delete-account`.
+- Current retention limitation is disclosed on the page: uploaded scan-image files may remain at
+  the image host after the related application record is deleted, matching the existing policy.

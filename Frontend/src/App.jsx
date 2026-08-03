@@ -10,6 +10,7 @@ import Login from './components/Login';
 import SignUp from './components/SignUp';
 import ResetPassword from './components/ResetPassword';
 import PrivacyPolicy from './components/PrivacyPolicy';
+import DeleteAccount from './components/DeleteAccount';
 import Dashboard from './components/Dashboard';
 import Onboarding from './components/Onboarding';
 import BarcodeScanner from './components/BarcodeScanner';
@@ -59,6 +60,15 @@ const VIEW_TO_PATH = {
 const PATH_TO_VIEW = Object.fromEntries(
   Object.entries(VIEW_TO_PATH).map(([k, v]) => [v, k])
 );
+
+// Public information/action pages must remain directly reachable when there
+// is no session. This is essential for store-listing URLs and emailed links.
+const PUBLIC_STANDALONE_PATHS = new Set([
+  '/privacy-policy',
+  '/privacy',
+  '/delete-account',
+  '/reset-password',
+]);
 
 const shellTitles = {
   dashboard: 'home',
@@ -226,6 +236,7 @@ export default function App() {
   const { t, i18n } = useTranslation();
   const { isDark, mode: themeMode, toggle: toggleTheme } = useTheme();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Manage RTL/LTR document direction and lang attributes
   useEffect(() => {
@@ -324,6 +335,7 @@ export default function App() {
   // - On failure: clear cache and redirect to /login.
   useEffect(() => {
     const hadCache = !!localStorage.getItem('nutriscan_auth');
+    const preservePublicRoute = PUBLIC_STANDALONE_PATHS.has(location.pathname);
 
     async function restoreSession() {
       try {
@@ -336,7 +348,7 @@ export default function App() {
           localStorage.setItem('nutriscan_profile', JSON.stringify(data.user.profile));
           // Only navigate when the splash was shown (no prior cache).
           // Returning users are already on the correct route.
-          if (!hadCache) {
+          if (!hadCache && !preservePublicRoute) {
             navigate(data.user.profile ? '/dashboard' : '/onboarding', { replace: true });
           }
         } else {
@@ -344,13 +356,13 @@ export default function App() {
           clearAuthToken();
           localStorage.removeItem('nutriscan_auth');
           localStorage.removeItem('nutriscan_profile');
-          navigate('/login', { replace: true });
+          if (!preservePublicRoute) navigate('/login', { replace: true });
         }
       } catch (err) {
         console.error('Failed to restore session:', err);
         localStorage.removeItem('nutriscan_auth');
         localStorage.removeItem('nutriscan_profile');
-        navigate('/login', { replace: true });
+        if (!preservePublicRoute) navigate('/login', { replace: true });
       } finally {
         setIsRestoring(false);
       }
@@ -397,6 +409,17 @@ export default function App() {
     localStorage.removeItem('nutriscan_auth');
     localStorage.removeItem('nutriscan_profile');
     navigate('/login', { replace: true });
+  };
+
+  // The deletion endpoint has already revoked every server-side session. Clear
+  // only the local app state so the public confirmation page stays visible.
+  const handleDeletionScheduled = () => {
+    clearAuthToken();
+    setUserAuth(null);
+    setUserProfile(null);
+    setPendingSignUp(null);
+    localStorage.removeItem('nutriscan_auth');
+    localStorage.removeItem('nutriscan_profile');
   };
 
   const handleSignUpPending = (data) => {
@@ -699,6 +722,15 @@ export default function App() {
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/privacy" element={<Navigate to="/privacy-policy" replace />} />
         <Route
+          path="/delete-account"
+          element={
+            <DeleteAccount
+              userAuth={userAuth}
+              onDeletionScheduled={handleDeletionScheduled}
+            />
+          }
+        />
+        <Route
           path="/onboarding"
           element={
             <Onboarding
@@ -784,7 +816,6 @@ export default function App() {
                 userAuth={userAuth}
                 authToken={authToken}
                 onBack={() => navigate('/dashboard')}
-                onDelete={handleLogout}
                 onLogout={handleLogout}
                 onDetailsSaved={handleUserDetailsUpdated}
                 onNavigateFeatures={() => navigate('/features')}

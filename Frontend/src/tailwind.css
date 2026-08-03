@@ -10958,6 +10958,398 @@ html.dark .auth-form-mark {
   }
 }
 
+/* ── Public account-deletion request page ──
+   Shareable from the Play listing and usable inside the Cordova HashRouter.
+   Destructive red is reserved for the final action; information and navigation
+   continue to use the existing neutral/brand tokens. */
+
+.account-deletion-page {
+  min-height: 100vh;
+  background: var(--ns-page-bg);
+  color: var(--ns-on-surface);
+  font-family: var(--font-main);
+}
+
+.account-deletion-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 64px;
+  padding: 10px 16px;
+  background: color-mix(in srgb, var(--ns-page-bg) 92%, transparent);
+  border-bottom: 1px solid var(--ns-border-light);
+  backdrop-filter: blur(12px);
+}
+
+.account-deletion-back,
+.account-deletion-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--ns-border-light);
+  border-radius: 12px;
+  background: var(--ns-card-bg);
+  color: var(--ns-on-surface);
+  font-size: 0.86rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background-color 180ms ease, border-color 180ms ease;
+}
+
+.account-deletion-back:hover,
+.account-deletion-secondary:hover {
+  background: var(--ns-surface-low);
+  border-color: var(--ns-outline);
+}
+
+.account-deletion-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-headline);
+}
+
+.account-deletion-brand img {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+}
+
+.account-deletion-brand strong {
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.account-deletion-body {
+  width: min(100%, 820px);
+  margin: 0 auto;
+  padding: 28px 18px calc(72px + env(safe-area-inset-bottom, 0px));
+}
+
+.account-deletion-hero {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.account-deletion-hero-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 52px;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--ns-error) 12%, transparent);
+  color: var(--ns-error);
+}
+
+.account-deletion-eyebrow {
+  margin: 0 0 5px;
+  color: var(--ns-error);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.account-deletion-hero h1,
+.account-deletion-success h1 {
+  margin: 0;
+  font-family: var(--font-headline);
+  font-size: clamp(1.55rem, 5vw, 2.25rem);
+  font-weight: 900;
+  line-height: 1.15;
+}
+
+.account-deletion-hero > div > p:last-child {
+  max-width: 68ch;
+  margin: 10px 0 0;
+  color: var(--ns-on-surface-var);
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.65;
+}
+
+.account-deletion-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin: 28px 0 18px;
+}
+
+.account-deletion-grid article {
+  padding: 18px;
+  border: 1px solid var(--ns-border-light);
+  border-radius: 16px;
+  background: var(--ns-card-bg);
+}
+
+.account-deletion-grid article > svg {
+  margin-bottom: 12px;
+  color: var(--ns-primary);
+}
+
+.account-deletion-grid h2,
+.account-deletion-notice h2,
+.account-deletion-signin h2 {
+  margin: 0 0 6px;
+  font-family: var(--font-headline);
+  font-size: 0.95rem;
+  font-weight: 850;
+}
+
+.account-deletion-grid p,
+.account-deletion-notice p,
+.account-deletion-signin p {
+  margin: 0;
+  color: var(--ns-on-surface-var);
+  font-size: 0.86rem;
+  font-weight: 600;
+  line-height: 1.55;
+}
+
+.account-deletion-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--sem-score-avg) 35%, var(--ns-border-light));
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--sem-score-avg) 8%, var(--ns-card-bg));
+}
+
+.account-deletion-notice > svg {
+  flex: 0 0 auto;
+  color: var(--sem-score-avg);
+}
+
+.account-deletion-notice button {
+  padding: 2px;
+  color: var(--ns-primary);
+  font-weight: 850;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.account-deletion-form,
+.account-deletion-signin,
+.account-deletion-success {
+  margin-top: 18px;
+  padding: 20px;
+  border: 1px solid var(--ns-border-light);
+  border-radius: 18px;
+  background: var(--ns-card-bg);
+}
+
+.account-deletion-signed-in {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--ns-border-light);
+}
+
+.account-deletion-signed-in span {
+  color: var(--ns-outline);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.account-deletion-signed-in strong {
+  overflow-wrap: anywhere;
+  font-size: 0.9rem;
+}
+
+.account-deletion-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 18px;
+  color: var(--ns-on-surface-var);
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.account-deletion-check input {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+  accent-color: var(--ns-error);
+}
+
+.account-deletion-field {
+  margin-top: 18px;
+}
+
+.account-deletion-field label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.account-deletion-field input {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--ns-outline);
+  border-radius: 12px;
+  background: var(--ns-input-bg);
+  color: var(--ns-on-surface);
+  font-size: 1rem;
+  font-weight: 750;
+}
+
+.account-deletion-field p {
+  margin: 6px 0 0;
+  color: var(--ns-outline);
+  font-size: 0.76rem;
+  font-weight: 650;
+}
+
+.account-deletion-error {
+  margin: 14px 0 0;
+  padding: 12px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--ns-error) 10%, transparent);
+  color: var(--ns-error);
+  font-size: 0.85rem;
+  font-weight: 750;
+  line-height: 1.5;
+}
+
+.account-deletion-submit,
+.account-deletion-signin > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 48px;
+  margin-top: 18px;
+  padding: 0 18px;
+  border-radius: 12px;
+  background: var(--ns-error);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 850;
+  cursor: pointer;
+  transition: opacity 180ms ease, background-color 180ms ease;
+}
+
+.account-deletion-submit:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ns-error) 86%, #000);
+}
+
+.account-deletion-submit:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.account-deletion-signin {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  gap: 12px;
+}
+
+.account-deletion-signin > svg {
+  color: var(--ns-primary);
+}
+
+.account-deletion-signin > button {
+  grid-column: 1 / -1;
+  margin-top: 4px;
+  background: var(--ns-primary);
+}
+
+.account-deletion-support {
+  margin: 18px 0 0;
+  text-align: center;
+  color: var(--ns-outline);
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+
+.account-deletion-support a {
+  color: var(--ns-primary);
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.account-deletion-success {
+  max-width: 620px;
+  margin: 36px auto 0;
+  text-align: center;
+}
+
+.account-deletion-success-icon {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 16px;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--ns-primary) 12%, transparent);
+  color: var(--ns-primary);
+}
+
+.account-deletion-success p {
+  margin: 12px auto 0;
+  max-width: 56ch;
+  color: var(--ns-on-surface-var);
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.65;
+}
+
+.account-deletion-secondary {
+  margin-top: 20px;
+}
+
+.account-deletion-back:focus-visible,
+.account-deletion-notice button:focus-visible,
+.account-deletion-check input:focus-visible,
+.account-deletion-field input:focus-visible,
+.account-deletion-submit:focus-visible,
+.account-deletion-signin > button:focus-visible,
+.account-deletion-support a:focus-visible,
+.account-deletion-secondary:focus-visible,
+.account-deletion-success h1:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--ns-primary) 35%, transparent);
+  outline-offset: 3px;
+}
+
+@media (min-width: 720px) {
+  .account-deletion-body {
+    padding: 42px 24px 80px;
+  }
+
+  .account-deletion-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .account-deletion-form,
+  .account-deletion-signin,
+  .account-deletion-success {
+    padding: 26px;
+  }
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    ROUND 4 — Onboarding
 

@@ -896,8 +896,12 @@ router.get('/leaderboard', authenticate, async (req, res) => {
   }
 });
 
-// Schedule Account Deletion — marks account for permanent removal after 7 days
-router.delete('/account', authenticate, validateRequest({ body: emptyBody }), async (req, res) => {
+// Schedule account deletion — marks the account for permanent removal after
+// seven days, revokes every active session, and clears browser credentials.
+// POST /account/deletion is the canonical request endpoint used by the public
+// deletion page. DELETE /account remains as a compatibility alias for older
+// app builds that opened the former Profile confirmation modal.
+const scheduleAccountDeletion = async (req, res) => {
   try {
     const userId = req.userId;
 
@@ -906,17 +910,21 @@ router.delete('/account', authenticate, validateRequest({ body: emptyBody }), as
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Schedule deletion 7 days from now
-    const deletionDate = new Date();
-    deletionDate.setDate(deletionDate.getDate() + 7);
+    // Keep retries idempotent: a repeated request must not push the deadline
+    // seven days farther into the future.
+    const existingDeletionDate = userRes.rows[0].scheduled_deletion_at;
+    const deletionDate = existingDeletionDate ? new Date(existingDeletionDate) : new Date();
+    if (!existingDeletionDate) {
+      deletionDate.setDate(deletionDate.getDate() + 7);
+      await req.pool.query(
+        `UPDATE users
+         SET scheduled_deletion_at = $1,
+             token_version = token_version + 1
+         WHERE id = $2`,
+        [deletionDate, userId]
+      );
+    }
 
-    await req.pool.query(
-      `UPDATE users
-       SET scheduled_deletion_at = $1,
-           token_version = token_version + 1
-       WHERE id = $2`,
-      [deletionDate, userId]
-    );
     await revokeUserSessions(req.pool, userId);
     res.clearCookie('token', createClearAuthCookieOptions());
     res.clearCookie('refresh_token', createClearRefreshCookieOptions());
@@ -931,7 +939,10 @@ router.delete('/account', authenticate, validateRequest({ body: emptyBody }), as
     console.error('[Account Deletion Scheduling Error]', error);
     res.status(500).json({ error: 'Failed to schedule account deletion. Please try again.' });
   }
-});
+};
+
+router.post('/account/deletion', authenticate, validateRequest({ body: emptyBody }), scheduleAccountDeletion);
+router.delete('/account', authenticate, validateRequest({ body: emptyBody }), scheduleAccountDeletion);
 
 // Cancel Scheduled Deletion
 router.post('/cancel-deletion', authenticate, validateRequest({ body: emptyBody }), async (req, res) => {

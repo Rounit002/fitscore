@@ -138,6 +138,53 @@ describe('Auth Routes', () => {
     });
   });
 
+  describe('POST /auth/account/deletion', () => {
+    it('schedules deletion through the canonical account-deletion endpoint', async () => {
+      pool.query
+        .mockResolvedValueOnce({ rows: [{ id: 1, scheduled_deletion_at: null }] })
+        .mockResolvedValueOnce({})
+        .mockResolvedValueOnce({});
+
+      const res = await request(app)
+        .post('/auth/account/deletion')
+        .set('Cookie', 'token=valid')
+        .send({});
+
+      expect(res.status).toBe(200);
+      expect(res.body).toMatchObject({
+        success: true,
+        message: 'Account scheduled for deletion',
+      });
+      expect(new Date(res.body.scheduledDeletionAt).getTime()).toBeGreaterThan(Date.now());
+    });
+
+    it('does not extend an existing deletion deadline when the request is retried', async () => {
+      const scheduledDeletionAt = '2026-08-08T12:00:00.000Z';
+      pool.query
+        .mockResolvedValueOnce({ rows: [{ id: 1, scheduled_deletion_at: scheduledDeletionAt }] })
+        .mockResolvedValueOnce({});
+
+      const res = await request(app)
+        .post('/auth/account/deletion')
+        .set('Cookie', 'token=valid')
+        .send({});
+
+      expect(res.status).toBe(200);
+      expect(res.body.scheduledDeletionAt).toBe(scheduledDeletionAt);
+      expect(pool.query).not.toHaveBeenCalledWith(
+        expect.stringContaining('SET scheduled_deletion_at'),
+        expect.anything(),
+      );
+    });
+
+    it('requires an authenticated account', async () => {
+      const res = await request(app).post('/auth/account/deletion').send({});
+
+      expect(res.status).toBe(401);
+      expect(res.body.error).toBe('Unauthorized');
+    });
+  });
+
   describe('POST /auth/google', () => {
     it('creates new user via google', async () => {
       pool.query
