@@ -8,7 +8,9 @@ import {
   FileWarning,
   Loader2,
   LogIn,
+  Globe2,
   ShieldAlert,
+  Smartphone,
   Trash2,
 } from 'lucide-react';
 import { API } from '../api/client.js';
@@ -125,27 +127,79 @@ export default function DeleteAccount({ userAuth, onDeletionScheduled }) {
                 <p className="account-deletion-eyebrow">Account and data controls</p>
                 <h1>Delete your bitezsnap account</h1>
                 <p>
-                  This is the official account-deletion request page for the bitezsnap web and Android app.
-                  You must sign in so we can verify which account should be deleted.
+                  This public page explains how to permanently delete your bitezsnap account and
+                  associated data. You can submit the request in the Android app or on this website.
                 </p>
               </div>
             </section>
 
-            <section className="account-deletion-grid" aria-label="What happens after a deletion request">
+            <section className="account-deletion-policy-section" aria-labelledby="deletion-request-heading">
+              <div className="account-deletion-section-heading">
+                <p>Request options</p>
+                <h2 id="deletion-request-heading">How to request account deletion</h2>
+                <span>
+                  You do not need to contact support if you can sign in. Both options schedule the
+                  same permanent account and data deletion.
+                </span>
+              </div>
+
+              <div className="account-deletion-methods">
+                <article>
+                  <Smartphone size={22} aria-hidden="true" />
+                  <div>
+                    <h3>Delete from the Android app</h3>
+                    <ol>
+                      <li>Open bitezsnap and sign in.</li>
+                      <li>Open <strong>Profile</strong>.</li>
+                      <li>Under <strong>Account Actions</strong>, select <strong>Delete Account</strong>.</li>
+                      <li>Review the information, tick the acknowledgement, and type <strong>DELETE</strong>.</li>
+                      <li>Select <strong>Schedule account deletion</strong>.</li>
+                    </ol>
+                  </div>
+                </article>
+
+                <article>
+                  <Globe2 size={22} aria-hidden="true" />
+                  <div>
+                    <h3>Delete on this website</h3>
+                    <ol>
+                      <li>Use the sign-in button or request form on this page.</li>
+                      <li>Sign in to verify the account you want deleted.</li>
+                      <li>Tick the acknowledgement and type <strong>DELETE</strong>.</li>
+                      <li>Select <strong>Schedule account deletion</strong>.</li>
+                    </ol>
+                  </div>
+                </article>
+              </div>
+            </section>
+
+            <section className="account-deletion-grid" aria-label="Account deletion timing and data handling">
               <article>
                 <Clock3 size={22} aria-hidden="true" />
-                <h2>Seven-day safety window</h2>
-                <p>Your request is scheduled immediately. Sign in within seven days to cancel it.</p>
+                <h2>When deletion happens</h2>
+                <p>
+                  The request is scheduled immediately. Your account is permanently deleted after a
+                  seven-day grace period. Signing in during those seven days cancels the request.
+                </p>
               </article>
               <article>
                 <ShieldAlert size={22} aria-hidden="true" />
-                <h2>Personal records removed</h2>
-                <p>Your account, health profile, scan history, saved results, and authored requests are removed.</p>
+                <h2>Data permanently deleted</h2>
+                <ul>
+                  <li>Account identity and sign-in data</li>
+                  <li>Profile, medical conditions, and health goals</li>
+                  <li>Scan history, saved results, progress, and authored feature requests</li>
+                  <li>Active sessions and links identifying you as a product contributor</li>
+                </ul>
               </article>
               <article>
                 <Database size={22} aria-hidden="true" />
-                <h2>Limited records may remain</h2>
-                <p>Anonymised shared product facts, provider transaction records, and legally required records may remain.</p>
+                <h2>Data retained and for how long</h2>
+                <ul>
+                  <li>Anonymised shared product facts may remain indefinitely without your account link.</li>
+                  <li>Hosted scan-image copies and votes on other users' requests may remain until you ask support to remove them.</li>
+                  <li>Payment, security, tax, or legal records may remain only for the period required by law or the relevant provider.</li>
+                </ul>
               </article>
             </section>
 
@@ -154,16 +208,20 @@ export default function DeleteAccount({ userAuth, onDeletionScheduled }) {
               <div>
                 <h2>Before you continue</h2>
                 <p>
-                  Deletion cannot be undone after the seven-day window. Some previously uploaded scan-image
-                  files may remain at the image host after the matching app record is removed. Read the{' '}
+                  Deletion cannot be undone after the seven-day window. To request removal of a hosted image,
+                  a remaining vote record, or to get help when you cannot sign in, email support below. Read the{' '}
                   <button type="button" onClick={() => navigate('/privacy-policy')}>Privacy Policy</button>{' '}
-                  for the current retention details.
+                  for complete data-handling details.
                 </p>
               </div>
             </aside>
 
             {userAuth ? (
-              <form className="account-deletion-form" onSubmit={handleDeletionRequest} noValidate>
+              <form id="account-deletion-request" className="account-deletion-form" onSubmit={handleDeletionRequest} noValidate>
+                <div className="account-deletion-form-heading">
+                  <p>Web deletion request</p>
+                  <h2>Confirm account deletion</h2>
+                </div>
                 <div className="account-deletion-signed-in">
                   <span>Signed in account</span>
                   <strong>{userAuth.email || userAuth.name || 'Current bitezsnap account'}</strong>
@@ -212,10 +270,10 @@ export default function DeleteAccount({ userAuth, onDeletionScheduled }) {
                 </button>
               </form>
             ) : (
-              <section className="account-deletion-signin">
+              <section id="account-deletion-request" className="account-deletion-signin">
                 <LogIn size={24} aria-hidden="true" />
                 <div>
-                  <h2>Sign in to submit your request</h2>
+                  <h2>Submit a web deletion request</h2>
                   <p>For account security, deletion requests are accepted only from an authenticated session.</p>
                 </div>
                 <button type="button" onClick={() => navigate('/login')}>Sign in to continue</button>

@@ -33,7 +33,12 @@ describe('DeleteAccount', () => {
     renderPage();
 
     expect(screen.getByRole('heading', { name: 'Delete your bitezsnap account' })).toBeInTheDocument();
-    expect(screen.getByText(/official account-deletion request page/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'How to request account deletion' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Delete from the Android app' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Delete on this website' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Data permanently deleted' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Data retained and for how long' })).toBeInTheDocument();
+    expect(screen.getByText(/Anonymised shared product facts may remain indefinitely/i)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Sign in to continue' }));
     expect(mockNavigate).toHaveBeenCalledWith('/login');

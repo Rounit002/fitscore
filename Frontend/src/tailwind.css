@@ -11077,6 +11077,91 @@ html.dark .auth-form-mark {
   line-height: 1.65;
 }
 
+.account-deletion-policy-section {
+  margin-top: 28px;
+}
+
+.account-deletion-section-heading {
+  max-width: 72ch;
+}
+
+.account-deletion-section-heading > p,
+.account-deletion-form-heading > p {
+  margin: 0 0 5px;
+  color: var(--ns-primary);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.account-deletion-section-heading h2,
+.account-deletion-form-heading h2 {
+  margin: 0;
+  font-family: var(--font-headline);
+  font-size: 1.2rem;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.account-deletion-section-heading > span {
+  display: block;
+  margin-top: 8px;
+  color: var(--ns-on-surface-var);
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.account-deletion-methods {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.account-deletion-methods article {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid var(--ns-border-light);
+  border-radius: 16px;
+  background: var(--ns-card-bg);
+}
+
+.account-deletion-methods article > svg {
+  flex: 0 0 auto;
+  color: var(--ns-primary);
+}
+
+.account-deletion-methods h3 {
+  margin: 0;
+  font-family: var(--font-headline);
+  font-size: 1rem;
+  font-weight: 850;
+}
+
+.account-deletion-methods ol,
+.account-deletion-grid ul {
+  margin: 10px 0 0;
+  padding-left: 1.25rem;
+  color: var(--ns-on-surface-var);
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.account-deletion-methods li + li,
+.account-deletion-grid li + li {
+  margin-top: 5px;
+}
+
+.account-deletion-methods strong {
+  color: var(--ns-on-surface);
+  font-weight: 850;
+}
+
 .account-deletion-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -11115,6 +11200,10 @@ html.dark .auth-form-mark {
   line-height: 1.55;
 }
 
+.account-deletion-grid ul {
+  margin-top: 8px;
+}
+
 .account-deletion-notice {
   display: flex;
   align-items: flex-start;
@@ -11147,6 +11236,10 @@ html.dark .auth-form-mark {
   border: 1px solid var(--ns-border-light);
   border-radius: 18px;
   background: var(--ns-card-bg);
+}
+
+.account-deletion-form-heading {
+  margin-bottom: 16px;
 }
 
 .account-deletion-signed-in {
@@ -11341,6 +11434,10 @@ html.dark .auth-form-mark {
 
   .account-deletion-grid {
     grid-template-columns: repeat(3, 1fr);
+  }
+
+  .account-deletion-methods {
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .account-deletion-form,

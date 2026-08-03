@@ -1158,3 +1158,20 @@ Also confirmed absent from cordova-android 15: `SplashShowOnlyFirstTime`,
 - Deployment URL format: `https://<deployed-web-domain>/delete-account`.
 - Current retention limitation is disclosed on the page: uploaded scan-image files may remain at
   the image host after the related application record is deleted, matching the existing policy.
+
+## 2026-08-03 - Aligned deletion URL content with Google Play Console requirements
+- Expanded the public `/delete-account` page to explicitly explain both supported request methods:
+  the Android flow (`Profile` > `Account Actions` > `Delete Account`) and the authenticated web form.
+- Added clear, separately labelled sections for when deletion occurs, which account-associated data
+  is permanently deleted, which limited records may remain, and the applicable retention duration
+  or condition for every retained category.
+- The page now states that anonymised shared product facts can remain indefinitely without an
+  account link; hosted image copies and remaining vote records can remain until support removes
+  them; and payment/security/tax/legal records remain only for periods required by law or providers.
+- Clarified that support is not required when a user can sign in, while keeping the support path for
+  account-access problems and removal of retained image/vote records.
+- UI follows the existing bitezsnap design system with responsive two-column instruction cards,
+  semantic ordered/unordered lists, labelled controls, keyboard focus styling, and 44px+ actions.
+- Verification: deletion-page tests passed (4/4), backend auth tests passed (30/30), targeted ESLint
+  passed, `git diff --check` passed, and the Vite production build succeeded. The existing large
+  JavaScript chunk warning remains non-blocking.
