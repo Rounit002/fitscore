@@ -1205,3 +1205,17 @@ Also confirmed absent from cordova-android 15: `SplashShowOnlyFirstTime`,
   after the hero, and a 48px Request Deletion action.
 - Production requirement: set `FRONTEND_URL` to the deployed web origin and configure
   `BREVO_API_KEY` plus verified sender values so the 24-hour confirmation emails are delivered.
+
+## 2026-08-04 - Fixed Render refresh 404s for BrowserRouter routes
+- Confirmed the live `/dashboard` refresh failure occurs at Render's static hosting layer before
+  React loads: nested paths were being looked up as files and returned `404 Not Found`.
+- Enabled the existing `fitscore-6hqp` frontend static-site definition in the root `render.yaml`.
+  It now publishes `Frontend/dist` and declares the required `/*` to `/index.html` rewrite, while
+  leaving the browser URL unchanged so React Router can resolve `/dashboard`, `/delete-account`,
+  and every other client route.
+- Kept `Frontend/public/_redirects` as a portable build-output fallback and corrected its comment
+  to identify `render.yaml` as the active Render configuration source.
+- Verification: `npm run build` in `Frontend` completed successfully; the generated
+  `Frontend/dist/_redirects` contains the SPA fallback. Render still needs the Blueprint synced
+  (or the identical rule added under the existing site's Redirects/Rewrites tab) and redeployed
+  before the currently hosted URL changes behavior.

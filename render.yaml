@@ -1,4 +1,4 @@
-# Render Blueprint — reproducible deploy config for the bitezsnap backend API.
+# Render Blueprint — reproducible deploy config for the bitezsnap API and web app.
 # Docs: https://render.com/docs/blueprint-spec
 #
 # IMPORTANT:
@@ -9,9 +9,8 @@
 #   the Render dashboard (Environment tab); Render preserves them across deploys.
 # - Render log streams are workspace-level dashboard integrations and cannot be
 #   declared in a Blueprint. Follow MONITORING_SETUP.md after the service deploys.
-# - The frontend static site is intentionally NOT defined here to avoid creating a
-#   duplicate of your existing `fitscore-6hqp` site. See the commented block at the
-#   bottom if you want to manage it via this blueprint too.
+# - The frontend service name below must match the existing Render static site.
+#   Its catch-all rewrite is required for BrowserRouter routes to survive refreshes.
 
 services:
   - type: web
@@ -115,22 +114,19 @@ services:
       - key: RAZORPAY_KEY_SECRET
         sync: false
 
-# --- Optional: manage the frontend static site here too ---
-# Only enable if the `name` matches your existing site, or you accept a new one.
-#
-#  - type: web
-#    name: fitscore-6hqp
-#    runtime: static
-#    rootDir: Frontend
-#    buildCommand: npm install && npm run build
-#    staticPublishPath: dist
-#    autoDeploy: true
-#    envVars:
-#      - key: VITE_API_URL
-#        value: https://fitscan-api.onrender.com
-#      - key: VITE_API_BASE_URL
-#        value: https://fitscan-api.onrender.com
-#    routes:
-#      - type: rewrite
-#        source: /*
-#        destination: /index.html
+  - type: web
+    name: fitscore-6hqp
+    runtime: static
+    rootDir: Frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    autoDeploy: true
+    envVars:
+      - key: VITE_API_URL
+        value: https://fitscan-api.onrender.com
+      - key: VITE_API_BASE_URL
+        value: https://fitscan-api.onrender.com
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
