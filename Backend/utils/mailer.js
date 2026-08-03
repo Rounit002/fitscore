@@ -100,4 +100,53 @@ async function sendPasswordResetEmail({ to, name, resetUrl, expiresInMinutes }) 
   return sendMail({ to, subject, html, text });
 }
 
-module.exports = { sendMail, sendPasswordResetEmail };
+/**
+ * Account-deletion verification email. A deletion request is destructive, so
+ * the public form never schedules it based on an email address alone. The
+ * recipient must open this short-lived link and explicitly confirm the action.
+ */
+async function sendAccountDeletionVerificationEmail({ to, verificationUrl, expiresInHours }) {
+  const subject = 'Confirm your bitezsnap account deletion request';
+  const text = [
+    'We received a request to delete the bitezsnap account registered to this email address.',
+    '',
+    `Open this link within ${expiresInHours} hours to verify the request:`,
+    verificationUrl,
+    '',
+    'After verification, the account enters a seven-day grace period. Account and associated data deletion is permanent once completed and will be processed within 30 days.',
+    '',
+    'If you did not request this, ignore this email. No deletion will be scheduled.',
+    '',
+    'bitezsnap',
+  ].join('\n');
+
+  const html = `
+    <div style="font-family:system-ui,-apple-system,'Segoe UI',sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#111827">
+      <h1 style="font-size:20px;margin:0 0 16px">Confirm account deletion</h1>
+      <p style="margin:0 0 16px;line-height:1.6">
+        We received a request to delete the bitezsnap account registered to this email address.
+      </p>
+      <p style="margin:0 0 24px">
+        <a href="${verificationUrl}"
+           style="display:inline-block;background:#b42318;color:#ffffff;text-decoration:none;padding:12px 22px;border-radius:10px;font-weight:700">
+          Review and confirm deletion
+        </a>
+      </p>
+      <p style="margin:0 0 12px;font-size:13px;color:#4b5563;line-height:1.6">
+        This verification link expires in ${expiresInHours} hours. After verification, the account enters a seven-day grace period.
+        Account and associated data deletion is permanent once completed and will be processed within 30 days.
+      </p>
+      <p style="margin:0 0 8px;font-size:13px;color:#6b7280;line-height:1.6">
+        If the button does not work, paste this address into your browser:
+      </p>
+      <p style="margin:0 0 20px;font-size:13px;word-break:break-all"><a href="${verificationUrl}">${verificationUrl}</a></p>
+      <p style="margin:0;font-size:13px;color:#6b7280;line-height:1.6">
+        Did not request this? Ignore this email. No deletion will be scheduled.
+      </p>
+    </div>
+  `;
+
+  return sendMail({ to, subject, html, text });
+}
+
+module.exports = { sendMail, sendPasswordResetEmail, sendAccountDeletionVerificationEmail };

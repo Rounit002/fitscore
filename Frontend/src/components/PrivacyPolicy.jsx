@@ -102,10 +102,10 @@ const PRIVACY_SECTIONS = [
     title: '9. Retention and account deletion',
     body: [
       'Account, profile, scan, and progress records remain while your account is active because they support history, personalisation, and cross-device access.',
-      'Profile > Delete Account schedules database deletion after a 7-day grace period. Signing in during that period cancels the request. After the period, the automated purge removes your user record, profile, medical conditions, health goals, scans, and feature requests that you authored.',
+      'You can request deletion from Profile > Delete Account or through the public deletion page using your registered email address. The public form sends a 24-hour verification link before scheduling deletion. A confirmed request has a 7-day grace period, signing in during that period cancels it, and deletion is processed within 30 days. The automated purge removes your user record, profile, medical conditions, health goals, scans, and feature requests that you authored.',
       'Shared product rows remain because they describe food products rather than an individual. References identifying who first or last scanned the product are cleared.',
-      'Important current limitation: deleting a scan or account removes the application record and its link to an image, but the automated purge does not currently delete the underlying image asset already uploaded to Cloudinary. Contact us to request deletion of a hosted image copy.',
-      'Votes on feature requests authored by other users may remain associated with an internal numeric account identifier after account deletion. Contact us if you want those vote records removed.',
+      'When an account is purged, bitezsnap also requests deletion of its hosted Cloudinary scan images. If the image provider temporarily fails, the account remains scheduled and the automated job retries rather than silently leaving the hosted copy behind.',
+      'The purge removes your internal account identifier from votes on feature requests authored by other users.',
       'Refresh tokens are removed on logout, revocation, or expiry. Security logs and payment records may remain for a limited period where reasonably needed for security, dispute handling, tax, accounting, or other legal requirements.',
     ],
   },
@@ -114,7 +114,7 @@ const PRIVACY_SECTIONS = [
     title: '10. Your choices and rights',
     body: [
       'Depending on where you live, you may have rights to access, correct, export, delete, object to, or restrict use of personal information, withdraw consent, and complain to a data-protection authority.',
-      'You can edit many profile details in the app and start account deletion from Profile. For a copy of your data, hosted-image deletion, deletion of remaining vote records, or another privacy request, contact us. We may need to verify that the request relates to your account.',
+      'You can edit many profile details in the app and start account deletion from Profile or the public deletion-request page. For a copy of your data or another privacy request, contact us. We may need to verify that the request relates to your account.',
     ],
   },
   {

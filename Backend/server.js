@@ -7,6 +7,7 @@ const crypto = require('crypto');
 const { analyzeIpLimiter, apiSlowDown, globalLimiter } = require('./middleware/rateLimiter');
 const { Pool } = require('pg');
 const { createCorsOptions, getAllowedOrigins } = require('./config/cors');
+const { deleteImageByUrl } = require('./config/cloudinary');
 const { csrfProtection } = require('./middleware/csrf');
 const { getJwtSecret } = require('./utils/tokens');
 
@@ -263,6 +264,8 @@ const initDb = async () => {
     await addColumnIfMissing('users', 'plan_expires_at', 'TIMESTAMP');
     await addColumnIfMissing('users', 'reset_token_hash', 'VARCHAR(255)');
     await addColumnIfMissing('users', 'reset_token_expires_at', 'TIMESTAMP');
+    await addColumnIfMissing('users', 'deletion_request_token_hash', 'VARCHAR(255)');
+    await addColumnIfMissing('users', 'deletion_request_token_expires_at', 'TIMESTAMP');
     await addColumnIfMissing('users', 'failed_login_attempts', 'INTEGER NOT NULL DEFAULT 0');
     await addColumnIfMissing('users', 'last_failed_login_at', 'TIMESTAMP');
     await addColumnIfMissing('users', 'locked_until', 'TIMESTAMP');
@@ -418,10 +421,27 @@ const purgeScheduledDeletions = async () => {
     for (const row of expiredRes.rows) {
       const userId = row.id;
       try {
+        // Delete hosted scan images before their database URLs disappear. A
+        // provider failure leaves the account scheduled so the hourly job can
+        // retry instead of silently retaining third-party data.
+        const scanImages = await client.query(
+          'SELECT image_url FROM scans WHERE user_id = $1 AND image_url IS NOT NULL',
+          [userId]
+        );
+        for (const scan of scanImages.rows) {
+          await deleteImageByUrl(scan.image_url);
+        }
+
         await client.query('BEGIN');
         await client.query('DELETE FROM user_health_goals WHERE user_id = $1', [userId]);
         await client.query('DELETE FROM user_medical_conditions WHERE user_id = $1', [userId]);
         await client.query('DELETE FROM feature_requests WHERE user_id = $1', [userId]);
+        await client.query(
+          `UPDATE feature_requests
+           SET voters = COALESCE(voters, '{}'::jsonb) - $1
+           WHERE COALESCE(voters, '{}'::jsonb) ? $1`,
+          [String(userId)]
+        );
         await client.query('DELETE FROM scans WHERE user_id = $1', [userId]);
         await client.query('UPDATE product_database SET first_scanned_by = NULL WHERE first_scanned_by = $1', [userId]);
         await client.query('UPDATE product_database SET last_scanned_by = NULL WHERE last_scanned_by = $1', [userId]);

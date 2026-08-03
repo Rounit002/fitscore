@@ -2,6 +2,7 @@ const express = require('express');
 const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const {
+  accountDeletionRequestLimiter,
   authSlowDown,
   loginLimiter,
   passwordResetLimiter,
@@ -12,7 +13,10 @@ const { validateRequest } = require('../middleware/validateRequest');
 const { auth: authSchemas, emptyBody } = require('../validation/schemas');
 const { MINIMUM_AGE, isOldEnough } = require('../utils/ageCheck');
 const { buildQuotaFields } = require('../utils/scanQuota');
-const { sendPasswordResetEmail } = require('../utils/mailer');
+const {
+  sendAccountDeletionVerificationEmail,
+  sendPasswordResetEmail,
+} = require('../utils/mailer');
 const { securityLog } = require('../utils/securityLogger');
 const {
   issueSession,
@@ -546,10 +550,10 @@ router.post('/google', loginLimiter, authSlowDown, validateRequest({ body: authS
 
 const RESET_TOKEN_TTL_MINUTES = 30;
 
-const hashResetToken = (token) =>
+const hashActionToken = (token) =>
   crypto.createHash('sha256').update(token).digest('hex');
 
-const resolveResetBaseUrl = () => {
+const resolveFrontendBaseUrl = () => {
   const configured = process.env.FRONTEND_URL || process.env.APP_URL;
   return (configured || 'http://localhost:5173').replace(/\/+$/, '');
 };
@@ -590,10 +594,10 @@ router.post('/forgot-password', passwordResetLimiter, authSlowDown, validateRequ
 
     await req.pool.query(
       'UPDATE users SET reset_token_hash = $1, reset_token_expires_at = $2 WHERE id = $3',
-      [hashResetToken(rawToken), expiresAt, user.id]
+      [hashActionToken(rawToken), expiresAt, user.id]
     );
 
-    const resetUrl = `${resolveResetBaseUrl()}/reset-password?token=${rawToken}&email=${encodeURIComponent(email)}`;
+    const resetUrl = `${resolveFrontendBaseUrl()}/reset-password?token=${rawToken}&email=${encodeURIComponent(email)}`;
 
     try {
       await sendPasswordResetEmail({
@@ -628,7 +632,7 @@ router.post('/reset-password', passwordResetLimiter, authSlowDown, validateReque
       `SELECT id, email, reset_token_expires_at
        FROM users
        WHERE reset_token_hash = $1`,
-      [hashResetToken(token)]
+      [hashActionToken(token)]
     );
 
     if (userRes.rows.length === 0) {
@@ -667,7 +671,65 @@ router.post('/reset-password', passwordResetLimiter, authSlowDown, validateReque
   }
 });
 
-// Logout — clears the HttpOnly auth cookie
+// Public account-deletion request. The response never reveals whether the
+// address is registered, and deletion is not scheduled until the recipient
+// verifies ownership through the emailed one-time link.
+const ACCOUNT_DELETION_TOKEN_TTL_HOURS = 24;
+const ACCOUNT_DELETION_REQUEST_RESPONSE = {
+  success: true,
+  message: 'If a bitezsnap account exists for that email, a verification link is on its way.',
+};
+
+router.post(
+  '/account/deletion-request',
+  accountDeletionRequestLimiter,
+  authSlowDown,
+  validateRequest({ body: authSchemas.accountDeletionRequest }),
+  async (req, res) => {
+    const email = normalizeEmail(req.body?.email);
+
+    try {
+      const userRes = await findUserByEmail(req.pool, email);
+      if (userRes.rows.length === 0) {
+        securityLog('account_deletion_verification_requested', req, { accountFound: false }, 'info');
+        return res.status(202).json(ACCOUNT_DELETION_REQUEST_RESPONSE);
+      }
+
+      const user = userRes.rows[0];
+      const rawToken = crypto.randomBytes(32).toString('hex');
+      const expiresAt = new Date(Date.now() + ACCOUNT_DELETION_TOKEN_TTL_HOURS * 60 * 60 * 1000);
+
+      await req.pool.query(
+        `UPDATE users
+         SET deletion_request_token_hash = $1,
+             deletion_request_token_expires_at = $2
+         WHERE id = $3`,
+        [hashActionToken(rawToken), expiresAt, user.id]
+      );
+
+      const verificationUrl = `${resolveFrontendBaseUrl()}/delete-account?token=${rawToken}`;
+      try {
+        await sendAccountDeletionVerificationEmail({
+          to: email,
+          verificationUrl,
+          expiresInHours: ACCOUNT_DELETION_TOKEN_TTL_HOURS,
+        });
+      } catch (mailError) {
+        // Keep the public response indistinguishable from an unknown account.
+        // The user can retry, while logs retain the provider error for support.
+        console.error('[Account Deletion] Failed to send verification email:', mailError.message);
+      }
+
+      securityLog('account_deletion_verification_requested', req, { accountFound: true }, 'info');
+      return res.status(202).json(ACCOUNT_DELETION_REQUEST_RESPONSE);
+    } catch (error) {
+      console.error('[Account Deletion] Request failed:', error);
+      return res.status(500).json({ error: 'Could not submit the deletion request. Please try again.' });
+    }
+  }
+);
+
+// Logout and session endpoints.
 router.get('/csrf', (req, res) => {
   const csrfToken = issueCsrfToken(req, res);
   res.json({ csrfToken });
@@ -901,31 +963,34 @@ router.get('/leaderboard', authenticate, async (req, res) => {
 // POST /account/deletion is the canonical request endpoint used by the public
 // deletion page. DELETE /account remains as a compatibility alias for older
 // app builds that opened the former Profile confirmation modal.
+const scheduleAccountDeletionForUser = async (pool, userId) => {
+  const userRes = await pool.query('SELECT id, scheduled_deletion_at FROM users WHERE id = $1', [userId]);
+  if (userRes.rows.length === 0) return null;
+
+  // Keep retries idempotent: a repeated request must not push the deadline
+  // seven days farther into the future.
+  const existingDeletionDate = userRes.rows[0].scheduled_deletion_at;
+  const deletionDate = existingDeletionDate ? new Date(existingDeletionDate) : new Date();
+  if (!existingDeletionDate) {
+    deletionDate.setDate(deletionDate.getDate() + 7);
+    await pool.query(
+      `UPDATE users
+       SET scheduled_deletion_at = $1,
+           token_version = token_version + 1
+       WHERE id = $2`,
+      [deletionDate, userId]
+    );
+  }
+
+  await revokeUserSessions(pool, userId);
+  return deletionDate;
+};
+
 const scheduleAccountDeletion = async (req, res) => {
   try {
-    const userId = req.userId;
+    const deletionDate = await scheduleAccountDeletionForUser(req.pool, req.userId);
+    if (!deletionDate) return res.status(404).json({ error: 'User not found' });
 
-    const userRes = await req.pool.query('SELECT id, scheduled_deletion_at FROM users WHERE id = $1', [userId]);
-    if (userRes.rows.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    // Keep retries idempotent: a repeated request must not push the deadline
-    // seven days farther into the future.
-    const existingDeletionDate = userRes.rows[0].scheduled_deletion_at;
-    const deletionDate = existingDeletionDate ? new Date(existingDeletionDate) : new Date();
-    if (!existingDeletionDate) {
-      deletionDate.setDate(deletionDate.getDate() + 7);
-      await req.pool.query(
-        `UPDATE users
-         SET scheduled_deletion_at = $1,
-             token_version = token_version + 1
-         WHERE id = $2`,
-        [deletionDate, userId]
-      );
-    }
-
-    await revokeUserSessions(req.pool, userId);
     res.clearCookie('token', createClearAuthCookieOptions());
     res.clearCookie('refresh_token', createClearRefreshCookieOptions());
 
@@ -943,6 +1008,67 @@ const scheduleAccountDeletion = async (req, res) => {
 
 router.post('/account/deletion', authenticate, validateRequest({ body: emptyBody }), scheduleAccountDeletion);
 router.delete('/account', authenticate, validateRequest({ body: emptyBody }), scheduleAccountDeletion);
+
+// Complete a public request only after the recipient explicitly confirms the
+// one-time email link. Link scanners cannot schedule deletion because the
+// destructive action is a POST from the confirmation page, not a GET request.
+router.post(
+  '/account/deletion/confirm',
+  accountDeletionRequestLimiter,
+  authSlowDown,
+  validateRequest({ body: authSchemas.confirmAccountDeletion }),
+  async (req, res) => {
+    const { token } = req.body;
+
+    try {
+      const userRes = await req.pool.query(
+        `SELECT id, deletion_request_token_expires_at
+         FROM users
+         WHERE deletion_request_token_hash = $1`,
+        [hashActionToken(token)]
+      );
+
+      if (userRes.rows.length === 0) {
+        return res.status(400).json({ error: 'This deletion link is invalid or has already been used.' });
+      }
+
+      const user = userRes.rows[0];
+      if (!user.deletion_request_token_expires_at || new Date(user.deletion_request_token_expires_at) < new Date()) {
+        await req.pool.query(
+          `UPDATE users
+           SET deletion_request_token_hash = NULL,
+               deletion_request_token_expires_at = NULL
+           WHERE id = $1`,
+          [user.id]
+        );
+        return res.status(400).json({ error: 'This deletion link has expired. Submit a new request.' });
+      }
+
+      const deletionDate = await scheduleAccountDeletionForUser(req.pool, user.id);
+      if (!deletionDate) return res.status(400).json({ error: 'This deletion link is no longer valid.' });
+
+      await req.pool.query(
+        `UPDATE users
+         SET deletion_request_token_hash = NULL,
+             deletion_request_token_expires_at = NULL
+         WHERE id = $1`,
+        [user.id]
+      );
+
+      res.clearCookie('token', createClearAuthCookieOptions());
+      res.clearCookie('refresh_token', createClearRefreshCookieOptions());
+      securityLog('account_deletion_confirmed_by_email', req, {}, 'info');
+      return res.json({
+        success: true,
+        message: 'Account deletion request confirmed',
+        scheduledDeletionAt: deletionDate.toISOString(),
+      });
+    } catch (error) {
+      console.error('[Account Deletion] Confirmation failed:', error);
+      return res.status(500).json({ error: 'Could not confirm the deletion request. Please try again.' });
+    }
+  }
+);
 
 // Cancel Scheduled Deletion
 router.post('/cancel-deletion', authenticate, validateRequest({ body: emptyBody }), async (req, res) => {

@@ -41,6 +41,8 @@ const auth = {
   }).strict(),
   forgotPassword: z.object({ email }).strict(),
   resetPassword: z.object({ token: z.string().min(40).max(200), password }).strict(),
+  accountDeletionRequest: z.object({ email }).strict(),
+  confirmAccountDeletion: z.object({ token: z.string().min(40).max(200) }).strict(),
   refresh: z.object({ refreshToken: z.string().min(40).max(500).optional() }).strict(),
   profilePicture: z.object({
     imageBase64: z.string().startsWith('data:image/').max(5_500_000),

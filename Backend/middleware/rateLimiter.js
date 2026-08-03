@@ -45,6 +45,11 @@ const passwordResetLimiter = createLimiter('password_reset', {
   limit: Number(process.env.PASSWORD_RESET_RATE_LIMIT || 5),
 });
 
+const accountDeletionRequestLimiter = createLimiter('account_deletion_request', {
+  windowMs: 30 * 60 * 1000,
+  limit: Number(process.env.ACCOUNT_DELETION_REQUEST_RATE_LIMIT || 5),
+});
+
 const analyzeIpLimiter = createLimiter('analyze_ip', {
   windowMs: 10 * 60 * 1000,
   limit: Number(process.env.ANALYZE_IP_RATE_LIMIT || 20),
@@ -75,6 +80,7 @@ const apiSlowDown = slowDown({
 });
 
 module.exports = {
+  accountDeletionRequestLimiter,
   analyzeIpLimiter,
   analyzeLimiter: analyzeIpLimiter,
   analyzeUserLimiter,

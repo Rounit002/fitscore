@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
   CheckCircle2,
   Clock3,
   Database,
   FileWarning,
-  Loader2,
-  LogIn,
   Globe2,
+  Loader2,
+  Mail,
   ShieldAlert,
   Smartphone,
   Trash2,
@@ -16,12 +16,12 @@ import {
 import { API } from '../api/client.js';
 import BrandLogo from './BrandLogo.jsx';
 
-const CONFIRMATION_TEXT = 'DELETE';
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function formatDeletionDate(value) {
-  if (!value) return 'seven days from your request';
+  if (!value) return 'within 30 days';
   const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return 'seven days from your request';
+  if (Number.isNaN(parsed.getTime())) return 'within 30 days';
   return new Intl.DateTimeFormat(undefined, {
     dateStyle: 'long',
     timeStyle: 'short',
@@ -30,56 +30,80 @@ function formatDeletionDate(value) {
 
 export default function DeleteAccount({ userAuth, onDeletionScheduled }) {
   const navigate = useNavigate();
-  const successHeadingRef = useRef(null);
-  const [confirmation, setConfirmation] = useState('');
-  const [understood, setUnderstood] = useState(false);
+  const [searchParams] = useSearchParams();
+  const verificationToken = searchParams.get('token') || '';
+  const resultHeadingRef = useRef(null);
+  const [email, setEmail] = useState(() => userAuth?.email || '');
   const [requestState, setRequestState] = useState('idle');
   const [error, setError] = useState('');
   const [scheduledDeletionAt, setScheduledDeletionAt] = useState(null);
 
   useEffect(() => {
     const previousTitle = document.title;
-    document.title = 'Delete account | bitezsnap';
+    document.title = 'Account and data deletion | bitezsnap';
     return () => { document.title = previousTitle; };
   }, []);
 
   useEffect(() => {
-    if (requestState === 'success') successHeadingRef.current?.focus();
+    if (requestState === 'request-sent' || requestState === 'scheduled') {
+      resultHeadingRef.current?.focus();
+    }
   }, [requestState]);
 
-  const canSubmit = understood
-    && confirmation.trim() === CONFIRMATION_TEXT
-    && requestState !== 'submitting';
+  const emailIsValid = EMAIL_PATTERN.test(email.trim());
+  const isSubmitting = requestState === 'submitting-request'
+    || requestState === 'submitting-confirmation';
 
-  const handleDeletionRequest = async (event) => {
+  const submitDeletionRequest = async (event) => {
     event.preventDefault();
-    if (!canSubmit) return;
+    if (!emailIsValid || isSubmitting) return;
 
-    setRequestState('submitting');
+    setRequestState('submitting-request');
     setError('');
 
     try {
-      const response = await fetch(`${API}/auth/account/deletion`, {
+      const response = await fetch(`${API}/auth/account/deletion-request`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ email: email.trim() }),
       });
       const body = await response.json().catch(() => ({}));
-
       if (!response.ok) {
-        if (response.status === 401) {
-          throw new Error('Your session has expired. Sign in again before submitting the request.');
-        }
-        throw new Error(body.error || 'We could not schedule your account deletion. Please try again.');
+        throw new Error(body.error || 'We could not submit your deletion request. Please try again.');
+      }
+      setRequestState('request-sent');
+    } catch (requestError) {
+      setError(requestError.message || 'We could not submit your deletion request. Please try again.');
+      setRequestState('error');
+    }
+  };
+
+  const confirmDeletionRequest = async () => {
+    if (!verificationToken || isSubmitting) return;
+
+    setRequestState('submitting-confirmation');
+    setError('');
+
+    try {
+      const response = await fetch(`${API}/auth/account/deletion/confirm`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: verificationToken }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(body.error || 'We could not confirm your deletion request. Please try again.');
       }
 
       setScheduledDeletionAt(body.scheduledDeletionAt || null);
-      setRequestState('success');
+      setRequestState('scheduled');
       onDeletionScheduled?.();
+      navigate('/delete-account', { replace: true });
     } catch (requestError) {
-      setError(requestError.message || 'We could not schedule your account deletion. Please try again.');
-      setRequestState('error');
+      setError(requestError.message || 'We could not confirm your deletion request. Please try again.');
+      setRequestState('confirmation-error');
     }
   };
 
@@ -99,19 +123,19 @@ export default function DeleteAccount({ userAuth, onDeletionScheduled }) {
       </header>
 
       <main className="account-deletion-body">
-        {requestState === 'success' ? (
+        {requestState === 'scheduled' ? (
           <section className="account-deletion-success" aria-live="polite">
             <span className="account-deletion-success-icon" aria-hidden="true">
               <CheckCircle2 size={30} />
             </span>
-            <h1 ref={successHeadingRef} tabIndex="-1">Deletion scheduled</h1>
+            <h1 ref={resultHeadingRef} tabIndex="-1">Deletion request confirmed</h1>
             <p>
               Your bitezsnap account is scheduled for permanent deletion on{' '}
               <strong>{formatDeletionDate(scheduledDeletionAt)}</strong>.
             </p>
             <p>
-              All active sessions have been signed out. Signing in before that deadline automatically
-              cancels the request and keeps your account.
+              The request will be processed within 30 days. Signing in during the seven-day grace
+              period cancels the request and keeps your account.
             </p>
             <button type="button" className="account-deletion-secondary" onClick={() => navigate('/login')}>
               Return to sign in
@@ -127,8 +151,8 @@ export default function DeleteAccount({ userAuth, onDeletionScheduled }) {
                 <p className="account-deletion-eyebrow">Account and data controls</p>
                 <h1>Delete your bitezsnap account</h1>
                 <p>
-                  This public page explains how to permanently delete your bitezsnap account and
-                  associated data. You can submit the request in the Android app or on this website.
+                  Submit a request to permanently delete your bitezsnap account and associated
+                  personal data. This page is publicly accessible and does not require the app.
                 </p>
               </div>
             </section>
@@ -138,8 +162,8 @@ export default function DeleteAccount({ userAuth, onDeletionScheduled }) {
                 <p>Request options</p>
                 <h2 id="deletion-request-heading">How to request account deletion</h2>
                 <span>
-                  You do not need to contact support if you can sign in. Both options schedule the
-                  same permanent account and data deletion.
+                  You can initiate deletion from the Android app or submit the registered email
+                  address through the secure public form on this page.
                 </span>
               </div>
 
@@ -147,13 +171,12 @@ export default function DeleteAccount({ userAuth, onDeletionScheduled }) {
                 <article>
                   <Smartphone size={22} aria-hidden="true" />
                   <div>
-                    <h3>Delete from the Android app</h3>
+                    <h3>From the Android app</h3>
                     <ol>
                       <li>Open bitezsnap and sign in.</li>
                       <li>Open <strong>Profile</strong>.</li>
                       <li>Under <strong>Account Actions</strong>, select <strong>Delete Account</strong>.</li>
-                      <li>Review the information, tick the acknowledgement, and type <strong>DELETE</strong>.</li>
-                      <li>Select <strong>Schedule account deletion</strong>.</li>
+                      <li>Enter your registered email address and submit the request.</li>
                     </ol>
                   </div>
                 </article>
@@ -161,12 +184,12 @@ export default function DeleteAccount({ userAuth, onDeletionScheduled }) {
                 <article>
                   <Globe2 size={22} aria-hidden="true" />
                   <div>
-                    <h3>Delete on this website</h3>
+                    <h3>From this website</h3>
                     <ol>
-                      <li>Use the sign-in button or request form on this page.</li>
-                      <li>Sign in to verify the account you want deleted.</li>
-                      <li>Tick the acknowledgement and type <strong>DELETE</strong>.</li>
-                      <li>Select <strong>Schedule account deletion</strong>.</li>
+                      <li>Enter your registered email address in the public form.</li>
+                      <li>Select <strong>Request Deletion</strong>.</li>
+                      <li>Open the verification link sent to that address within 24 hours.</li>
+                      <li>Review and confirm the permanent deletion request.</li>
                     </ol>
                   </div>
                 </article>
@@ -176,10 +199,10 @@ export default function DeleteAccount({ userAuth, onDeletionScheduled }) {
             <section className="account-deletion-grid" aria-label="Account deletion timing and data handling">
               <article>
                 <Clock3 size={22} aria-hidden="true" />
-                <h2>When deletion happens</h2>
+                <h2>Processing time</h2>
                 <p>
-                  The request is scheduled immediately. Your account is permanently deleted after a
-                  seven-day grace period. Signing in during those seven days cancels the request.
+                  After email verification, deletion is scheduled with a seven-day grace period
+                  and will be processed within 30 days.
                 </p>
               </article>
               <article>
@@ -194,11 +217,11 @@ export default function DeleteAccount({ userAuth, onDeletionScheduled }) {
               </article>
               <article>
                 <Database size={22} aria-hidden="true" />
-                <h2>Data retained and for how long</h2>
+                <h2>Limited data retention</h2>
                 <ul>
-                  <li>Anonymised shared product facts may remain indefinitely without your account link.</li>
-                  <li>Hosted scan-image copies and votes on other users' requests may remain until you ask support to remove them.</li>
-                  <li>Payment, security, tax, or legal records may remain only for the period required by law or the relevant provider.</li>
+                  <li>Anonymised shared product facts may remain without your account link.</li>
+                  <li>Records required for security, fraud prevention, tax, or legal compliance may be retained.</li>
+                  <li>See the Privacy Policy for current retention details and support options.</li>
                 </ul>
               </article>
             </section>
@@ -206,82 +229,129 @@ export default function DeleteAccount({ userAuth, onDeletionScheduled }) {
             <aside className="account-deletion-notice">
               <FileWarning size={22} aria-hidden="true" />
               <div>
-                <h2>Before you continue</h2>
+                <h2>Permanent action</h2>
                 <p>
-                  Deletion cannot be undone after the seven-day window. To request removal of a hosted image,
-                  a remaining vote record, or to get help when you cannot sign in, email support below. Read the{' '}
+                  Data deletion is permanent once completed and will be processed within 30 days.
+                  Read the{' '}
                   <button type="button" onClick={() => navigate('/privacy-policy')}>Privacy Policy</button>{' '}
-                  for complete data-handling details.
+                  before submitting if you need more information.
                 </p>
               </div>
             </aside>
 
-            {userAuth ? (
-              <form id="account-deletion-request" className="account-deletion-form" onSubmit={handleDeletionRequest} noValidate>
+            {verificationToken ? (
+              <section id="account-deletion-request" className="account-deletion-form account-deletion-confirm">
                 <div className="account-deletion-form-heading">
-                  <p>Web deletion request</p>
-                  <h2>Confirm account deletion</h2>
+                  <p>Email verification</p>
+                  <h2>Confirm your deletion request</h2>
                 </div>
-                <div className="account-deletion-signed-in">
-                  <span>Signed in account</span>
-                  <strong>{userAuth.email || userAuth.name || 'Current bitezsnap account'}</strong>
-                </div>
-
-                <label className="account-deletion-check" htmlFor="account-deletion-understood">
-                  <input
-                    id="account-deletion-understood"
-                    type="checkbox"
-                    checked={understood}
-                    onChange={(event) => setUnderstood(event.target.checked)}
-                  />
-                  <span>I understand that my account will be permanently deleted after seven days.</span>
-                </label>
-
-                <div className="account-deletion-field">
-                  <label htmlFor="account-deletion-confirmation">
-                    Type <strong>{CONFIRMATION_TEXT}</strong> to confirm
-                  </label>
-                  <input
-                    id="account-deletion-confirmation"
-                    type="text"
-                    value={confirmation}
-                    onChange={(event) => setConfirmation(event.target.value)}
-                    autoComplete="off"
-                    spellCheck="false"
-                    aria-describedby="account-deletion-help"
-                  />
-                  <p id="account-deletion-help">The confirmation is case-sensitive.</p>
-                </div>
-
+                <p className="account-deletion-form-copy">
+                  This link verifies that you can access the registered email address. Select the
+                  button below to schedule permanent account and associated data deletion.
+                </p>
+                <p className="account-deletion-permanent-note">
+                  Data deletion is permanent once completed and will be processed within 30 days.
+                </p>
                 {error && <p className="account-deletion-error" role="alert">{error}</p>}
-
-                <button type="submit" className="account-deletion-submit" disabled={!canSubmit}>
-                  {requestState === 'submitting' ? (
+                <button
+                  type="button"
+                  className="account-deletion-submit"
+                  onClick={confirmDeletionRequest}
+                  disabled={isSubmitting}
+                >
+                  {requestState === 'submitting-confirmation' ? (
                     <>
                       <Loader2 size={18} className="animate-spin" aria-hidden="true" />
-                      Scheduling deletion…
+                      Confirming request...
                     </>
                   ) : (
                     <>
                       <Trash2 size={18} aria-hidden="true" />
-                      Schedule account deletion
+                      Confirm Deletion Request
+                    </>
+                  )}
+                </button>
+              </section>
+            ) : requestState === 'request-sent' ? (
+              <section id="account-deletion-request" className="account-deletion-request-sent" aria-live="polite">
+                <span aria-hidden="true"><Mail size={26} /></span>
+                <div>
+                  <h2 ref={resultHeadingRef} tabIndex="-1">Check your email</h2>
+                  <p>
+                    If a bitezsnap account exists for <strong>{email.trim()}</strong>, we sent a
+                    verification link. Open it within 24 hours to confirm the request.
+                  </p>
+                  <p>No deletion is scheduled until the email link is confirmed.</p>
+                </div>
+                <button
+                  type="button"
+                  className="account-deletion-secondary"
+                  onClick={() => {
+                    setRequestState('idle');
+                    setError('');
+                  }}
+                >
+                  Submit another email
+                </button>
+              </section>
+            ) : (
+              <form
+                id="account-deletion-request"
+                className="account-deletion-form"
+                onSubmit={submitDeletionRequest}
+                noValidate
+              >
+                <div className="account-deletion-form-heading">
+                  <p>Public deletion request</p>
+                  <h2>Request account and data deletion</h2>
+                </div>
+
+                <div className="account-deletion-field">
+                  <label htmlFor="account-deletion-email">Registered Email Address</label>
+                  <input
+                    id="account-deletion-email"
+                    type="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    autoComplete="email"
+                    inputMode="email"
+                    placeholder="you@example.com"
+                    aria-describedby="account-deletion-email-help account-deletion-disclaimer"
+                    required
+                  />
+                  <p id="account-deletion-email-help">
+                    Use the same email address associated with your bitezsnap account.
+                  </p>
+                </div>
+
+                <p id="account-deletion-disclaimer" className="account-deletion-permanent-note">
+                  Data deletion is permanent once completed and will be processed within 30 days.
+                </p>
+
+                {error && <p className="account-deletion-error" role="alert">{error}</p>}
+
+                <button
+                  type="submit"
+                  className="account-deletion-submit"
+                  disabled={!emailIsValid || isSubmitting}
+                >
+                  {requestState === 'submitting-request' ? (
+                    <>
+                      <Loader2 size={18} className="animate-spin" aria-hidden="true" />
+                      Submitting request...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 size={18} aria-hidden="true" />
+                      <strong>Request Deletion</strong>
                     </>
                   )}
                 </button>
               </form>
-            ) : (
-              <section id="account-deletion-request" className="account-deletion-signin">
-                <LogIn size={24} aria-hidden="true" />
-                <div>
-                  <h2>Submit a web deletion request</h2>
-                  <p>For account security, deletion requests are accepted only from an authenticated session.</p>
-                </div>
-                <button type="button" onClick={() => navigate('/login')}>Sign in to continue</button>
-              </section>
             )}
 
             <p className="account-deletion-support">
-              Cannot access your account? Email{' '}
+              Need help with your request? Email{' '}
               <a href="mailto:support@bitezsnap.app?subject=Account%20deletion%20help">support@bitezsnap.app</a>.
             </p>
           </>

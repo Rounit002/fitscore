@@ -6,6 +6,10 @@ const cookieParser = require('cookie-parser');
 
 jest.mock('bcrypt');
 jest.mock('jsonwebtoken');
+jest.mock('../utils/mailer', () => ({
+  sendPasswordResetEmail: jest.fn().mockResolvedValue({ sent: true }),
+  sendAccountDeletionVerificationEmail: jest.fn().mockResolvedValue({ sent: true }),
+}));
 
 // Mock profileValidator middleware to pass through
 jest.mock('../middleware/profileValidator', () => ({
@@ -14,6 +18,7 @@ jest.mock('../middleware/profileValidator', () => ({
 }));
 
 const authRouter = require('./auth');
+const { sendAccountDeletionVerificationEmail } = require('../utils/mailer');
 
 function createApp(pool) {
   const app = express();
@@ -36,6 +41,7 @@ describe('Auth Routes', () => {
     app = createApp(pool);
     jwt.sign.mockReturnValue('tok123');
     jwt.verify.mockReturnValue({ userId: 1 });
+    sendAccountDeletionVerificationEmail.mockClear();
   });
 
   describe('POST /auth/register', () => {
@@ -182,6 +188,98 @@ describe('Auth Routes', () => {
 
       expect(res.status).toBe(401);
       expect(res.body.error).toBe('Unauthorized');
+    });
+  });
+
+  describe('POST /auth/account/deletion-request', () => {
+    it('emails a one-time verification link for a registered address', async () => {
+      pool.query
+        .mockResolvedValueOnce({ rows: [{ id: 7, email: 'person@example.com' }] })
+        .mockResolvedValueOnce({});
+
+      const res = await request(app)
+        .post('/auth/account/deletion-request')
+        .send({ email: 'Person@Example.com' });
+
+      expect(res.status).toBe(202);
+      expect(res.body.message).toMatch(/If a bitezsnap account exists/i);
+      expect(sendAccountDeletionVerificationEmail).toHaveBeenCalledWith(expect.objectContaining({
+        to: 'person@example.com',
+        expiresInHours: 24,
+        verificationUrl: expect.stringMatching(/\/delete-account\?token=[a-f0-9]{64}$/),
+      }));
+    });
+
+    it('returns the same response for an unknown address without sending email', async () => {
+      pool.query.mockResolvedValueOnce({ rows: [] });
+
+      const res = await request(app)
+        .post('/auth/account/deletion-request')
+        .send({ email: 'missing@example.com' });
+
+      expect(res.status).toBe(202);
+      expect(res.body.message).toMatch(/If a bitezsnap account exists/i);
+      expect(sendAccountDeletionVerificationEmail).not.toHaveBeenCalled();
+    });
+
+    it('rejects an invalid email address', async () => {
+      const res = await request(app)
+        .post('/auth/account/deletion-request')
+        .send({ email: 'not-an-email' });
+
+      expect(res.status).toBe(400);
+      expect(pool.query).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('POST /auth/account/deletion/confirm', () => {
+    it('schedules deletion after a valid email confirmation', async () => {
+      pool.query
+        .mockResolvedValueOnce({
+          rows: [{ id: 7, deletion_request_token_expires_at: new Date(Date.now() + 60_000) }],
+        })
+        .mockResolvedValueOnce({ rows: [{ id: 7, scheduled_deletion_at: null }] })
+        .mockResolvedValueOnce({})
+        .mockResolvedValueOnce({})
+        .mockResolvedValueOnce({});
+
+      const res = await request(app)
+        .post('/auth/account/deletion/confirm')
+        .send({ token: 'a'.repeat(64) });
+
+      expect(res.status).toBe(200);
+      expect(res.body.message).toBe('Account deletion request confirmed');
+      expect(new Date(res.body.scheduledDeletionAt).getTime()).toBeGreaterThan(Date.now());
+      expect(pool.query).toHaveBeenCalledWith(
+        expect.stringContaining('deletion_request_token_hash = NULL'),
+        [7],
+      );
+    });
+
+    it('rejects an invalid or already-used confirmation link', async () => {
+      pool.query.mockResolvedValueOnce({ rows: [] });
+
+      const res = await request(app)
+        .post('/auth/account/deletion/confirm')
+        .send({ token: 'b'.repeat(64) });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/invalid or has already been used/i);
+    });
+
+    it('clears and rejects an expired confirmation link', async () => {
+      pool.query
+        .mockResolvedValueOnce({
+          rows: [{ id: 7, deletion_request_token_expires_at: new Date(Date.now() - 60_000) }],
+        })
+        .mockResolvedValueOnce({});
+
+      const res = await request(app)
+        .post('/auth/account/deletion/confirm')
+        .send({ token: 'c'.repeat(64) });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/expired/i);
     });
   });
 

@@ -40,10 +40,11 @@ describe('PrivacyPolicy', () => {
     );
   });
 
-  it('discloses current deletion limitations', () => {
+  it('describes the public request and associated-data cleanup', () => {
     renderPolicy();
 
-    expect(screen.getByText(/does not currently delete the underlying image asset/i)).toBeInTheDocument();
-    expect(screen.getByText(/Votes on feature requests authored by other users may remain/i)).toBeInTheDocument();
+    expect(screen.getByText(/public deletion page using your registered email address/i)).toBeInTheDocument();
+    expect(screen.getByText(/requests deletion of its hosted Cloudinary scan images/i)).toBeInTheDocument();
+    expect(screen.getByText(/removes your internal account identifier from votes/i)).toBeInTheDocument();
   });
 });

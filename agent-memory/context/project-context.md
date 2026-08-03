@@ -1175,3 +1175,33 @@ Also confirmed absent from cordova-android 15: `SplashShowOnlyFirstTime`,
 - Verification: deletion-page tests passed (4/4), backend auth tests passed (30/30), targeted ESLint
   passed, `git diff --check` passed, and the Vite production build succeeded. The existing large
   JavaScript chunk warning remains non-blocking.
+
+## 2026-08-04 - Added public registered-email account/data deletion request
+- Replaced the sign-in-only `/delete-account` interaction with a prominent public form containing
+  the exact `Registered Email Address` field, bold `Request Deletion` action, and permanent/30-day
+  processing disclaimer requested for the Google Play Data Safety resource.
+- Added public `POST /api/auth/account/deletion-request`. It validates and normalises the email,
+  rate-limits requests, always returns the same message for registered/unregistered addresses, and
+  emails a cryptographically random one-time verification link without exposing account existence.
+- Added `POST /api/auth/account/deletion/confirm`. The emailed token is stored only as a SHA-256
+  hash, expires after 24 hours, is single-use, and requires an explicit POST confirmation so email
+  link scanners cannot schedule destructive work. Confirmation reuses the idempotent seven-day
+  deletion scheduler, revokes all sessions, and clears browser auth credentials.
+- Added startup-managed `users.deletion_request_token_hash` and
+  `users.deletion_request_token_expires_at` columns plus the configurable
+  `ACCOUNT_DELETION_REQUEST_RATE_LIMIT` (default 5 requests per 30 minutes).
+- Added a Brevo account-deletion verification email containing the review link, seven-day grace
+  period, 24-hour link expiry, permanent-action warning, and within-30-days processing promise.
+- Closed prior associated-data purge gaps: expired-account cleanup now deletes each hosted
+  Cloudinary scan image (and invalidates cached copies) before removing database rows, retries the
+  scheduled account if the provider does not confirm deletion, and removes the deleted user's
+  internal identifier from votes on other feature requests.
+- Updated the Privacy Policy to document the public form, email verification, 30-day promise,
+  Cloudinary deletion/retry behavior, and feature-vote identifier cleanup.
+- Verification: backend auth + Cloudinary helpers passed 40/40 tests; deletion page + Privacy Policy
+  passed 9/9 tests; targeted ESLint and Node syntax checks passed; `git diff --check` passed; Vite
+  production build passed with only the existing large-chunk warning. Real Chrome QA at 390x844 and
+  1440x900 confirmed direct public-route rendering, zero horizontal overflow, the form immediately
+  after the hero, and a 48px Request Deletion action.
+- Production requirement: set `FRONTEND_URL` to the deployed web origin and configure
+  `BREVO_API_KEY` plus verified sender values so the 24-hour confirmation emails are delivered.
