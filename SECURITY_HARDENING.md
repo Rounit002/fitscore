@@ -1,4 +1,4 @@
-# FitScore production security hardening
+# bitezsnap production security hardening
 
 Implemented on 2026-07-28. This document describes the code that is now in the repository and the deployment work that remains.
 
@@ -118,7 +118,7 @@ helmet({
 });
 ```
 
-Production CORS excludes localhost and accepts only `FRONTEND_URL`, `FRONTEND_URLS`, the deployed FitScore URL, and the Cordova `https://localhost` origin. Cookie-authenticated unsafe methods require an `X-CSRF-Token` value that timing-safely matches the CSRF cookie. Bearer-authenticated mobile/server requests are not vulnerable to cookie CSRF and bypass this check.
+Production CORS excludes localhost and accepts only `FRONTEND_URL`, `FRONTEND_URLS`, the deployed bitezsnap URL, and the Cordova `https://localhost` origin. Cookie-authenticated unsafe methods require an `X-CSRF-Token` value that timing-safely matches the CSRF cookie. Bearer-authenticated mobile/server requests are not vulnerable to cookie CSRF and bypass this check.
 
 One-line test:
 
@@ -153,7 +153,7 @@ Files affected:
 - `mobile/package.json`: `cordova-plugin-secure-storage-echo` and RevenueCat plugin.
 - `Frontend/src/api/client.js`: Android Keystore-backed access/refresh token storage; memory-only fail-closed fallback.
 
-Release WebView debugging is disabled by Cordova's release build defaults; no code enables `WebView.setWebContentsDebuggingEnabled`. External intents are restricted to FitScore, Google Play, Google Accounts, telephone, email, and Play Market. No custom deep-link scheme is currently registered, so there is no custom scheme handler to inject into.
+Release WebView debugging is disabled by Cordova's release build defaults; no code enables `WebView.setWebContentsDebuggingEnabled`. External intents are restricted to bitezsnap, Google Play, Google Accounts, telephone, email, and Play Market. No custom deep-link scheme is currently registered, so there is no custom scheme handler to inject into.
 
 Root/tamper detection is deliberately **not claimed as complete**. Client-only root checks are bypassable. A production payment build should add Google Play Integrity in Play Console/Google Cloud, obtain an integrity token from native code, and verify it server-side before granting high-risk entitlements. RevenueCat/Google server verification already prevents the app client from directly granting subscription status, but device integrity remains an external deployment integration.
 
@@ -191,12 +191,14 @@ Files affected:
 
 Current production dependency audit status:
 
-- Backend: 7 moderate advisory nodes in the `googleapis` transitive tree, rooted in `uuid`; the current audit reports no complete fix for the direct `googleapis` dependency. The vulnerable UUID buffer-writing APIs are not called by FitScore, but the package tree should be upgraded as soon as Google publishes a resolved release. A longer-term option is replacing the broad `googleapis` package with the narrower Google Auth/Android Publisher clients after integration testing.
+- Backend: 7 moderate advisory nodes in the `googleapis` transitive tree, rooted in `uuid`; the current audit reports no complete fix for the direct `googleapis` dependency. The vulnerable UUID buffer-writing APIs are not called by bitezsnap, but the package tree should be upgraded as soon as Google publishes a resolved release. A longer-term option is replacing the broad `googleapis` package with the narrower Google Auth/Android Publisher clients after integration testing.
 - Frontend: 2 high advisory nodes (`react-router-dom` and transitive `react-router`) for an RSC action CSRF issue; the current audit reports no fix. This Vite SPA does not enable React Server Components/actions, which reduces reachability, but the patched router release should still be installed and regression-tested when available.
 - Mobile: 0 known production dependency vulnerabilities.
 - Development-only Jest dependency trees still report additional advisories; they are not shipped, but should be updated in a dedicated test-toolchain upgrade.
 
 Recommended lightweight alerting: send Render JSON logs to a managed log drain such as Better Stack, Datadog, or Grafana Cloud; alert on spikes in `login_failed`, `account_locked`, `authentication_invalid`, `csrf_rejected`, `rate_limit_exceeded`, and webhook 401/403/5xx events. Never alert with raw request bodies, cookies, authorization headers, email addresses, purchase tokens, or reset tokens.
+
+The concrete Better Stack drain, alert thresholds, event-name drift, webhook visibility blocker, production-variable cross-check, and Android release-CI blocker are tracked in `MONITORING_SETUP.md`.
 
 One-line test:
 

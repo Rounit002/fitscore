@@ -358,7 +358,7 @@ router.post('/register', signupLimiter, authSlowDown, validateRequest({ body: au
   // applies the same rule so it cannot be bypassed by skipping it here.
   if (dateOfBirth && !isOldEnough(dateOfBirth)) {
     return res.status(400).json({
-      error: `You must be at least ${MINIMUM_AGE} years old to use FitScan`,
+      error: `You must be at least ${MINIMUM_AGE} years old to use bitezsnap`,
       field: 'dateOfBirth',
     });
   }

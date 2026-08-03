@@ -17,7 +17,7 @@ function StatTile({ icon: Icon, label, value, tone }) {
 
 function LeaderboardRow({ player, rank, isCurrentUser }) {
   const displayRank = rankLabels[rank - 1] || rank;
-  const name = player.name || (isCurrentUser ? 'You' : 'NutriScore User');
+  const name = player.name || (isCurrentUser ? 'You' : 'bitezsnap User');
 
   return (
     <div className={`leaderboard-row${isCurrentUser ? ' is-current-user' : ''}`}>
@@ -104,7 +104,7 @@ export default function StreakLeaderboard({ authToken, userAuth, onBack }) {
             <ArrowLeft size={20} />
           </button>
           <div>
-            <span>NutriScore</span>
+            <span>bitezsnap</span>
             <strong>{t('streak_board')}</strong>
           </div>
         </header>

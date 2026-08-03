@@ -113,7 +113,6 @@ export default function DailyNutritionCard({ scans, title }) {
           stroke={8}
           trackColor="var(--ns-border-light)"
           color="var(--ns-primary)"
-          glow
         >
           <div className="flex flex-col items-center leading-none">
             <span

@@ -27,11 +27,11 @@ const profileSchema = z.object({
   // registration.
   age: z.union([
     z.number().int('Age must be a whole number')
-      .min(MINIMUM_AGE, `You must be at least ${MINIMUM_AGE} years old to use FitScan`)
+      .min(MINIMUM_AGE, `You must be at least ${MINIMUM_AGE} years old to use bitezsnap`)
       .max(MAXIMUM_AGE, `Age must be ${MAXIMUM_AGE} or less`),
     z.string().regex(/^\d*$/, 'Age must be a number').transform(val => val === '' ? null : Number(val))
       .refine(val => val === null || (val >= MINIMUM_AGE && val <= MAXIMUM_AGE), {
-        message: `You must be at least ${MINIMUM_AGE} years old to use FitScan`,
+        message: `You must be at least ${MINIMUM_AGE} years old to use bitezsnap`,
       }),
     z.null()
   ]).optional(),
@@ -52,7 +52,7 @@ const profileSchema = z.object({
       // PUT /auth/details alike and cannot be skipped by editing the profile
       // after registration.
       .refine((value) => isOldEnough(value), {
-        message: `You must be at least ${MINIMUM_AGE} years old to use FitScan`,
+        message: `You must be at least ${MINIMUM_AGE} years old to use bitezsnap`,
       }),
     z.literal(''),
     z.null()

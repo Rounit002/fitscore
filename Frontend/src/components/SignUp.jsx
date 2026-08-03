@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Eye, EyeOff, Sparkles, CheckCircle, Flame } from 'lucide-react';
 import GoogleSignInButton from './GoogleSignInButton.jsx';
 import { PASSWORD_REQUIREMENTS, validatePassword } from '../utils/passwordPolicy.js';
+import { routeHref } from '../utils/platformUtils.js';
+import BrandLogo from './BrandLogo.jsx';
 
 const FEATURES = [
   {
@@ -58,7 +60,8 @@ export default function SignUp({ onNavigateLogin, onSignUpPending, onLogin }) {
           treatment (DESIGN_TOKENS.md 2.4 rule 4). */}
       <aside className="auth-brand-panel">
         <div className="auth-brand-mark">
-          Fit<em>Scan</em>
+          <BrandLogo className="auth-brand-logo" alt="" aria-hidden="true" />
+          <span>bitez<em>snap</em></span>
         </div>
 
         <div>
@@ -78,7 +81,7 @@ export default function SignUp({ onNavigateLogin, onSignUpPending, onLogin }) {
         </div>
 
         <div className="auth-brand-footer">
-          &copy; {new Date().getFullYear()} FitScan Inc. All rights reserved.
+          &copy; {new Date().getFullYear()} bitezsnap Inc. All rights reserved.
         </div>
       </aside>
 
@@ -86,7 +89,8 @@ export default function SignUp({ onNavigateLogin, onSignUpPending, onLogin }) {
       <main className="auth-form-panel">
         <div className="auth-form-inner">
           <div className="auth-form-mark">
-            <em>Fit</em>Scan
+            <BrandLogo className="auth-form-logo" alt="" aria-hidden="true" />
+            <span><em>bitez</em>snap</span>
           </div>
 
           <h1 className="auth-title">Create Account</h1>
@@ -209,6 +213,13 @@ export default function SignUp({ onNavigateLogin, onSignUpPending, onLogin }) {
             >
               Sign in
             </button>
+          </p>
+
+          {/* Shown before the account exists, so it links the route rather than
+              the in-app Profile row. */}
+          <p className="auth-legal">
+            By creating an account, you acknowledge that you have read our{' '}
+            <a href={routeHref('/privacy-policy')}>Privacy Policy</a>.
           </p>
         </div>
       </main>

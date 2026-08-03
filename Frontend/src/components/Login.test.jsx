@@ -19,7 +19,9 @@ function renderLogin(props = {}) {
 // its own. This is the form SignUp.test.jsx already used for its two fields.
 describe('Login', () => {
   it('renders form fields', () => {
-    renderLogin();
+    const { container } = renderLogin();
+    expect(container).toHaveTextContent('bitezsnap');
+    expect(container).not.toHaveTextContent(/nutri\s*score/i);
     expect(screen.getByLabelText(/email address/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^password$/i)).toBeInTheDocument();
   });

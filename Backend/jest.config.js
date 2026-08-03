@@ -14,6 +14,7 @@ module.exports = {
     'routes/user.js',
     'routes/features.js',
     'routes/payment.js',
+    'routes/playIntegrity.js',
     'routes/scans.js',
     'routes/analyze.js',
     'utils/ownershipCheck.js',

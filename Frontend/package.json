@@ -1,8 +1,9 @@
 {
-  "name": "nutri-scan",
+  "name": "bitezsnap",
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "securityAuditTodo": "2026-08-01: react-router-dom 7.18.2 still resolves the vulnerable react-router 7.18.2 for GHSA-qwww-vcr4-c8h2, while no react-router-dom 8.3.0 package is published. Recheck for a compatible patched release before upgrading.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

@@ -10,8 +10,8 @@
 const BREVO_ENDPOINT = 'https://api.brevo.com/v3/smtp/email';
 
 const getSender = () => ({
-  email: process.env.MAIL_FROM_ADDRESS || 'no-reply@fitscan.app',
-  name: process.env.MAIL_FROM_NAME || 'FitScan',
+  email: process.env.MAIL_FROM_ADDRESS || 'no-reply@bitezsnap.app',
+  name: process.env.MAIL_FROM_NAME || 'bitezsnap',
 });
 
 /**
@@ -59,18 +59,18 @@ async function sendMail({ to, subject, html, text }) {
  */
 async function sendPasswordResetEmail({ to, name, resetUrl, expiresInMinutes }) {
   const greeting = name ? `Hi ${name},` : 'Hi,';
-  const subject = 'Reset your FitScan password';
+  const subject = 'Reset your bitezsnap password';
 
   const text = [
     greeting,
     '',
-    'We received a request to reset your FitScan password.',
+    'We received a request to reset your bitezsnap password.',
     `Open this link to choose a new one (valid for ${expiresInMinutes} minutes):`,
     resetUrl,
     '',
     'If you did not request this, you can safely ignore this email — your password will not change.',
     '',
-    'FitScan',
+    'bitezsnap',
   ].join('\n');
 
   const html = `
@@ -78,7 +78,7 @@ async function sendPasswordResetEmail({ to, name, resetUrl, expiresInMinutes }) 
       <h1 style="font-size:20px;margin:0 0 16px">Reset your password</h1>
       <p style="margin:0 0 12px;line-height:1.6">${greeting}</p>
       <p style="margin:0 0 20px;line-height:1.6">
-        We received a request to reset your FitScan password. Choose a new one using the button below.
+        We received a request to reset your bitezsnap password. Choose a new one using the button below.
         This link is valid for ${expiresInMinutes} minutes and can only be used once.
       </p>
       <p style="margin:0 0 24px">

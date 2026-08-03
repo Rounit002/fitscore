@@ -1,4 +1,4 @@
-# NutriScan — Frontend Documentation
+# bitezsnap — Frontend Documentation
 
 ## Table of Contents
 
@@ -477,7 +477,7 @@ Login form with a split-layout design (sidebar on desktop, full-width on mobile)
 - Email + password form with show/hide toggle
 - Displays backend error messages
 - "Forgot password" button (UI only, no implementation)
-- Split panel with FitScan feature highlights on the left (desktop only)
+- Split panel with bitezsnap feature highlights on the left (desktop only)
 
 **Props:**
 | Prop | Type | Description |

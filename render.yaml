@@ -1,4 +1,4 @@
-# Render Blueprint — reproducible deploy config for the FitScan backend API.
+# Render Blueprint — reproducible deploy config for the bitezsnap backend API.
 # Docs: https://render.com/docs/blueprint-spec
 #
 # IMPORTANT:
@@ -7,6 +7,8 @@
 #   service is named differently.
 # - Env vars marked `sync: false` are NOT stored in git. Set their values once in
 #   the Render dashboard (Environment tab); Render preserves them across deploys.
+# - Render log streams are workspace-level dashboard integrations and cannot be
+#   declared in a Blueprint. Follow MONITORING_SETUP.md after the service deploys.
 # - The frontend static site is intentionally NOT defined here to avoid creating a
 #   duplicate of your existing `fitscore-6hqp` site. See the commented block at the
 #   bottom if you want to manage it via this blueprint too.
@@ -46,6 +48,13 @@ services:
         sync: false
       - key: DB_NAME
         sync: false
+      - key: DB_SSL
+        sync: false
+      - key: DB_SSL_REJECT_UNAUTHORIZED
+        sync: false
+      # Optional PEM CA bundle when the provider uses a private certificate authority.
+      - key: DB_SSL_CA
+        sync: false
 
       # Auth
       - key: JWT_SECRET
@@ -74,11 +83,30 @@ services:
         value: premium
       - key: REVENUECAT_WEBHOOK_AUTH
         sync: false
+      - key: REVENUECAT_WEBHOOK_SIGNING_SECRET
+        sync: false
+      - key: REVENUECAT_APP_IDS
+        sync: false
 
       # Google Play billing (optional/legacy)
       - key: GOOGLE_SERVICE_ACCOUNT_JSON
         sync: false
       - key: GOOGLE_PACKAGE_NAME
+        sync: false
+      - key: GOOGLE_RTDN_AUDIENCE
+        sync: false
+      - key: GOOGLE_RTDN_SERVICE_ACCOUNT
+        sync: false
+      - key: GOOGLE_SUBSCRIPTION_IDS
+        sync: false
+
+      # Play Integrity remains off until a signed Play-installed build passes
+      # end-to-end verification. Enabling it rejects unattested entitlement calls.
+      - key: PLAY_INTEGRITY_ENFORCEMENT_ENABLED
+        value: "false"
+      - key: PLAY_INTEGRITY_MAX_TOKEN_AGE_MS
+        value: "120000"
+      - key: PLAY_INTEGRITY_ALLOWED_CERT_DIGESTS
         sync: false
 
       # Razorpay payments (optional)

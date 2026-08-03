@@ -24,6 +24,7 @@ export default {
     'src/components/PaywallContent.jsx',
     'src/components/ErrorBoundary.jsx',
     'src/components/LoadingState.jsx',
+    'src/components/SplashScreen.jsx',
     'src/components/ThemeToggle.jsx',
     'src/components/BarcodeScanner.jsx',
   ],

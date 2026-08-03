@@ -1,10 +1,10 @@
-# FitScan Technical Architecture & Explanation
+# bitezsnap Technical Architecture & Explanation
 
-FitScan is a full-stack web application designed to provide users with detailed nutritional analysis of food products based on their personal health profiles. It leverages AI (Google Gemini) to analyze food images and ingredients, offering personalized verdicts and health insights.
+bitezsnap is a full-stack web application designed to provide users with detailed nutritional analysis of food products based on their personal health profiles. It leverages AI (Google Gemini) to analyze food images and ingredients, offering personalized verdicts and health insights.
 
 ## 1. High-Level Architecture
 
-FitScan follows a classic client-server architecture with a relational database:
+bitezsnap follows a classic client-server architecture with a relational database:
 
 *   **Frontend:** A Single Page Application (SPA) built with React and Vite.
 *   **Backend:** A RESTful API server built with Node.js and Express.
@@ -80,7 +80,7 @@ The database schema is defined in `server/prisma/schema.prisma` and extended man
 6.  **Storage:** The frontend initiates a request to `/scans` to save the result. The backend uploads the image to Cloudinary, saves the scan to the user's history, and updates the shared `product_database`.
 
 ### B. User Personalization Workflow
-The power of FitScan lies in its personalization. When a user updates their profile (Age, Goals, Medical Conditions with severity levels), this data is stored relationally in the database. During any scan, this profile is injected into the Gemini prompt, ensuring that a product might be marked "Good" for a bodybuilder but "Bad" for someone with high blood pressure.
+The power of bitezsnap lies in its personalization. When a user updates their profile (Age, Goals, Medical Conditions with severity levels), this data is stored relationally in the database. During any scan, this profile is injected into the Gemini prompt, ensuring that a product might be marked "Good" for a bodybuilder but "Bad" for someone with high blood pressure.
 
 ---
 

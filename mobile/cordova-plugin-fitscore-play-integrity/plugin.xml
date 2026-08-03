@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        id="cordova-plugin-fitscore-play-integrity"
+        version="1.0.0">
+    <name>FitScorePlayIntegrity</name>
+    <description>Request-bound Google Play Integrity standard tokens for NutriScore.</description>
+    <license>UNLICENSED</license>
+
+    <js-module src="www/request-hash.js" name="requestHash" />
+    <js-module src="www/play-integrity.js" name="PlayIntegrity">
+        <clobbers target="FitScorePlayIntegrity" />
+    </js-module>
+
+    <platform name="android">
+        <config-file target="res/xml/config.xml" parent="/*">
+            <feature name="FitScorePlayIntegrity">
+                <param name="android-package" value="com.fitscore.playintegrity.FitScorePlayIntegrity" />
+            </feature>
+        </config-file>
+
+        <source-file src="src/android/FitScorePlayIntegrity.java"
+                     target-dir="src/com/fitscore/playintegrity" />
+        <framework src="com.google.android.play:integrity:1.6.0" />
+    </platform>
+</plugin>

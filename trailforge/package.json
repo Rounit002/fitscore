@@ -1,0 +1,22 @@
+{
+  "name": "trailforge",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "matter-js": "^0.20.0"
+  },
+  "devDependencies": {
+    "@types/matter-js": "^0.19.8",
+    "typescript": "^5.8.3",
+    "vite": "^7.1.7",
+    "vitest": "^3.2.4"
+  }
+}

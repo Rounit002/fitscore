@@ -14,24 +14,24 @@ const generateJobId = () => `mem_${crypto.randomBytes(18).toString('base64url')}
 // Setup Redis & BullMQ if REDIS_URL is configured
 if (useRedis) {
   try {
-    console.log('[FitScan Queue] REDIS_URL detected. Initializing BullMQ connection...');
+    console.log('[bitezsnap Queue] REDIS_URL detected. Initializing BullMQ connection...');
     redisConnection = new Redis(process.env.REDIS_URL, {
       maxRetriesPerRequest: null,
     });
     
     redisConnection.on('error', (err) => {
-      console.error('[FitScan Queue] Redis client error:', err.message);
+      console.error('[bitezsnap Queue] Redis client error:', err.message);
     });
 
     queue = new Queue('analysis', {
       connection: redisConnection,
     });
-    console.log('[FitScan Queue] BullMQ successfully initialized.');
+    console.log('[bitezsnap Queue] BullMQ successfully initialized.');
   } catch (err) {
-    console.error('[FitScan Queue] Failed to initialize Redis queue, falling back to In-Memory:', err.message);
+    console.error('[bitezsnap Queue] Failed to initialize Redis queue, falling back to In-Memory:', err.message);
   }
 } else {
-  console.log('[FitScan Queue] No REDIS_URL detected. Running in secure In-Memory queue mode.');
+  console.log('[bitezsnap Queue] No REDIS_URL detected. Running in secure In-Memory queue mode.');
 }
 
 // Add job to the queue
@@ -107,7 +107,7 @@ const getJobStatus = async (jobId, userId) => {
         error: job.failedReason,
       };
     } catch (err) {
-      console.error('[FitScan Queue] Error fetching job state from Redis:', err.message);
+      console.error('[bitezsnap Queue] Error fetching job state from Redis:', err.message);
       return null;
     }
   } else {
@@ -136,7 +136,7 @@ const processInMemoryJob = async (jobId) => {
       job.status = 'completed';
       job.result = result;
     } catch (err) {
-      console.error(`[FitScan Queue] Job ${jobId} failed in-memory:`, err.message);
+      console.error(`[bitezsnap Queue] Job ${jobId} failed in-memory:`, err.message);
       job.status = 'failed';
       job.error = err.message;
     }

@@ -149,7 +149,7 @@ export async function apiFetch(path, options = {}) {
 }
 
 /**
- * Central security wrapper for calls to the FitScore API. It loads Android
+ * Central security wrapper for calls to the bitezsnap API. It loads Android
  * Keystore-backed credentials before the first mobile request, adds CSRF
  * protection to cookie-authenticated browser writes, and rotates an expired
  * access token once before replaying the original request.

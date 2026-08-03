@@ -1,7 +1,7 @@
 /**
  * Minimum age policy.
  *
- * FitScan is a 13+ product, so a date of birth that puts the user under 13 is
+ * bitezsnap is a 13+ product, so a date of birth that puts the user under 13 is
  * rejected. Shared between the registration/profile validators and the
  * frontend's mirror of the same rule so both cannot drift.
  */

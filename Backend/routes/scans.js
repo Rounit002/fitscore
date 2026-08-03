@@ -322,7 +322,7 @@ const searchOpenFoodFacts = async (search) => {
 
   const response = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?${params.toString()}`, {
     headers: {
-      'User-Agent': 'FitScan/1.0 (food database search)',
+      'User-Agent': 'bitezsnap/1.0 (food database search)',
       Accept: 'application/json',
     },
     signal: AbortSignal.timeout(9000),

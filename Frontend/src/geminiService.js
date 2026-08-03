@@ -1,4 +1,4 @@
-// FitScan AI Service â€” All Gemini calls are now proxied through the backend server.
+// bitezsnap AI Service â€” All Gemini calls are now proxied through the backend server.
 // This avoids CORS issues, keeps the API key secure, and allows server-side background queues.
 
 import i18n from './i18n/index.js';

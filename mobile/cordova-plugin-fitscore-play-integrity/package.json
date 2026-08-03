@@ -1,0 +1,17 @@
+{
+  "name": "cordova-plugin-fitscore-play-integrity",
+  "version": "1.0.0",
+  "description": "NutriScore Cordova bridge for Google Play Integrity standard requests",
+  "cordova": {
+    "id": "cordova-plugin-fitscore-play-integrity",
+    "platforms": [
+      "android"
+    ]
+  },
+  "keywords": [
+    "cordova",
+    "android",
+    "play-integrity"
+  ],
+  "license": "UNLICENSED"
+}

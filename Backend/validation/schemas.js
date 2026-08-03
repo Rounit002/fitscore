@@ -1,4 +1,5 @@
 const { z } = require('zod');
+const { PLAN_IDS } = require('../config/plans');
 
 const stripUnsafeMarkup = (value) => value
   .replace(/<[^>]*>/g, '')
@@ -79,6 +80,13 @@ const features = {
 };
 
 const payments = {
+  // Only the plan *id* is accepted from the client. The price is looked up
+  // server-side in config/plans.js, so a tampered request cannot change what is
+  // charged. Kept as an enum of known ids rather than a free string so an
+  // unknown plan is a 400 rather than a silent fallback to the cheapest tier.
+  createOrder: z.object({
+    planId: z.enum(PLAN_IDS),
+  }).strict(),
   razorpayVerify: z.object({
     razorpay_order_id: z.string().regex(/^order_[A-Za-z0-9]+$/).max(100),
     razorpay_payment_id: z.string().regex(/^pay_[A-Za-z0-9]+$/).max(100),

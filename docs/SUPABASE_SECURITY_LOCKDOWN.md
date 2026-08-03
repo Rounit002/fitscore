@@ -1,8 +1,8 @@
-# FitScan: Supabase Production Security Lockdown Guide
+# bitezsnap: Supabase Production Security Lockdown Guide
 
 Since you are testing locally right now, follow this guide when you deploy the application to production on **Render** (Node.js backend) and **Supabase** (PostgreSQL database). 
 
-By default, Supabase exposes an auto-generated REST API (via PostgREST) on port 443. Because FitScan accesses the database strictly through **Prisma ORM** and **node-postgres (`pg`)** using direct TCP connections, **we must completely lock down the public Supabase API** to prevent unauthorized access or XSS-based data exfiltration.
+By default, Supabase exposes an auto-generated REST API (via PostgREST) on port 443. Because bitezsnap accesses the database strictly through **Prisma ORM** and **node-postgres (`pg`)** using direct TCP connections, **we must completely lock down the public Supabase API** to prevent unauthorized access or XSS-based data exfiltration.
 
 ---
 
@@ -16,7 +16,7 @@ This script:
 
 ```sql
 -- =====================================================================
--- FitScan Production Supabase API Lockdown Script
+-- bitezsnap Production Supabase API Lockdown Script
 -- =====================================================================
 
 -- 1. Enable Row Level Security (RLS) on all tables

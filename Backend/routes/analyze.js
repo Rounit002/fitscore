@@ -117,14 +117,14 @@ async function generateWithFallback(apiKey, body) {
   // Only 1 round — don't burn quota with aggressive retries
   for (const modelName of MODEL_LIST) {
     try {
-      console.log(`[FitScan AI] Trying ${modelName}...`);
+      console.log(`[bitezsnap AI] Trying ${modelName}...`);
       const response = await callGemini(apiKey, modelName, body);
 
       if (response.ok) {
         const data = await response.json();
         const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
         if (text) {
-          console.log(`[FitScan AI] ✅ Success with ${modelName}`);
+          console.log(`[bitezsnap AI] ✅ Success with ${modelName}`);
           return text;
         }
         throw new Error('Empty response from model');
@@ -134,18 +134,18 @@ async function generateWithFallback(apiKey, body) {
 
       // 429 = Rate limited — stop immediately, activate global cooldown
       if (status === 429) {
-        console.warn(`[FitScan AI] 🛑 Rate limited (429). Activating ${RATE_LIMIT_COOLDOWN_MS / 1000}s cooldown.`);
+        console.warn(`[bitezsnap AI] 🛑 Rate limited (429). Activating ${RATE_LIMIT_COOLDOWN_MS / 1000}s cooldown.`);
         rateLimitCooldownUntil = Date.now() + RATE_LIMIT_COOLDOWN_MS;
         throw new Error('Rate limited by Google. Please wait ~60 seconds before trying again.');
       }
 
       if (status === 404 || status === 400) {
-        console.warn(`[FitScan AI] ❌ ${modelName} unavailable/error (${status}).`);
+        console.warn(`[bitezsnap AI] ❌ ${modelName} unavailable/error (${status}).`);
         continue; // try next model
       }
 
       if (status === 503 || status === 500) {
-        console.warn(`[FitScan AI] ⏳ ${modelName} server error (${status}). Trying next model...`);
+        console.warn(`[bitezsnap AI] ⏳ ${modelName} server error (${status}). Trying next model...`);
         await sleep(1000);
         continue; // try next model, but don't do multiple rounds
       }
@@ -154,7 +154,7 @@ async function generateWithFallback(apiKey, body) {
       lastError = new Error(`HTTP ${status}: ${errText.slice(0, 100)}`);
     } catch (err) {
       lastError = err;
-      console.warn(`[FitScan AI] Error on ${modelName}:`, err.message);
+      console.warn(`[bitezsnap AI] Error on ${modelName}:`, err.message);
       // If it's a rate limit error, don't try the next model
       if (err.message.includes('Rate limited')) throw err;
     }
@@ -179,7 +179,7 @@ function parseResponse(text) {
 
   // If the JSON is truncated (no closing brace), try a basic repair
   if (end === -1 || end < start) {
-    console.warn('[FitScan AI] Truncated JSON detected. Attempting emergency repair...');
+    console.warn('[bitezsnap AI] Truncated JSON detected. Attempting emergency repair...');
     // Close strings, arrays, and the object itself
     if (clean.endsWith(',')) clean = clean.slice(0, -1);
     clean = clean.substring(start) + '\n  ],\n  "alternatives": []\n}';
@@ -195,7 +195,7 @@ function parseResponse(text) {
     const result = JSON.parse(clean);
     return normalizeResult(result);
   } catch (err) {
-    console.error('[FitScan AI] JSON Parse Failure. Cleaned text was:', clean);
+    console.error('[bitezsnap AI] JSON Parse Failure. Cleaned text was:', clean);
     throw new Error(`Failed to parse AI response: ${err.message}`);
   }
 }
@@ -261,12 +261,12 @@ const { addAnalysisJob, getJobStatus } = require('../config/queue');
  * Human-readable copy for each non-food category the model can return.
  */
 const NON_FOOD_MESSAGES = {
-  medicine: 'This looks like a medicine or tablet strip. FitScan only analyses food and drink — please scan a food product instead.',
-  supplement: 'This looks like a medicinal supplement rather than a food product. FitScan only analyses food and drink.',
-  cosmetic: 'This looks like a cosmetic or personal care product. FitScan only analyses food and drink.',
-  household: 'This looks like a household or cleaning product. FitScan only analyses food and drink.',
+  medicine: 'This looks like a medicine or tablet strip. bitezsnap only analyses food and drink — please scan a food product instead.',
+  supplement: 'This looks like a medicinal supplement rather than a food product. bitezsnap only analyses food and drink.',
+  cosmetic: 'This looks like a cosmetic or personal care product. bitezsnap only analyses food and drink.',
+  household: 'This looks like a household or cleaning product. bitezsnap only analyses food and drink.',
   not_a_product: 'No food product was detected in this image. Point the camera at a food label and try again.',
-  other: 'This does not look like a food or drink product. FitScan only analyses food and drink.',
+  other: 'This does not look like a food or drink product. bitezsnap only analyses food and drink.',
 };
 
 const nonFoodMessage = (reason) =>
@@ -471,7 +471,7 @@ async function processTextAnalysis({ productData, userProfile, userId, lang = 'e
   };
   const targetLanguage = languageNames[lang] || 'English';
 
-  const prompt = `You are "FitScan", a brutally honest nutrition analyst for the Indian health market.
+  const prompt = `You are "bitezsnap", a brutally honest nutrition analyst for the Indian health market.
 
 STEP 1 — CLASSIFY BEFORE ANALYSING. This app analyses FOOD AND DRINK ONLY.
 If the product described below is a medicine (tablets, capsules, pills, syrups, blister
@@ -625,7 +625,7 @@ router.post('/image', authenticate, analyzeUserLimiter, validateBody(imageAnalys
     const jobInfo = await addAnalysisJob('analyzeImage', { imageBase64, userProfile, userId, lang: targetLang });
     res.json(jobInfo);
   } catch (err) {
-    console.error('[FitScan AI] Enqueue error:', err.message);
+    console.error('[bitezsnap AI] Enqueue error:', err.message);
     res.status(500).json({ error: 'Failed to queue scanning job.', details: err.message });
   }
 });
@@ -640,7 +640,7 @@ router.post('/text', authenticate, analyzeUserLimiter, validateBody(textAnalysis
   // from the product's own category tags before spending a scan or an AI call.
   const nonFoodReason = detectNonFoodProduct(productData);
   if (nonFoodReason) {
-    console.log(`[FitScan AI] Rejected non-food product (${nonFoodReason}): ${productData?.product_name || 'unnamed'}`);
+    console.log(`[bitezsnap AI] Rejected non-food product (${nonFoodReason}): ${productData?.product_name || 'unnamed'}`);
     return res.status(422).json({
       error: nonFoodMessage(nonFoodReason),
       nonFood: true,
@@ -695,7 +695,7 @@ router.post('/text', authenticate, analyzeUserLimiter, validateBody(textAnalysis
     const jobInfo = await addAnalysisJob('analyzeText', { productData, userProfile, userId, lang: targetLang });
     res.json(jobInfo);
   } catch (err) {
-    console.error('[FitScan AI] Enqueue error:', err.message);
+    console.error('[bitezsnap AI] Enqueue error:', err.message);
     res.status(500).json({ error: 'Failed to queue analysis job.', details: err.message });
   }
 });
@@ -710,7 +710,7 @@ router.get('/status/:jobId', authenticate, validateRequest({ params: analyzeSche
     }
     res.json(statusInfo);
   } catch (err) {
-    console.error('[FitScan AI] Status retrieval error:', err.message);
+    console.error('[bitezsnap AI] Status retrieval error:', err.message);
     res.status(500).json({ error: 'Failed to retrieve analysis status.', details: err.message });
   }
 });

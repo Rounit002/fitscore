@@ -69,11 +69,11 @@ export default function Results({ result, onBack, authToken, onServingsChanged }
     try {
       await new Promise(r => setTimeout(r, 300));
       const dataUrl = await toPng(summaryRef.current, { backgroundColor: '#ffffff', pixelRatio: 3 });
-      const filename = `nutriscore_${result.productName.toLowerCase().replace(/[\s\W]+/g, '_')}.png`;
+      const filename = `bitezsnap_${result.productName.toLowerCase().replace(/[\s\W]+/g, '_')}.png`;
       const blob = await (await fetch(dataUrl)).blob();
       const file = new File([blob], filename, { type: 'image/png' });
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: 'NutriScore Health Audit', text: `Results for ${result.productName}` });
+        await navigator.share({ files: [file], title: 'bitezsnap Health Audit', text: `Results for ${result.productName}` });
       } else {
         const a = document.createElement('a');
         a.href = dataUrl;

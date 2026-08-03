@@ -1,4 +1,5 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   AlertTriangle,
@@ -12,8 +13,8 @@ import {
   Globe2,
   HeartPulse,
   Languages,
-  LifeBuoy,
   Loader2,
+  Lock,
   LogOut,
   Mail,
   Moon,
@@ -26,6 +27,68 @@ import {
 } from 'lucide-react';
 import { API } from '../api/client.js';
 import { LANGUAGES } from '../utils/languages.js';
+
+/**
+ * Display copy for the paywall tiers.
+ *
+ * Prices are NOT stored here — the amounts come from GET /api/payment/plans, which
+ * reads the same server catalogue that Razorpay is charged from. Keeping the
+ * numbers on the server means the price on screen cannot drift from the price
+ * charged, and a tampered client cannot buy the lifetime tier for 1 paisa.
+ *
+ * `usdRate` is a rough INR->USD divisor used only for the "~$x" secondary line.
+ */
+const USD_PER_INR = 83;
+
+const PLAN_COPY = {
+  trial7: {
+    subtitle: 'For new users only',
+    unit: '/ 7 days',
+    note: 'One-time offer — first purchase only',
+    cta: 'Start 7-day access',
+    // The advertised figure is the whole charge, not a per-month rate.
+    perMonth: false,
+  },
+  monthly: {
+    subtitle: 'Flexible month-to-month',
+    unit: '/ month',
+    cta: 'Get monthly access',
+    perMonth: false,
+  },
+  yearly: {
+    subtitle: 'Best rate when you pay yearly',
+    unit: '/ month',
+    badge: 'Best value',
+    cta: 'Get best value',
+    // Billed as one yearly charge but advertised as the monthly equivalent, so
+    // the headline figure is amount / 12 and the note states the real total.
+    perMonth: true,
+    months: 12,
+  },
+  lifetime: {
+    subtitle: 'Pay once, keep it forever',
+    unit: 'one-time',
+    badge: 'Lifetime',
+    note: 'No renewals — never expires',
+    cta: 'Get lifetime access',
+    perMonth: false,
+  },
+};
+
+// Order the cards left-to-right by commitment length.
+const PLAN_ORDER = ['trial7', 'monthly', 'yearly', 'lifetime'];
+
+const PLAN_FEATURES = [
+  'Unlimited food scans (subject to fair usage)',
+  'AI-powered nutrition analysis',
+  'Ingredient explanations',
+  'Personalized health insights',
+  'Smart recommendations',
+  'Priority AI responses',
+];
+
+/** Paise -> whole rupees. All catalogue amounts are whole rupees, so no decimals. */
+const rupees = (paise) => Math.round(paise / 100);
 
 const healthIssues = [
   'Acid Reflux / GERD',
@@ -745,6 +808,7 @@ export function HealthGoalsPage({
 
 export default function Profile({ userProfile, userAuth, authToken, onBack, onDelete, onLogout, onDetailsSaved, onNavigateFeatures, isDark, toggleTheme }) {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const [modal, setModal] = useState(null);
   const [view, setView] = useState('menu');
   const [language, setLanguage] = useState(() => i18n.resolvedLanguage || i18n.language || 'en');
@@ -772,6 +836,44 @@ export default function Profile({ userProfile, userAuth, authToken, onBack, onDe
 
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [paymentToast, setPaymentToast] = useState(null);
+  // Which card's button is spinning, so only the clicked tier shows "Processing".
+  const [pendingPlanId, setPendingPlanId] = useState(null);
+  const [plans, setPlans] = useState([]);
+  const [plansState, setPlansState] = useState('idle'); // idle | loading | ready | error
+
+  // Plans are fetched when the upgrade modal opens rather than on mount: the
+  // response depends on the account's payment history (the 7-day intro tier is
+  // hidden after a first purchase), and most Profile visits never open it.
+  useEffect(() => {
+    if (modal !== 'family' || userAuth?.isPremium) return;
+
+    const controller = new AbortController();
+    setPlansState('loading');
+
+    (async () => {
+      try {
+        const res = await fetch(`${API}/api/payment/plans`, {
+          credentials: 'include',
+          signal: controller.signal,
+        });
+        if (!res.ok) throw new Error('Failed to load plans');
+        const data = await res.json();
+        const list = Array.isArray(data.plans) ? data.plans : [];
+        // Only render tiers the client has copy for, ordered by commitment.
+        const ordered = PLAN_ORDER
+          .map((id) => list.find((p) => p.id === id))
+          .filter((p) => p && PLAN_COPY[p.id]);
+        setPlans(ordered);
+        setPlansState('ready');
+      } catch (err) {
+        if (err.name === 'AbortError') return;
+        console.error('Failed to load plans:', err);
+        setPlansState('error');
+      }
+    })();
+
+    return () => controller.abort();
+  }, [modal, userAuth?.isPremium]);
 
   const showPaymentToast = (message, type = 'success') => {
     setPaymentToast({ message, type });
@@ -792,8 +894,9 @@ export default function Profile({ userProfile, userAuth, authToken, onBack, onDe
     });
   };
 
-  const handlePayment = async (planType) => {
+  const handlePayment = async (planId) => {
     setIsProcessingPayment(true);
+    setPendingPlanId(planId);
     try {
       const isLoaded = await loadRazorpayScript();
       if (!isLoaded) {
@@ -808,18 +911,24 @@ export default function Profile({ userProfile, userAuth, authToken, onBack, onDe
             'Content-Type': 'application/json',
           },
           credentials: 'include',
-          body: JSON.stringify({ planType })
+          // Was `{ planType }`, which the strict emptyBody schema on this route
+          // rejected with a 400 — the upgrade button could never open checkout.
+          // The route now validates `planId` against the server plan catalogue.
+          body: JSON.stringify({ planId })
         }
       );
-      if (!orderRes.ok) throw new Error('Failed to create order');
+      if (!orderRes.ok) {
+        const detail = await orderRes.json().catch(() => null);
+        throw new Error(detail?.error || 'Failed to create order');
+      }
       const order = await orderRes.json();
 
       const options = {
         key: order.key_id,
         amount: order.amount,
         currency: order.currency,
-        name: "NutriScore",
-        description: "Premium Plan Upgrade",
+        name: "bitezsnap",
+        description: `bitezsnap Premium — ${plans.find((p) => p.id === planId)?.label || 'Premium'}`,
         order_id: order.order_id,
         handler: async function (response) {
           try {
@@ -831,11 +940,14 @@ export default function Profile({ userProfile, userAuth, authToken, onBack, onDe
                   'Content-Type': 'application/json',
                 },
                 credentials: 'include',
+                // `planType` was sent here too and rejected by the strict verify
+                // schema. The plan is not a client input at all: /verify reads it
+                // from the order row it was recorded against, so paying for the
+                // 7-day tier cannot be redeemed as lifetime.
                 body: JSON.stringify({
                   razorpay_payment_id: response.razorpay_payment_id,
                   razorpay_order_id: response.razorpay_order_id,
                   razorpay_signature: response.razorpay_signature,
-                  planType
                 })
               }
             );
@@ -874,6 +986,7 @@ export default function Profile({ userProfile, userAuth, authToken, onBack, onDe
       showPaymentToast(err.message || 'Payment initiation failed', 'error');
     } finally {
       setIsProcessingPayment(false);
+      setPendingPlanId(null);
     }
   };
 
@@ -949,7 +1062,7 @@ export default function Profile({ userProfile, userAuth, authToken, onBack, onDe
   };
 
   const mailSupport = () => {
-    window.location.href = 'mailto:support@nutrisnap.app?subject=NutriScore%20Support';
+    window.location.href = 'mailto:support@bitezsnap.app?subject=bitezsnap%20Support';
   };
 
   const handleProfilePhotoChange = (event) => {
@@ -1116,7 +1229,9 @@ export default function Profile({ userProfile, userAuth, authToken, onBack, onDe
           <ProfileAction label={t('request_feature')} icon={Globe2} onClick={onNavigateFeatures} area="support" />
           <ProfileAction label={t('support_email')} icon={Mail} onClick={mailSupport} area="support" />
           <ProfileAction label={t('terms_condition')} icon={ShieldCheck} onClick={() => setModal('terms')} area="support" />
-          <ProfileAction label={t('privacy_policy')} icon={LifeBuoy} onClick={() => setModal('privacy')} area="support" />
+          {/* Opens the full policy page rather than a one-line modal: it has to
+              be a shareable URL for the store listing and OAuth consent screen. */}
+          <ProfileAction label={t('privacy_policy')} icon={Lock} onClick={() => navigate('/privacy-policy')} area="support" />
         </ProfileSection>
 
         <ProfileSection title={t('account_action')}>
@@ -1149,28 +1264,76 @@ export default function Profile({ userProfile, userAuth, authToken, onBack, onDe
         <ProfileModal title="Upgrade Your Plan" onClose={() => setModal(null)}>
           <p className="profile-upgrade-subtitle">Choose the plan that fits your health goals.</p>
           {!userAuth?.isPremium ? (
-            <div className="profile-plans-container">
-              {/* Premium Plan Card */}
-              <div className="profile-plan-card premium-card">
-                <div className="plan-header">
-                  <h3>Premium Plan</h3>
-                  <p className="plan-price">â‚¹249 <span>/ month</span></p>
-                </div>
-                <ul className="plan-features">
-                  <li><Check size={16} /> Unlimited AI Scans</li>
-                  <li><Check size={16} /> Advanced Nutrition Analysis</li>
-                  <li><Check size={16} /> Priority Support</li>
-                </ul>
-                <button
-                  className="profile-modal-primary"
-                  type="button"
-                  onClick={() => handlePayment('premium')}
-                  disabled={isProcessingPayment}
-                >
-                  {isProcessingPayment ? 'Processing...' : 'Upgrade'}
-                </button>
+            plansState === 'loading' ? (
+              <div className="profile-plans-status">
+                <Loader2 size={20} className="animate-spin" />
+                <span>Loading plans…</span>
               </div>
-            </div>
+            ) : plansState === 'error' || plans.length === 0 ? (
+              <div className="profile-plans-status">
+                <AlertTriangle size={20} />
+                <span>Plans are unavailable right now. Please try again later.</span>
+              </div>
+            ) : (
+              <div className="profile-plans-container">
+                {plans.map((plan) => {
+                  const copy = PLAN_COPY[plan.id];
+                  const total = rupees(plan.amount);
+                  // Yearly advertises its monthly equivalent; every other tier
+                  // advertises the amount actually charged.
+                  const headline = copy.perMonth ? Math.round(total / copy.months) : total;
+                  const usd = (headline / USD_PER_INR).toFixed(2);
+                  const isPending = pendingPlanId === plan.id;
+
+                  return (
+                    <div
+                      key={plan.id}
+                      className={`profile-plan-card${copy.badge ? ' premium-card' : ''}`}
+                    >
+                      {copy.badge && <span className="plan-badge">{copy.badge}</span>}
+
+                      <div className="plan-header">
+                        <h3>{plan.label}</h3>
+                        <p className="plan-subtitle">{copy.subtitle}</p>
+                        <p className="plan-price">
+                          ₹{headline} <span>{copy.unit}</span>
+                        </p>
+                        <p className="plan-price-usd">
+                          ~${usd}
+                          {copy.perMonth ? '/month' : ''}
+                        </p>
+                        {/* Yearly's note is derived, not hardcoded, so it always
+                            agrees with the amount the server will charge. */}
+                        {copy.perMonth ? (
+                          <p className="plan-note">
+                            Billed yearly — ₹{headline} × {copy.months} = ₹{total}
+                          </p>
+                        ) : copy.note ? (
+                          <p className="plan-note">{copy.note}</p>
+                        ) : null}
+                      </div>
+
+                      <ul className="plan-features">
+                        {PLAN_FEATURES.map((feature) => (
+                          <li key={feature}>
+                            <Check size={16} /> {feature}
+                          </li>
+                        ))}
+                      </ul>
+
+                      <button
+                        className="profile-modal-primary"
+                        type="button"
+                        onClick={() => handlePayment(plan.id)}
+                        disabled={isProcessingPayment}
+                      >
+                        {isPending ? 'Processing…' : copy.cta}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )
           ) : (
             <div className="profile-active-plan">
               <div className="active-plan-header">
@@ -1216,13 +1379,7 @@ export default function Profile({ userProfile, userAuth, authToken, onBack, onDe
 
       {modal === 'terms' && (
         <ProfileModal title="Terms & Condition" onClose={() => setModal(null)}>
-          <p>NutriScore provides nutrition insights to help your choices. It is not a substitute for professional medical advice.</p>
-        </ProfileModal>
-      )}
-
-      {modal === 'privacy' && (
-        <ProfileModal title="Privacy Policy" onClose={() => setModal(null)}>
-          <p>Your profile and scan history are used to personalize recommendations and are protected by your account login.</p>
+          <p>bitezsnap provides nutrition insights to help your choices. It is not a substitute for professional medical advice.</p>
         </ProfileModal>
       )}
 

@@ -29,7 +29,7 @@ describe('BarcodeScanner', () => {
     expect(screen.getByText('Scanner')).toBeInTheDocument();
     expect(screen.getByText('Barcode Scan')).toBeInTheDocument();
     expect(screen.getByText('Align the code within the frame')).toBeInTheDocument();
-    expect(screen.getByText('Powered by NutriScore AI')).toBeInTheDocument();
+    expect(screen.getByText('Powered by bitezsnap AI')).toBeInTheDocument();
   });
 
   it('initializes Html5QrcodeScanner on mount', () => {

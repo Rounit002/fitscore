@@ -9,6 +9,7 @@ import LoadingState from './components/LoadingState';
 import Login from './components/Login';
 import SignUp from './components/SignUp';
 import ResetPassword from './components/ResetPassword';
+import PrivacyPolicy from './components/PrivacyPolicy';
 import Dashboard from './components/Dashboard';
 import Onboarding from './components/Onboarding';
 import BarcodeScanner from './components/BarcodeScanner';
@@ -21,7 +22,6 @@ import { useTheme } from './components/ThemeToggle';
 import { useTranslation } from 'react-i18next';
 import {
   Activity,
-  Apple,
   BarChart2,
   Bell,
   Camera,
@@ -36,6 +36,8 @@ import {
 import { API, setAuthToken, clearAuthToken, getRefreshToken } from './api/client.js';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import MobileBottomNav from './components/MobileBottomNav.jsx';
+import SplashScreen from './components/SplashScreen.jsx';
+import BrandLogo from './components/BrandLogo.jsx';
 import { RevenueCatProvider } from './context/RevenueCatContext.jsx';
 import Paywall from './components/Paywall.jsx';
 
@@ -95,7 +97,7 @@ function DesktopAppShell({ userAuth, userProfile, onNavigate, onLogout }) {
 
   const currentView = PATH_TO_VIEW[location.pathname] || 'dashboard';
 
-  const displayName = userAuth?.name || userProfile?.name || 'FitScan User';
+  const displayName = userAuth?.name || userProfile?.name || 'bitezsnap User';
   const initials = displayName
     .split(' ')
     .filter(Boolean)
@@ -110,8 +112,10 @@ function DesktopAppShell({ userAuth, userProfile, onNavigate, onLogout }) {
     <div className="fitscan-app-shell lg:flex">
       <aside className="fitscan-app-sidebar hidden lg:flex" aria-label="Desktop navigation">
         <div className="fitscan-app-brand">
-          <span className="fitscan-app-brand-mark"><Apple size={20} /></span>
-          <strong>Fit<span>Scan</span></strong>
+          <span className="fitscan-app-brand-mark">
+            <BrandLogo className="fitscan-app-brand-logo" alt="" aria-hidden="true" />
+          </span>
+          <strong>bitez<span>snap</span></strong>
         </div>
 
         <nav className="fitscan-app-sidebar-nav">
@@ -161,7 +165,7 @@ function DesktopAppShell({ userAuth, userProfile, onNavigate, onLogout }) {
         {/* Desktop header */}
         <header className="top-header hidden lg:flex">
           <div className="fitscan-app-title">
-            <span>{t(shellTitles[currentView]) || 'FitScan'}</span>
+            <span>{t(shellTitles[currentView]) || 'bitezsnap'}</span>
           </div>
           <div className="fitscan-header-quota" aria-label="Scan quota">
             <Search size={15} />
@@ -188,7 +192,7 @@ function DesktopAppShell({ userAuth, userProfile, onNavigate, onLogout }) {
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--ns-on-surface)', fontFamily: 'var(--font-headline)' }}>
-              {t(shellTitles[currentView]) || 'FitScan'}
+              {t(shellTitles[currentView]) || 'bitezsnap'}
             </span>
           </div>
           <button
@@ -617,31 +621,10 @@ export default function App() {
     }
   };
 
-  // Show splash while the session cookie is being validated
+  // Show splash while the session cookie is being validated. SplashScreen keeps
+  // the mark/wordmark in step with the native Android splash — see its comment.
   if (isRestoring) {
-    return (
-      <div
-        className="flex flex-col items-center justify-center min-h-screen gap-6 animate-fade-in-up"
-        style={{ background: 'var(--ns-surface)' }}
-      >
-        <div
-          className="w-20 h-20 rounded-[24px] flex items-center justify-center"
-          style={{ background: '#10B981', boxShadow: '0 12px 40px rgba(16, 185, 129,0.38)' }}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="white">
-            <path d="M17 8C8 10 5.9 16.17 3.82 19.17C5 21 7 21 8 21C8 21 10 18 12 16C16 15 19 13 20 9L17 8Z" />
-            <path d="M8.5 11.5C10.5 8.5 15 6 19 7C19 7 19 11 16 13C13 15 10 15 8 17C8 17 6.5 13.5 8.5 11.5Z" opacity="0.6" />
-          </svg>
-        </div>
-        <div
-          className="w-8 h-8 rounded-full animate-spin"
-          style={{ border: '3px solid var(--ns-surface-high)', borderTopColor: 'var(--ns-primary)' }}
-        />
-        <p className="text-sm font-medium" style={{ color: 'var(--ns-outline)', fontFamily: 'var(--font-main)' }}>
-          Loading NutriScan...
-        </p>
-      </div>
-    );
+    return <SplashScreen />;
   }
 
   const shellProps = {
@@ -710,6 +693,11 @@ export default function App() {
         {/* Password reset landing page (target of the emailed link). Public so a
             logged-out user can complete it. */}
         <Route path="/reset-password" element={<ResetPassword />} />
+        {/* Public and outside the app shell: the store listing and the Google
+            OAuth consent screen both need a policy URL that resolves without a
+            session, and the pre-signup links point here too. */}
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/privacy" element={<Navigate to="/privacy-policy" replace />} />
         <Route
           path="/onboarding"
           element={

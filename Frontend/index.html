@@ -3,14 +3,25 @@
 
 <head>
   <meta charset="UTF-8" />
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <!-- Brand icons, all rasterised from resources/icon.png by `npm run gen:res`
+       in mobile/. Vite rewrites these hrefs to the build's base, so the same
+       tags work for the web build (`/`) and the Cordova build (`./`). -->
+  <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
+  <link rel="manifest" href="/manifest.webmanifest" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <!-- Tells the browser (and the Android WebView) to render its own chrome —
        scrollbars, form controls, the address bar — to match. Without it a dark
        page keeps light native scrollbars. Both values, in preference order, so
        the OS setting decides. -->
   <meta name="color-scheme" content="light dark" />
-  <title>NutriScore</title>
+  <!-- Emerald `--ns-primary`. Per-scheme so the mobile browser chrome follows
+       the page rather than forcing a light bar onto the dark theme. -->
+  <meta name="theme-color" content="#10B981" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#10B981" media="(prefers-color-scheme: dark)" />
+  <title>bitezsnap</title>
   <!--
     Theme applied before first paint, synchronously in <head>.
 

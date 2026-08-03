@@ -1,4 +1,4 @@
--- NutriScan complete PostgreSQL schema
+-- bitezsnap complete PostgreSQL schema
 -- Run this script on a new/empty PostgreSQL database before starting the API.
 
 BEGIN;
@@ -133,6 +133,10 @@ CREATE TABLE IF NOT EXISTS payment_orders (
   currency VARCHAR(3) NOT NULL,
   status VARCHAR(20) NOT NULL DEFAULT 'created',
   payment_id VARCHAR(100) UNIQUE,
+  -- Which plan from config/plans.js this order was created for. Nullable so
+  -- rows predating the multi-plan catalogue remain valid; /verify treats NULL
+  -- as the legacy monthly grant.
+  plan_id VARCHAR(50),
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   verified_at TIMESTAMP
 );

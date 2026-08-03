@@ -1,6 +1,6 @@
-# FitScan — Production Cloudflare CDN & Edge Integration Blueprint
+# bitezsnap — Production Cloudflare CDN & Edge Integration Blueprint
 
-This document outlines the step-by-step production blueprint to route and configure **FitScan** behind Cloudflare CDN. By routing client and server traffic through Cloudflare’s edge nodes, you gain globally distributed caching, sub-10ms response times for static resources, advanced DDoS defense, and intelligent backend routing.
+This document outlines the step-by-step production blueprint to route and configure **bitezsnap** behind Cloudflare CDN. By routing client and server traffic through Cloudflare’s edge nodes, you gain globally distributed caching, sub-10ms response times for static resources, advanced DDoS defense, and intelligent backend routing.
 
 ---
 
@@ -25,7 +25,7 @@ graph TD
 
 ## 1. Cloudflare Pages Frontend Configuration
 
-Cloudflare Pages automatically processes the [_headers](file:///d:/FitScan/public/_headers) file we created in the `public/` folder during deployment. It propagates these exact cache instructions to all Cloudflare edge nodes globally:
+Cloudflare Pages automatically processes the [_headers](file:///d:/bitezsnap/public/_headers) file we created in the `public/` folder during deployment. It propagates these exact cache instructions to all Cloudflare edge nodes globally:
 - **Vite Hashed Assets (`/assets/*`):** Caching duration set to `max-age=31536000, immutable`. Since compiled asset URLs contain cryptographically unique hashes, they are safely cached forever at the edge and browser.
 - **Images and SVGs:** Cache duration set to `max-age=2592000` (30 days) with `must-revalidate` to pull new versions immediately if updated.
 - **Landing Page (`/` and `index.html`):** Cache duration set to `max-age=0, must-revalidate`. This ensures the entry page is checked on every visit, immediately hot-swapping older compiled bundle links with fresh updates when a new build is deployed!
@@ -62,7 +62,7 @@ app.use('/public', express.static(path.join(__dirname, 'public'), {
 
 ## 3. Cloudflare Portal Configuration (DNS & Page Rules)
 
-To route the FitScan system securely and optimize connection speed, configure these parameters inside your [Cloudflare Dashboard](https://dash.cloudflare.com):
+To route the bitezsnap system securely and optimize connection speed, configure these parameters inside your [Cloudflare Dashboard](https://dash.cloudflare.com):
 
 ### A. DNS Proxying (Orange-Cloud)
 - Create an `A` or `CNAME` record for your backend custom domain (e.g. `api.fitscan.com` pointing to Render's URL).

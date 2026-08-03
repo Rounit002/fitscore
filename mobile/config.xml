@@ -1,11 +1,11 @@
 <?xml version='1.0' encoding='utf-8'?>
-<widget id="com.nutriscan.app" version="1.0.0" android-versionCode="10000"
+<widget id="com.bitezsnap.app" version="1.0.0" android-versionCode="10000"
         xmlns="http://www.w3.org/ns/widgets"
         xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:cdv="http://cordova.apache.org/ns/1.0">
-    <name>NutriScan</name>
+    <name>bitezsnap</name>
     <description>AI nutrition label scanning and analysis.</description>
-    <author email="dev@nutriscan.app" href="https://nutriscan.app">NutriScan Team</author>
+    <author email="dev@bitezsnap.app" href="https://bitezsnap.app">bitezsnap Team</author>
 
     <!-- The SPA is bundled into www/ from Frontend/dist (npm run sync:www). -->
     <content src="index.html" />
@@ -35,11 +35,31 @@
     <!-- Camera preview + barcode scanning run through getUserMedia in the WebView. -->
     <preference name="AndroidInsecureFileModeEnabled" value="false" />
 
+    <!-- Public Google Cloud project number for Play Integrity standard requests.
+         Replace 0 for release builds after enabling Play Integrity in Play Console. -->
+    <preference name="PlayIntegrityCloudProjectNumber" value="0" />
+    <preference name="PlayIntegrityAllowedOrigins" value="https://fitscore-rqgb.onrender.com" />
+
     <!-- Android 12+ draws a system splash screen from these values; older
          releases fall back to a plain window background. Regenerate the PNGs
-         with `npm run gen:res` after changing the logo. -->
+         with `npm run gen:res` after changing the logo.
+
+         The splash icon is rasterised from resources/splash.png, whose mark is
+         transparent and inset well inside the safe area — the system masks this
+         icon to a circle and may crop further, so the mark must not approach
+         the edges. The background below is the app's own light page colour, so
+         the splash hands over to the first paint without a colour jump. -->
     <preference name="AndroidWindowSplashScreenBackground" value="#F5F5F5" />
     <preference name="AndroidWindowSplashScreenAnimatedIcon" value="res/android/splash/splash-icon.png" />
+    <!-- Hold the splash for a fixed window instead of hiding it the moment the
+         HTML finishes: `onPageFinished` fires before React has mounted, which
+         otherwise flashes an empty shell. Cordova's own splash plugin is built
+         into cordova-android 15 (SplashScreenPlugin), so no extra plugin is
+         needed for these. -->
+    <preference name="AutoHideSplashScreen" value="true" />
+    <preference name="SplashScreenDelay" value="2000" />
+    <preference name="FadeSplashScreen" value="true" />
+    <preference name="FadeSplashScreenDuration" value="400" />
 
     <platform name="android">
         <preference name="android-minSdkVersion" value="24" />
@@ -65,7 +85,13 @@
         <!-- Launcher icons. `foreground`+`background` build the adaptive icon
              used from Android 8; `src` is the legacy square fallback.
              `background` must be an image, not a colour: cordova-android emits
-             @mipmap/ic_launcher_background, which a colour literal can't satisfy. -->
+             @mipmap/ic_launcher_background, which a colour literal can't satisfy.
+
+             All densities below are generated from resources/icon.png by
+             `npm run gen:res`. The density-less entry is the default source of
+             record for the mark; Cordova falls back to it only when a density
+             is missing, which is why every bucket is still listed explicitly. -->
+        <icon src="res/android/icon/xxxhdpi.png" />
         <icon density="ldpi" src="res/android/icon/ldpi.png"
               foreground="res/android/adaptive/ldpi-foreground.png"
               background="res/android/adaptive/ldpi-background.png" />
@@ -95,4 +121,7 @@
             <uses-feature android:name="android.hardware.camera" android:required="false" />
         </config-file>
     </platform>
+
+    <plugin name="cordova-plugin-fitscore-play-integrity"
+            spec="file:cordova-plugin-fitscore-play-integrity" />
 </widget>

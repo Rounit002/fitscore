@@ -66,7 +66,7 @@ export default function PaywallContent({ onClose }) {
         <div className="w-14 h-14 rounded-2xl bg-amber-400 flex items-center justify-center shadow-lg">
           <Crown className="w-7 h-7 text-white" />
         </div>
-        <h2 className="text-2xl font-black tracking-tight">NutriScan Premium</h2>
+        <h2 className="text-2xl font-black tracking-tight">bitezsnap Premium</h2>
         <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs">
           Unlock unlimited scans and the full nutrition toolkit.
         </p>
@@ -87,7 +87,7 @@ export default function PaywallContent({ onClose }) {
       {/* Offerings */}
       {!purchasesEnabled ? (
         <div className="rounded-2xl bg-gray-50 dark:bg-white/5 p-4 text-center text-sm text-gray-500">
-          In-app purchases are only available in the NutriScan mobile app.
+          In-app purchases are only available in the bitezsnap mobile app.
         </div>
       ) : loading && packages.length === 0 ? (
         <div className="flex justify-center py-6">

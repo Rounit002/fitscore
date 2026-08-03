@@ -9,7 +9,9 @@ function renderSignUp(props = {}) {
 
 describe('SignUp', () => {
   it('renders form fields', () => {
-    renderSignUp();
+    const { container } = renderSignUp();
+    expect(container).toHaveTextContent('bitezsnap');
+    expect(container).not.toHaveTextContent(/nutri\s*score/i);
     expect(screen.getByLabelText(/full name/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/email address/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^password$/i)).toBeInTheDocument();

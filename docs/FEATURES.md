@@ -1,4 +1,4 @@
-# FitScan — Feature Reference
+# bitezsnap — Feature Reference
 
 > App package: `com.havenn.studyspace` · Version: 1.0.2 · Platform: Web (Vite/React) + Android (Cordova)
 

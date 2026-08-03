@@ -570,3 +570,569 @@ Native release compilation is blocked locally because the configured
   `npm run build:cordova` (bundle `index-BxOU1q5M.js`); APK/AAB build not run to completion.
 - OUTSTANDING: the fix only takes effect for the installed APK after the backend on
   fitscore-rqgb.onrender.com is redeployed.
+
+## 2026-07-29 — Health Progress (Trends) spacing pass
+- Single file changed: `Frontend/src/tailwind.css` (new block appended at end). No JSX touched, so no logic/state/props/data-fetching changes.
+- IMPORTANT correction to the task's premise: this screen is **not** a Tailwind-utility TSX component. `Frontend/src/components/Trends.jsx` uses semantic CSS classes (`.trends-*`, `.stat-card-*`, `.graph-*`) and all spacing lives in `tailwind.css` (~11.2k lines). Tailwind v3 is present but the screen's layout is hand-written CSS, so the fix is CSS custom properties + declarations, not `className` edits. Same for the bottom nav (`MobileBottomNav.jsx` -> `.ns-bnav-*`).
+- Introduced one scale on `.trends-page`: `--trends-gap: 12px`, `--trends-card-pad: 16px`, `--trends-section: 16px` (16px = what `--page-pad-x/y` already collapse to at <=430px).
+- Fixes: header bottom margin 14px->16px; `.trends-content` gap ->16px; stat grid gap from shared var both axes + `align-items: stretch`; `.stat-card-icon { flex: 0 0 auto }` (badge was being squeezed by long labels); `.stat-card-info span` gets `min-height: 2.6em` so BEST/WORST DAY rows align; `.trends-graph-container` padding `20px 16px`->16px; `.range-tabs button` -> `box-sizing: border-box; flex: 1 1 0; min-height: 40px; padding: 0 12px` (root cause of the fat selected pill was the shared `border: 2px !important` active rule at ~8685, not padding); `.graph-header`/`.graph-score` allowed to wrap so "/ 10" stays inline and the legend + trend chip stop hugging the right edge; `.graph-legend` spacing moved to `margin-left` on dots so each dot groups with its own label; `.ns-bnav` gap floor 8px->12px and side padding 12px->16px to clear the FAB's 3px shadow ring.
+- Scoping notes for future edits: the Trends screen has base rules ~5108, an `!important` normalisation block ~8259, and TWO `min-width: 1024px` layout blocks (~6669 and ~7269) that build the desktop two-column grid. New spacing rules that must not disturb desktop are wrapped in `@media (max-width: 1023px)`. Anything beating the ~8259 block needs `!important` AND a later source position — hence appending at EOF.
+- FLAGGED, not fixed (needs a product decision): "Health Progress" genuinely renders twice. `App.jsx` mobile `top-header` prints `t(shellTitles.trends)` and `Trends.jsx` prints its own `<h1>{t('health_progress')}</h1>`. Collapsing them = deleting one heading = a JSX/structure change, which was out of scope. The in-page bar also carries the back button + filter icon, so it cannot just be dropped. Affects every shell page, not only Trends.
+- Verified: `npm run build` in `Frontend/` passes (CSS 235.03 kB). `npx vitest --run` HANGS (>10 min, pre-existing — unrelated to this change); no test file references any class touched here.
+
+## 2026-07-29 — Profile "Upgrade" paywall: 4 pricing tiers + two payment bugs fixed
+- Added 7 Days ₹50, Monthly ₹499, Yearly ₹400/mo (₹4800 billed yearly), Lifetime ₹15000 to the Profile > Upgrade modal (`modal === 'family'`). Previously a single hardcoded "₹249 / month" card.
+- NEW `Backend/config/plans.js` — single source of truth for plan id, amount (paise), durationDays. Prices live server-side ONLY; the client sends just `planId`. `durationDays: null` = lifetime (existing expiry guards in `requirePlan.js` / `analyze.js` are `plan_expires_at && <past>`, so NULL correctly means never expires).
+- NEW `GET /api/payment/plans` (authenticated) returns the catalogue. The `trial7` tier is filtered out server-side if the account has any `payment_orders` row with `status='paid'` (`firstPurchaseOnly`), and `create-order` re-checks it → 409. Hiding the button is not enforcement.
+- **BUG 1 FIXED (paywall was completely broken):** `Profile.jsx` sent `{ planType }` to `/create-order`, but that route used `validateRequest({ body: emptyBody })` where `emptyBody = z.object({}).strict()`. Strict rejects unknown keys, so every upgrade attempt got a 400 and checkout never opened. Verified with a direct zod repro. Same bug on `/verify` (also sent `planType` into a `.strict()` schema). Now: `/create-order` validates `payments.createOrder = { planId: z.enum(PLAN_IDS) }`; `/verify` receives no plan at all.
+- **BUG 2 FIXED (paid users still hit the free cap):** `/verify` only set `subscription_plan` + `subscription_expires_at`, but the scan quota (`analyze.js checkQuota`) and `requirePlan.js` read `plan`, `plan_expires_at`, `scan_limit`. A paying user stayed capped at FREE_SCAN_LIMIT=5. `/verify` now writes both column pairs plus `scan_limit = PREMIUM_SCAN_LIMIT (100000)` and resets `scans_used`/`image_scans_used`.
+- `/verify` no longer hardcodes 30 days — duration comes from `payment_orders.plan_id` recorded at order creation, so paying for 7 days cannot be redeemed as lifetime. NULL `plan_id` (legacy rows) falls back to monthly.
+- DB: added `payment_orders.plan_id VARCHAR(50)` in BOTH `server.js` (CREATE TABLE + `addColumnIfMissing` for existing deployments) and `database-schema.sql`.
+- Frontend: plans fetched on modal open (not mount) because the response is account-dependent; `PLAN_COPY`/`PLAN_ORDER`/`PLAN_FEATURES` hold display copy only, no prices. Yearly's "₹400 × 12 = ₹4800" note is derived from the server amount so it can't drift. Added `.plan-subtitle`, `.plan-price-usd`, `.plan-note`, `.profile-plans-status` CSS + `flex-wrap` on `.profile-plans-container` (4 cards don't fit one row).
+- Verified: backend 21 suites / 184 tests pass (payment.test.js grew 7→17, covering per-plan pricing, tamper rejection, lifetime NULL expiry, legacy fallback, intro-tier reuse). Frontend `npm run build` passes. No diagnostics.
+- NOT DONE / FLAGGED: Razorpay is web-only. The Cordova Android build uses RevenueCat (`PaywallContent.jsx` + `RevenueCatContext`), which reads its own products from the RevenueCat dashboard and knows nothing about `config/plans.js`. These 4 tiers must be recreated as RevenueCat products/offerings for the Android app, or in-app prices will not match the web ones. Also unresolved from earlier: entitlement id mismatch (`Havenn Library Pro` vs `premium`).
+
+## 2026-07-30 — Changed Android package name and produced signed AAB for Play Store
+- Package name changed `com.nutriscan.app` -> `com.nutriscore.app` (matches the
+  `NutriScore` widget name already in config.xml).
+- Files edited:
+  - `mobile/config.xml` — `<widget id="com.nutriscore.app">` (version 1.0.0, android-versionCode 10000 unchanged).
+  - `Backend/.env.example` — `GOOGLE_PACKAGE_NAME=com.nutriscore.app` (used by `Backend/routes/billing.js` for Google Play receipt verification).
+  - `mobile/.gitignore` — added `release/` so staged AAB binaries are not committed.
+- Verified no other references: repo-wide grep for `com.nutriscan.app` returned only
+  those two files. Frontend has NO hardcoded `play.google.com` / `market://` /
+  `id=com.` package links (grep found 0 matches), so no store-link updates needed.
+- Regenerated the Android platform (`cordova platform rm android` + `platform add android`).
+  This was REQUIRED: `cordova prepare` updates `PACKAGE_NAMESPACE` but does not relocate
+  the Java source dir, so `MainActivity.java` would have stayed in `com/nutriscan/app`
+  and mismatched the namespace. After re-add: `PACKAGE_NAMESPACE=com.nutriscore.app`,
+  `java/com/nutriscore/app/MainActivity.java` present, old `com/nutriscan` dir gone.
+  All 4 plugins reinstalled (purchases, secure-storage-echo, android-permissions,
+  annotated-plugin-android).
+- Build: `npm run build:aab` -> BUILD SUCCESSFUL in 5m56s.
+  - Output: `mobile/platforms/android/app/build/outputs/bundle/release/app-release.aab`
+  - Copied to `mobile/release/nutriscore-1.0.0-vc10000.aab` (4.62 MB).
+- AAB verified: `jarsigner -verify` => "jar verified", signed by
+  `CN=NutriScan, OU=Mobile, O=NutriScan, L=Unknown, ST=Unknown, C=IN`.
+  Binary manifest contains `com.nutriscore.app`, `com.nutriscore.app.MainActivity`,
+  version `1.0.0`, CAMERA + INTERNET permissions; old package absent.
+- Keystore `mobile/nutriscan-release.keystore`, alias `nutriscan`, valid to 2053-12-11,
+  SHA256 `3C:AB:59:60:5C:8C:6D:43:D4:58:84:99:FE:6A:E7:B7:6F:E9:22:2D:64:49:AF:68:83:DA:6E:D6:5E:E8:4E:83`.
+- Toolchain used: Node 22.18.0, JAVA_HOME = Adoptium JDK 17.0.16.8 (note: `javac` on
+  PATH is 21, so JAVA_HOME must be set explicitly for the build), Android SDK
+  platform 36 + build-tools 36.0.0, cordova-android 15.1.0, Gradle 8.14.2, AGP 8.10.1.
+
+### FLAGGED — must resolve before/alongside the Play upload
+1. `Frontend/.env.cordova` has EMPTY `VITE_REVENUECAT_ANDROID_KEY` and EMPTY
+   `VITE_GOOGLE_CLIENT_ID`. Both degrade gracefully (`|| ''`), so the build succeeded,
+   but in THIS AAB in-app purchases and Google sign-in are non-functional. Fill both
+   and rebuild before shipping a monetised release.
+2. Production backend env (Render) must set `GOOGLE_PACKAGE_NAME=com.nutriscore.app`
+   — only `.env.example` was updated here.
+3. The RevenueCat dashboard + Play Console app must both use `com.nutriscore.app`;
+   a package rename invalidates any prior store/RevenueCat config for the old id.
+4. `mobile/build.json` keystore password is the weak literal `changeit-nutriscan`
+   (gitignored, but should be rotated to a strong password).
+5. Renaming the package after a Play release is impossible — confirm `com.nutriscore.app`
+   is final before first upload.
+
+## 2026-07-31 — Created BRAND_AND_FEATURES.md (logo design brief)
+- New file: `BRAND_AND_FEATURES.md` at repo root. Purpose: hand to an LLM/designer to get
+  logo recommendations. Covers identity, full web+mobile feature list, exact colour tokens
+  (light + dark + semantic), typography, shape/icon/motion language, languages/RTL, current
+  logo assets, and a concrete logo brief.
+- Read (not assumed): `mobile/config.xml`, `Frontend/src/tailwind.css`,
+  `Frontend/DESIGN_TOKENS.md`, `Frontend/src/App.jsx`, `Frontend/src/utils/scoreColor.js`,
+  `macroMeta.js`, `languages.js`, `Backend/config/plans.js`, `Backend/utils/scanQuota.js`,
+  `Backend/routes/*.js` (route inventory), both `package.json`s, `public/favicon.svg`.
+- FLAGGED in the doc:
+  - Naming drift: repo folder `NutriScan-mainn`, Android package id `com.fitscoreai.app`,
+    shipped product name `NutriScore`. Doc treats NutriScore as canonical.
+  - `Frontend/public/favicon.svg` is an unrelated purple/blue lightning-bolt mark
+    (`#863bff` / `#7e14ff` / `#47bfff`) from another project — matches no palette token and
+    should be replaced with the new logo.
+  - Header brand mark is a placeholder lucide `Apple` icon, not a real logo.
+  - `PROJECT_SETUP.md` at repo root documents a *different* product (Havenn study-space
+    platform, `com.havenn.studyspace`) — stale/mismatched for this repo; not used as a source.
+  - Page bg: `tailwind.css` ships `#F5F5F5` while `DESIGN_TOKENS.md` §13 specifies
+    `#EBEEEC`; doc records both.
+
+## 2026-07-31 — New logo wired into favicon/PWA, Android launcher icon + splash
+
+Replaced the leftover purple lightning-bolt mark with the supplied emerald
+"N + leaf" logo across web and Android. Branding/asset files only; no app logic,
+routes, or unrelated config touched.
+
+### Source masters (new, committed)
+- `resources/icon.png` — 1024x1024, transparent, mark at 94% of canvas.
+- `resources/splash.png` — 2732x2732, transparent, mark at 52% (safe area, since
+  the Android 12 splash icon is circle-masked and cropped per device).
+- The supplied asset was a **JPEG flattened on solid black**, not a transparent
+  PNG. A plain colour-key would leave a dark halo, because every antialiased edge
+  pixel is already blended toward black. Alpha is therefore derived from
+  luminance (ramp 10→46) and the colour un-premultiplied (`c / a`) — the exact
+  inverse of "src over black". Result: 58.65% fully clear, 2.59% partial edge,
+  38.76% opaque, no halo when composited over white or `#F5F5F5`.
+
+### `mobile/scripts/generate-resources.js` (rewritten)
+Now reads the two masters instead of `Frontend/public/favicon.svg`, and emits
+**both** platforms in one pass (27 assets):
+- `mobile/res/android/` — 6 legacy launcher icons (on `#F5F5F5`, unmasked so a
+  transparent PNG would show wallpaper through), 6 adaptive foregrounds (inset to
+  the 66/108 safe zone) + 6 adaptive background fills, `splash/splash-icon.png`
+  (1152px), `play-store-icon.png` (512, no alpha).
+- `Frontend/public/icons/` — 16/32 favicons, 180 apple-touch-icon (flattened on
+  emerald `#10B981`, iOS disallows alpha), 192/512 PWA, 512 maskable (62% inset).
+- `Frontend/public/favicon.ico` — 16/32/48 multi-size. Hand-built container
+  (6-byte header + 16-byte dir entries + PNG payloads); sharp cannot emit ICO and
+  the format is too simple to justify a dependency. Verified: type=1, 3 entries,
+  each decodes at its declared size.
+
+### Web
+- `Frontend/index.html`: added `favicon.ico`, 16/32 PNG, apple-touch-icon,
+  `manifest` link, and per-scheme `theme-color` `#10B981`. Kept the existing
+  pre-paint theme script untouched.
+- New `Frontend/public/manifest.webmanifest`: `theme_color` `#10B981`,
+  `background_color` `#F5F5F5`, 192 + 512 + maskable-512. No vite-plugin-pwa in
+  this project, so a plain manifest is the right shape.
+- Vite rewrites all of these hrefs to `./` for the cordova build automatically
+  (verified in `mobile/www/index.html`), so one set of tags serves both targets.
+
+### `mobile/config.xml` (icon/splash lines only)
+- Added a density-less `<icon src="res/android/icon/xxxhdpi.png" />` default.
+- Added `AutoHideSplashScreen=true`, `SplashScreenDelay=2000`,
+  `FadeSplashScreen=true`, `FadeSplashScreenDuration=400`. These are read by
+  `SplashScreenPlugin` built into cordova-android 15 — **no plugin needed**.
+  Default delay is `-1` (hide on `onPageFinished`), which fires before React
+  mounts and flashed an empty shell.
+- Splash background stays `#F5F5F5`, matching `--ns-page-bg` (light) so the
+  handover to first paint has no colour jump. NOTE: the asset reads on light, not
+  white — `#F5F5F5` was kept deliberately over `#FFFFFF`.
+
+### cordova-res: evaluated and rejected (do not retry)
+Installed and run it as instructed; it is the wrong tool for this platform version:
+1. It writes `<splash density="port-*">` tags. cordova-android 15 hard-rejects
+   these — `prepare.js:warnForDeprecatedSplashScreen` emits "The `<splash>` tags
+   were detected and are no longer supported. Please migrate to ... 
+   `AndroidWindowSplashScreenAnimatedIcon`". Its 12 full-screen splash PNGs are
+   dead weight under the Android 12 splash API.
+2. It will not run on Node 22 here: npm resolved `tslib` into the lockfile but
+   never wrote it to disk (`npm i`, `--force`, `--install-strategy=nested` all
+   reported "up to date" with the dir absent); had to `npm pack` + untar it by
+   hand to even get `--version` to respond.
+Both it and `tslib` were uninstalled; lockfile and `node_modules` verified clean.
+`generate-resources.js` targets exactly what cordova-android 15 consumes.
+Also confirmed absent from cordova-android 15: `SplashShowOnlyFirstTime`,
+`SplashMaintainAspectRatio`, `ShowSplashScreenSpinner` — so the requested
+`SplashShowOnlyFirstTime` was **not** added; it would be a no-op.
+
+### Verification
+- `cordova platform rm android && cordova platform add android` — clean re-add,
+  all 3 plugins reinstalled, so no stale icon/splash resources survive.
+- `cordova build android -- --packageType=apk` → **BUILD SUCCESSFUL** (2m 2s).
+- APK inspected: 24 launcher entries (6 legacy `mipmap-*-v4/ic_launcher.png`,
+  6 adaptive fg, 6 bg, 6 `ic_launcher.xml`) + `drawable-nodpi-v4/`
+  `ic_cdv_splashscreen.png`. Native `cdv_themes.xml` resolves
+  `windowSplashScreenAnimatedIcon` → `@drawable/ic_cdv_splashscreen`,
+  `windowSplashScreenBackground` → `#F5F5F5`.
+- `Frontend`: `npm run build` OK, all 6 icons + `manifest.webmanifest` +
+  `favicon.ico` present in `dist/`.
+
+### Docs updated
+- `mobile/README.md` — masters table, dual-output `gen:res`, why not cordova-res.
+- `mobile/.gitignore` — comment now points at the masters, not the old SVG.
+
+### Still open (not done, needs a decision)
+- `Frontend/public/favicon.svg` (purple `#863bff`) and `icons.svg` are still on
+  disk. Nothing in `Frontend/src` imports either; the only live reference was the
+  `index.html` favicon link, now repointed. `favicon.svg` is still emitted into
+  `dist/`. Safe to delete once someone confirms no external/bookmark reliance —
+  left in place rather than deleting unasked.
+- The in-app brand marks are unchanged and still don't match the new logo: the
+  header/sidebar mark is a placeholder lucide `Apple` icon, and the splash/in-app
+  glyph in `tailwind.css` is a hand-drawn leaf on an emerald squircle. Only the
+  OS-level icons (favicon/PWA/launcher/splash) were in scope here.
+- `resources/` is committed at the repo root and is *not* covered by the root
+  `.gitignore`; the generated `mobile/res/` and `Frontend/public/icons/` are
+  regenerated output (`icons/` is currently untracked, not ignored — worth an
+  ignore rule if it shouldn't be committed).
+
+## 2026-08-01 — Renamed the app to FitScore (loading screen + all user-visible copy)
+
+### Changed
+- Brand display name is now **FitScore** everywhere it is shown to a user.
+  Case-sensitive `NutriScore` -> `FitScore` across 35 source files:
+  - Loading/splash: extracted `Frontend/src/components/SplashScreen.jsx` out of
+    the inline `isRestoring` branch in `App.jsx`. It now shows the real brand
+    mark (`/icons/icon-192.png`, generated from `resources/icon.png` by
+    `npm run gen:res`) plus a "FitScore" wordmark and "Loading FitScore...",
+    on `var(--ns-surface)` — deliberately matching the native Android splash
+    (`AndroidWindowSplashScreenAnimatedIcon` + `Background` in config.xml) so
+    the system splash hands over without a brand/colour jump. Previously it drew
+    a generic green leaf `<svg>` that matched nothing.
+    Added `role="status" aria-live="polite" aria-busy="true"`; the `<img>` is
+    `alt=""` (decorative — the wordmark carries the meaning).
+    Icon path is absolute on purpose: works from the web origin root and from
+    the Cordova shell at `https://localhost/` on any route.
+  - `Frontend/index.html` `<title>`, `Frontend/public/manifest.webmanifest`
+    (`name`/`short_name`), `Frontend/public/_headers`, `Frontend/package.json`
+    (`name: fitscore`).
+  - `mobile/config.xml` `<name>` + author display name; `mobile/package.json` +
+    `package-lock.json` (`fitscore-mobile`). Ran `cordova prepare android` —
+    `platforms/android/.../values/cdv_strings.xml` now has
+    `<string name="app_name">FitScore</string>`, so the launcher label is FitScore.
+  - All 8 i18n locales (`en/hi/es/fr/de/ar/ur/ne`): `scanned_with_ai`,
+    `top_users`, `no_requests_desc`, `ai_processing`. Non-Latin scripts verified
+    intact after the rewrite.
+  - Components: `Profile.jsx`, `PaywallContent.jsx`, `Results.jsx` (share title +
+    `fitscore_*.png` download filename), `StreakLeaderboard.jsx`,
+    `BarcodeScanner.jsx` (+ its test), `Login.jsx`, `SignUp.jsx`,
+    `Onboarding.jsx`, `DashboardRedesign.jsx`, `App.jsx` shell titles and the
+    `'FitScore User'` display-name fallback.
+  - Backend user-visible strings + log prefixes: `server.js`, `routes/analyze.js`,
+    `routes/auth.js`, `config/queue.js`, `config/worker.js`,
+    `middleware/profileValidator.js`, `utils/mailer.js` (from-name only),
+    `utils/ageCheck.js`.
+  - `docs/home_screen.html` mockup.
+
+### Added
+- `Frontend/src/components/SplashScreen.test.jsx` (6 tests): wordmark, loading
+  copy, a regression guard asserting the rendered text contains no `/nutri/i`,
+  the exported `BRAND_NAME`, the icon `src` + absence of the old inline `<svg>`,
+  and the busy status region. Registered `SplashScreen.jsx` in
+  `Frontend/jest.config.js` `collectCoverageFrom`.
+
+### Deliberately NOT renamed (would break live state — do not "fix" these blindly)
+- `localStorage` keys `nutriscan_auth` / `nutriscan_profile` (`App.jsx`) and
+  `fitscan_theme` (`index.html` + `ThemeToggle.jsx`): renaming logs every
+  existing user out / resets their theme.
+- `APP_USER_ID_PREFIX = 'nutriscan_'` in `services/revenueCatService.js`: this is
+  the RevenueCat app-user-id namespace. Changing it orphans every existing
+  subscriber record.
+- Email/domain literals: `no-reply@nutriscore.app` (`utils/mailer.js`
+  `MAIL_FROM_ADDRESS` default), `dev@nutriscore.app` + `https://nutriscore.app`
+  (`config.xml` author). The sender domain is DNS/Brevo-verified; changing it
+  silently breaks password-reset mail.
+- `mobile/nutriscan-release.keystore` filename (referenced by `build.json`).
+
+### Flagged for a decision
+- **The logo is still an "N".** `resources/icon.png` / `splash.png` are a
+  stylised leaf-"N" from the NutriScan era, now paired with the name "FitScore"
+  on both the launcher icon and the splash. Needs a new mark, then
+  `npm run gen:res` in `mobile/`.
+- `Frontend/src/components/Profile.jsx:1063` still mails
+  `support@nutrisnap.app` — a *third* dead brand. Needs a real support address.
+- Widget id stays `com.fitscoreai.app` and the API host
+  `fitscore-rqgb.onrender.com` (already FitScore-era); `config.xml` also lists
+  `allow-intent` for a different host `fitscore-6hqp.onrender.com` — worth
+  checking whether that is stale.
+
+### Verified
+- `Frontend`: `npx jest --maxWorkers=2` -> 17 suites / 166 tests passed.
+  (A full-parallel run intermittently times out `SignUp.test.jsx`; it passes in
+  isolation and at `--maxWorkers=2`. Pre-existing contention flake, unrelated.)
+- `Backend`: `npx jest` -> 21 suites / 184 tests passed.
+- `npm run build:cordova` succeeded; `mobile/` `npm run sync:www` +
+  `cordova prepare android` re-ran, so `mobile/www/index.html`,
+  `mobile/www/manifest.webmanifest` and
+  `platforms/android/app/src/main/assets/www/` all carry the FitScore title.
+- `npx eslint src/components/SplashScreen.jsx src/App.jsx` -> clean.
+- Dev server check: `GET /icons/icon-192.png` -> `200 image/png 50730`,
+  page `<title>` -> `FitScore`.
+- Not verified: no on-device/emulator run and no APK build in this session, and
+  the Playwright MCP browser was unreachable (`ECONNREFUSED 127.0.0.1:54686`),
+  so there is no screenshot of the splash — only the jsdom assertions above.
+
+## 2026-08-01 — Created SECURITY_MEASURES.md (web + Android security inventory)
+- New file: `SECURITY_MEASURES.md` at repo root. Current-state inventory (companion to
+  `SECURITY_HARDENING.md`, which is the change history).
+- Built by reading actual source: `Backend/server.js`, `config/{cors,cookies,cloudinary}.js`,
+  `middleware/{auth,csrf,rateLimiter,requirePlan,requireSubscription,validateRequest,validator}.js`,
+  `utils/{tokens,securityLogger,ownershipCheck,ageCheck,scanQuota}.js`, `validation/schemas.js`,
+  `routes/{auth,payment,revenueCatSubscriptions,billing,analyze}.js`, `Frontend/src/api/client.js`,
+  `Frontend/src/utils/{passwordPolicy,nativePermissions}.js`, `Frontend/index.html`, `vite.config.js`,
+  `mobile/config.xml`, `mobile/resources/android/*`, `render.yaml`, all `package.json` + `.gitignore`.
+- Documents: full stack tables (backend/web/Android/third-party), auth+session (JWT HS256 15m,
+  refresh rotation + family revocation, token_version, bcrypt 12, lockout, enumeration resistance),
+  authorization/ownership, Zod validation + injection defence, transport/helmet/CORS, CSRF
+  double-submit, payment + webhook integrity (Razorpay HMAC, RevenueCat re-fetch + signature +
+  idempotency), rate limiting table, privacy-preserving security logging, Android hardening
+  (Keystore tokens, no cleartext, allowBackup=false, R8, allowlists), test inventory.
+- VERIFIED negatives worth keeping: no secrets tracked in git (`git ls-files --error-unmatch`
+  fails for `Backend/.env`, `mobile/build.json`, `mobile/nutriscan-release.keystore`).
+- FLAGGED gaps (Section 12): NO security headers/CSP on the web SPA at all (repo-wide grep for
+  Content-Security-Policy/X-Frame-Options/Referrer-Policy/Permissions-Policy = 0 matches; helmet CSP
+  is API-only, render.yaml frontend block commented out); no email verification; no MFA;
+  `middleware/requireSubscription.js` is dead code that reads `req.user` (never populated → would
+  401 always); API hostname inconsistency (`fitscore-rqgb` in .env.cordova/config.xml vs
+  `fitscan-api` in render.yaml); no cert pinning; no dependency/secret scanning in CI; legacy JWTs
+  without tokenVersion still valid until expiry; profile pics stored base64 in users.profile JSONB;
+  `google-auth-library` required at runtime but only a transitive dep of `googleapis`.
+
+## 2026-08-02 — Added privacy policy to the web application
+- New file: `Frontend/src/components/PrivacyPolicy.jsx`. Full 12-section policy page
+  (collection, use, processors, GDPR legal basis, retention, rights, security, children,
+  transfers, not-medical-advice, changes, contact) plus TOC, "Last updated" date and a
+  back button.
+- Content derived from the ACTUAL data model and providers, not a template:
+  `Backend/database-schema.sql` (users: email/password_hash/google_id/name/points/streak/
+  profile JSONB/scheduled_deletion_at/failed_login_attempts...; scans: image_url/nutriments/
+  raw_product_data/servings/eaten...), `user_medical_conditions`, `user_health_goals`,
+  `refresh_tokens`, and `Backend/.env.example` providers (Gemini, Cloudinary, Open Food Facts,
+  Google Sign-In/Play Integrity, RevenueCat, Razorpay, Brevo, Render).
+- Documents the real 7-day scheduled-deletion window and the cancel-by-logging-in behaviour
+  already implemented in Profile.jsx.
+- Routing (`Frontend/src/App.jsx`): added PUBLIC route `/privacy-policy` (outside
+  `DesktopAppShell`, so it resolves with no session — required by the Play listing and the
+  Google OAuth consent screen) plus a `/privacy` → `/privacy-policy` redirect.
+- `Profile.jsx`: the privacy row now navigates to `/privacy-policy` instead of opening the
+  old one-sentence `modal === 'privacy'` stub, which was deleted. Glyph changed
+  `LifeBuoy` → `Lock` (LifeBuoy is the support glyph; matches the intent recorded in
+  `Frontend/UI_POLISH_CHANGELOG.md`). Added `useNavigate`.
+- `Login.jsx` / `SignUp.jsx`: added an `.auth-legal` line linking the policy pre-signup
+  (SignUp wording: "By creating an account you agree to our Privacy Policy").
+- HASHROUTER TRAP handled twice: `main.jsx` swaps BrowserRouter→HashRouter for the Cordova
+  build, so (a) added `routeHref()` to `Frontend/src/utils/platformUtils.js` which prefixes
+  `#` on mobile — plain `href="/privacy-policy"` would dead-end at
+  `https://localhost/privacy-policy` in the WebView; and (b) the TOC uses buttons +
+  `scrollIntoView`, not `#id` anchors, which would overwrite the route hash and unmount the page.
+  Plain `<a>`/`routeHref` was used on Login/SignUp rather than `<Link>` because
+  `Login.test.jsx`/`SignUp.test.jsx` render those components with NO Router wrapper.
+- Styles: added `.auth-legal` and a `.legal-*` block to `Frontend/src/tailwind.css`
+  (sticky header, 720px measure, 2-col TOC ≥768px, `scroll-margin-top: 72px` so anchored
+  headings clear the sticky header). Uses existing tokens only.
+- VERIFIED: `npm run build` passes (only the pre-existing >500 kB chunk warning);
+  Login + SignUp + platformUtils suites pass (15 tests); a temporary render test confirmed
+  all 12 sections and 12 TOC entries mount, then was deleted. ESLint on the touched files
+  reports only 4 PRE-EXISTING Profile.jsx errors (unused `authToken` prop ×3,
+  set-state-in-effect), none from this change.
+- FLAGGED for the owner: the policy is factual product documentation, not legal advice —
+  needs counsel review before publishing. `LAST_UPDATED` and `SUPPORT_EMAIL`
+  (`support@nutrisnap.app`, copied from Profile's `mailSupport`) are constants at the top of
+  the file; note that address does not match the `nutriscore.app` / `com.fitscoreai.app`
+  branding used elsewhere, so it may be wrong. Terms & Conditions is still a one-line modal
+  stub and should get the same treatment.
+
+## 2026-08-02 (follow-up) — Rewrote the privacy policy to match the ACTUAL app
+- Root cause of the follow-up request: the route/click path was already fine (verified
+  `GET /privacy-policy` → 200, and a temp test confirmed the Profile row click renders the
+  page). The problem was CONTENT — the first draft was accurate about the DB columns but
+  still read like a generic template and, worse, MISSED what the app actually exposes.
+- Investigated and then disclosed, explicitly, what other users can see (new §3):
+  - `Backend/routes/auth.js` GET `/leaderboard` → `SELECT name, points, streak ... LIMIT 50`,
+    so display names ARE visible to every signed-in user. Policy now says so and tells the
+    user they can rename themselves in Profile → Personal detail.
+  - `Backend/routes/features.js` → selects `u.name as author_name`, so feature requests are
+    posted under your display name.
+  - `Backend/routes/scans.js` upserts every scan into the SHARED `product_database`
+    (product_name, brand, ingredients, nutriments, latest_score, scan_count,
+    first/last_scanned_by). Policy states the product data is shared but the photo, score
+    history and health profile are not, and that the scanner reference is not shown to others.
+- CORRECTED a retention inaccuracy in the first draft: `Backend/server.js` scheduled-deletion
+  purge DELETEs users/scans/health goals/medical conditions/feature_requests but only
+  `UPDATE product_database SET first_scanned_by = NULL / last_scanned_by = NULL`. The product
+  rows SURVIVE account deletion. §8 now admits this exception instead of implying a full wipe.
+- Added §6 (cookies/on-device storage) naming the real artefacts: `token` + `refresh_token`
+  HttpOnly cookies (`Backend/routes/auth.js` setSessionCookies), the CSRF cookie
+  (`middleware/csrf.js`), Android Keystore on mobile, and the localStorage keys
+  `nutriscan_auth`, `nutriscan_profile`, `fitscan_language`, `fitscan_theme`.
+- Added §1 "short version" up top and made §7 flag health data as GDPR special-category
+  (consent-only). §13 now warns allergy users to read the physical label.
+- Grew 12 → 15 sections. Rewrote in the product's own voice using the real feature set from
+  `BRAND_AND_FEATURES.md` (score out of 10, ingredient audit, barcode, food database,
+  streaks/points, 7-day deletion grace).
+- NAMING DECISION recorded in a code comment: used **FitScore** because `Frontend/index.html`
+  `<title>`, `mobile/config.xml` `<name>` and the en translations all say FitScore, even
+  though `BRAND_AND_FEATURES.md` says "NutriScore" and the package id is `com.fitscoreai.app`.
+  Did not invent a resolution — flagged instead.
+- Added a "keep this in step with the code" comment block at the top of PrivacyPolicy.jsx
+  listing the 8 source files whose changes should force a policy update.
+- VERIFIED: eslint clean on the file; `npm run build` passes; temp tests confirmed 15 headings
+  + 15 TOC buttons + section ids all resolve, app-specific strings present, and the
+  Profile-row → policy-page click path works (needed `import '../i18n/index.js'` in the
+  harness, since the row label comes from `t('privacy_policy')`). All temp files deleted.
+- STILL FLAGGED: needs counsel review; `SUPPORT_EMAIL = support@nutrisnap.app` (from Profile's
+  mailSupport) matches neither `nutriscore.app` nor `fitscoreai` and is probably wrong;
+  Terms & Conditions remains a one-line modal stub.
+
+## 2026-08-02 - Privacy policy implementation corrected against current code
+- Reworked `Frontend/src/components/PrivacyPolicy.jsx` as a public, 17-section policy for
+  NutriScore web and Android (`com.fitscoreai.app`), retaining the existing `/privacy-policy`
+  route and links from Login, SignUp, and Profile.
+- Rejected the inaccurate requested claim that the service stores no data: the policy now
+  explicitly covers persisted account/profile/scan/community/subscription/security records,
+  browser profile caches, Cloudinary images, and the Gemini profile fields used in prompts.
+- No-refund wording is qualified by applicable law and Google Play/payment-provider policy;
+  cancellation, uninstall, and account-deletion effects are explained and the official Google
+  Play refund-policy page is linked.
+- Disclosed two implementation gaps rather than promising complete deletion: automated account
+  purge does not delete Cloudinary assets, and votes on other users' feature requests may retain
+  an internal numeric user id. Also corrected feature-board visibility and Play Integrity wording.
+- Updated SignUp acknowledgement copy and added accessible 44px targets, focus indicators, and
+  legal-page link styling in `Frontend/src/tailwind.css`.
+- Added `Frontend/src/components/PrivacyPolicy.test.jsx` (4 tests). Verified: privacy tests 4/4,
+  SignUp tests 4/4, targeted ESLint clean, and `npm.cmd run build` succeeds. Existing Vite large
+  chunk warning remains unrelated.
+
+## 2026-08-02 - Renamed the application display brand to bitezsnap
+- Replaced the live `NutriScore` display brand and remaining user-visible `FitScan` references
+  with the exact lowercase name `bitezsnap` across the frontend, backend response/email/AI copy,
+  all eight i18n locales, PWA metadata, Cordova metadata, tests, examples, and active product,
+  architecture, billing, privacy, and security documentation.
+- Updated package metadata to `bitezsnap` (`Frontend/package.json`) and `bitezsnap-mobile`
+  (`mobile/package.json` and `mobile/package-lock.json`). Shared result images now download as
+  `bitezsnap_<product>.png`; support and default sender metadata now use `bitezsnap.app`.
+- Cordova `<name>` and author display text now use `bitezsnap`. `cordova prepare android`
+  regenerated `mobile/platforms/android/app/src/main/res/values/cdv_strings.xml` with
+  `<string name="app_name">bitezsnap</string>`. The Cordova-targeted Vite build succeeded and
+  synced 17 files into `mobile/www`.
+- Compatibility-critical identifiers were deliberately preserved: Android package id
+  `com.fitscoreai.app`, deployed `fitscore`/`fitscan` Render URLs and service names, JWT/CSRF and
+  localStorage namespaces, Google Play product ids, the Play Integrity plugin id/class, and the
+  RevenueCat `nutriscan_` App User ID prefix. Renaming them would invalidate the existing Android
+  listing, sessions/tokens, deployments, products, or subscriber mappings.
+- Residual audit found no old display brand in active tracked source/config or the generated web
+  and Cordova application bundle. Old names remain only in historical changelog/context entries,
+  compatibility identifiers, generated plugin paths, and stale Gradle intermediates.
+- Verification: backend full suite 22/22 suites and 195/195 tests passed; frontend full serialized
+  suite 18/18 and 170/170 passed; rename-sensitive frontend subset 4/4 suites and 19/19 passed;
+  `vite build --mode cordova`, `sync:www`, and `cordova prepare android` passed. The first Cordova
+  debug-build wrapper timed out and its Gradle processes were stopped; a clean direct
+  `gradlew assembleDebug --no-daemon` retry then succeeded in 1m25s. `aapt2 dump badging` verified
+  the rebuilt 9,367,979-byte APK reports `application-label:'bitezsnap'` for every locale while
+  retaining package identity `com.fitscoreai.app`.
+
+## 2026-08-02 - Completed the bitezsnap web rename (split JSX wordmarks)
+- Follow-up web audit found why old branding was still visible despite the prior exact-string
+  replacement: several wordmarks split `NutriScore` across nested JSX nodes, such as
+  `Nutri<em>Score</em>` and `<span>Nutri</span><span>Score</span>`, so the contiguous-text search
+  could not detect them.
+- Replaced the split wordmarks with lowercase `bitezsnap` in `Frontend/src/App.jsx`,
+  `components/Login.jsx`, `SignUp.jsx`, `ResetPassword.jsx`, and `Onboarding.jsx`. This covers
+  the desktop sidebar, landing/login panel and form, signup page, reset-password page, and every
+  onboarding header. Updated the stale `Frontend/package-lock.json` root package name too.
+- Strengthened `Login.test.jsx` and `SignUp.test.jsx` with regression assertions that rendered
+  auth pages contain `bitezsnap` and do not contain the old `Nutri Score` text.
+- Verification: targeted Login + SignUp + Splash tests passed (3 suites / 14 tests); the normal
+  `vite build` passed; strict source audit found zero continuous or split old display-brand
+  matches; `Frontend/dist` and `mobile/www` each contain zero old-brand matches and both expose
+  `bitezsnap` in `index.html` and `manifest.webmanifest`.
+- Rebuilt/synced the Cordova web bundle, ran `cordova prepare android`, and rebuilt the debug APK
+  successfully. The only old capitalized name remaining inside generated Android web assets is
+  `FitScorePlayIntegrity`, the compatibility-critical native plugin service identifier—not
+  user-visible branding. Targeted ESLint found only pre-existing Onboarding issues at lines 61,
+  119, and 351 (two hook warnings and two unused-variable errors), unrelated to this rename.
+
+## 2026-08-02 - Glow-removal Phase 1 audit
+- Completed a read-only audit of frontend JSX/TSX/CSS/SCSS/Tailwind/SVG sources for colored
+  box shadows, drop shadows, glow keyframes, halo rings, and blurred decorative overlays.
+- Confirmed live glow effects in the result progress ring, toast/state treatments, profile and
+  health/settings controls, primary-action system, desktop/sidebar shell, mobile scan FAB, auth
+  focus states, and the unrouted `DashboardRedesign.jsx` mockup. Also found dormant or overridden
+  legacy glow declarations and two unreferenced filtered SVG assets.
+- No application source or styling was changed. Implementation is intentionally waiting for the
+  user's review and approval of the Phase 1 report.
+
+## 2026-08-03 - Fresh Cordova debug APK delivered
+- Ran `mobile/npm run build:android`, which rebuilt the Vite SPA in Cordova mode, synchronized
+  17 files into `mobile/www`, and completed the Cordova Android/Gradle debug build successfully.
+- Copied the installable artifact to `D:\NutriScan-mainn\bitezsnap-debug.apk` (9,367,979 bytes).
+- Verified with Android build-tools 36: application label `bitezsnap`, package
+  `com.fitscoreai.app`, versionName `1.0.0`, versionCode `10000`, compile/target SDK 36.
+- `apksigner verify` passed using APK Signature Scheme v2 with the Android debug certificate.
+  SHA-256: `2615C4E70662CE29BAD9334FA288DD8B768A1ED6B4E4BB294C09A793A0BF340D`.
+
+## 2026-08-03 - Replaced bitezsnap logo across web and Android
+- Used the user-supplied `D:\Downloads\bitezsnap logo.png` unchanged as the new visual master.
+  Created a 1024x1024 application master at `resources/icon.png` and a transparent 2732x2732
+  Android-safe splash master at `resources/splash.png` with the icon centred inside the safe area.
+- Added the shared `BrandLogo.jsx` image component and wired it into the desktop application shell,
+  login/signup desktop and compact headers, reset-password page, onboarding header, React loading
+  screen, and the standalone dashboard redesign while retaining the bitezsnap wordmark text.
+- Updated the asset generator for the finished opaque dark icon, then regenerated Android legacy
+  and adaptive launcher icons, Play Store art, Android 12 splash art, PWA icons, Apple touch icon,
+  PNG favicons, ICO favicon, and the legacy SVG favicon surface.
+- Verification: Login/SignUp/Splash tests passed (3 suites, 14 tests), production web build passed,
+  Cordova web build/sync passed, and Cordova Android debug build passed. Replaced the top-level APK
+  at `D:\NutriScan-mainn\bitezsnap-debug.apk` (10,475,331 bytes); label `bitezsnap`, package
+  `com.fitscoreai.app`, target SDK 36, APK Signature Scheme v2 verified. SHA-256:
+  `9E991098A553A525F701A619E5AA4E0B310114F40924B92C0CAF8CC5C6CDA88C`.
+
+
+## 2026-08-03 — Changed Android package name from com.fitscoreai.app to com.bitezsnap.app
+- Updated `mobile/config.xml` widget id from `com.fitscoreai.app` to `com.bitezsnap.app`.
+- Updated `Backend/.env.example` GOOGLE_PACKAGE_NAME to `com.bitezsnap.app`.
+- Updated `Frontend/src/components/PrivacyPolicy.jsx` ANDROID_PACKAGE constant.
+- Updated `BRAND_AND_FEATURES.md` package id documentation.
+- Updated `SECURITY_MEASURES.md` package id reference.
+- Updated all test references in `Backend/routes/playIntegrity.test.js`:
+  - requestPackageName in mock integrity token
+  - packageName in appIntegrity
+  - GOOGLE_PACKAGE_NAME env var
+  - Google Play Integrity API URL
+- **ACTION REQUIRED**: Update Google Play Console configuration with new package name.
+- **ACTION REQUIRED**: Update RevenueCat app configuration to match new package name.
+- **ACTION REQUIRED**: Update Play Integrity API allowlist if configured.
+- **ACTION REQUIRED**: Rebuild and re-sign the Android APK/AAB with new package identity.
+- **CRITICAL**: This is a breaking change for existing users — package name changes are treated as a different app by Android. Existing installs cannot be upgraded; users must uninstall the old app and install the new one. All local data (secure storage tokens, WebView localStorage) will be lost. Server-side accounts remain, but users must sign in again.
+
+## 2026-08-03 - Built TrailForge standalone 2D physics driving game
+- Added a new isolated `trailforge/` Vite + strict TypeScript + Matter.js project so the existing
+  bitezsnap frontend/backend/mobile worktree was not replaced or coupled to the game.
+- Created original TrailForge branding and a responsive procedural Canvas visual system: layered
+  parallax skies/mountains/clouds, five environment palettes, terrain strata/surfaces, pooled
+  decorations/pickups/particles, six procedural vehicle silhouettes, driver, suspension, HUD,
+  menus, garage, workshop, stage selector, settings, pause, and game-over presentation.
+- Physics uses separate Matter bodies for chassis, front wheel, rear wheel, and repositioned head
+  collision sensor. Both wheels collide with terrain and receive bounded rotational torque. Four
+  correctly measured damped constraints form two triangulated suspension assemblies so wheels
+  retain lateral position while visibly compressing/rebounding. Grounded axle alignment and
+  one-wheel roll damping keep acceleration controllable; vehicle-specific capped air torque keeps
+  GAS/BRAKE orientation control, with the dirt bike and buggy more agile than the starter jeep.
+- Added endless chunked procedural terrain with accurate matching collision segments, gradual
+  0-300 m onboarding, increasing hill amplitude/slope/roughness, generation ahead, unloading
+  behind, deterministic tests, pooled coins/fuel cans, and lightweight decorations.
+- Implemented full run loop: gas, brake/reverse, simultaneous pointer controls, smooth lead camera,
+  fuel drain/refills, bronze/silver/gold coins, airtime tiers, front/backflip tracking, landing/dust/
+  pickup effects, driver-impact/upside-down/out-of-fuel/stuck failures, slowed crash finish,
+  detailed results, instant retry, pause/resume/restart, and in-pause audio settings.
+- Added permanent LocalStorage progression (`trailforge.save.v1`): six vehicles, engine/grip/
+  suspension/fuel upgrades to level 20 with progressive costs, five unlockable stages with real
+  gravity/grip/terrain/fuel differences, seven achievements, balance/best distance, selection,
+  unlocks, settings, and corruption-safe save migration defaults.
+- Audio is original and asset-free via Web Audio synthesis: RPM-responsive filtered engine,
+  procedural music notes, and click/coin/fuel/landing/crash/reward/achievement/game-over cues.
+- Added `F3`/backtick physics debug rendering for collision bodies, constraints, center of mass,
+  chunk boundaries, FPS, velocity, angular velocity, contacts, suspension links, and body counts.
+- Verification in `trailforge/`: `npm test` -> 3 files / 8 tests passed (including 10,000 m terrain,
+  chunk unloading, real forward wheel-torque simulation, brake/reverse, pooling cadence, and save
+  reload); `npm run build` succeeded (150.06 kB JS / 27.71 kB CSS before gzip). A real headless
+  Chrome and Edge smokes at 1440x900 and 844x390 drove sustained runs, paused/resumed, verified
+  two-finger GAS+BRAKE, 44px+ targets, touch-action/overflow safety, and produced zero page/console errors.
+- Run with `cd trailforge`, `npm install`, `npm run dev`. Browser QA screenshots are generated into
+  ignored `trailforge/artifacts/` by `scripts/browser-smoke.mjs`.
+
+## 2026-08-03 - Regenerated favicon set and built signed Play Store AAB
+- Re-ran `mobile/npm run gen:res` from the current 1024x1024 bitezsnap master logo. Regenerated
+  27 web/Android assets, including ICO, 16/32px PNG favicons, Apple touch icon, PWA icons,
+  adaptive/legacy Android launcher icons, splash art, and Play Store icon.
+- Verified a normal Vite production build and the Cordova-targeted build both succeed. The
+  production and Cordova HTML reference the ICO/16px/32px icons correctly; the built icon copies
+  match the generated sources, and the final AAB contains the favicon/PWA files under
+  `base/assets/www/`.
+- The first AAB attempt exposed stale generated Android platform state: `MainActivity.java` still
+  used `com.fitscoreai.app` after `config.xml` changed to `com.bitezsnap.app`. Removed and recreated
+  only the generated Cordova Android platform with the locally installed cordova-android 15.1.0,
+  then confirmed `MainActivity` and Gradle namespace use `com.bitezsnap.app`.
+- `mobile/npm run build:aab` completed successfully using the ignored release keystore/build.json.
+  Copied the finished signed artifact to `D:\NutriScan-mainn\bitezsnap-release.aab`
+  (6,547,334 bytes). SHA-256:
+  `A44F30CB72C60DE22E8657F3E309FBD4B862EDA7FEFAFCFF38034721C1C6771C`.
+- Offline Android bundletool manifest verification: package `com.bitezsnap.app`, versionName
+  `1.0.0`, versionCode `10000`, min SDK 24, target/compile SDK 36, launcher activity
+  `com.bitezsnap.app.MainActivity`, cleartext disabled, backups disabled. `jarsigner -verify`
+  passed; upload certificate SHA-256 is
+  `3C:AB:59:60:5C:8C:6D:43:D4:58:84:99:FE:6A:E7:B7:6F:E9:22:2D:64:49:AF:68:83:DA:6E:D6:5E:E8:4E:83`.
+- Native Play Integrity tests passed (4/4). Remaining release configuration warning:
+  `PlayIntegrityCloudProjectNumber` is still `0`; the real Google Cloud project number and the
+  Play Console/RevenueCat configuration must match `com.bitezsnap.app` before production use.

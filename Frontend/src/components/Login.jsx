@@ -3,6 +3,8 @@ import { Eye, EyeOff, Sparkles, CheckCircle, Flame } from 'lucide-react';
 import { API } from '../api/client.js';
 import GoogleSignInButton from './GoogleSignInButton.jsx';
 import ForgotPasswordModal from './ForgotPasswordModal.jsx';
+import { routeHref } from '../utils/platformUtils.js';
+import BrandLogo from './BrandLogo.jsx';
 
 const FEATURES = [
   {
@@ -62,7 +64,8 @@ export default function Login({ onLogin, onNavigateSignup }) {
           treatment (DESIGN_TOKENS.md 2.4 rule 4). */}
       <aside className="auth-brand-panel">
         <div className="auth-brand-mark">
-          Fit<em>Scan</em>
+          <BrandLogo className="auth-brand-logo" alt="" aria-hidden="true" />
+          <span>bitez<em>snap</em></span>
         </div>
 
         <div>
@@ -82,7 +85,7 @@ export default function Login({ onLogin, onNavigateSignup }) {
         </div>
 
         <div className="auth-brand-footer">
-          &copy; {new Date().getFullYear()} FitScan Inc. All rights reserved.
+          &copy; {new Date().getFullYear()} bitezsnap Inc. All rights reserved.
         </div>
       </aside>
 
@@ -90,7 +93,8 @@ export default function Login({ onLogin, onNavigateSignup }) {
       <main className="auth-form-panel">
         <div className="auth-form-inner">
           <div className="auth-form-mark">
-            <em>Fit</em>Scan
+            <BrandLogo className="auth-form-logo" alt="" aria-hidden="true" />
+            <span><em>bitez</em>snap</span>
           </div>
 
           <h1 className="auth-title">Welcome back</h1>
@@ -175,6 +179,10 @@ export default function Login({ onLogin, onNavigateSignup }) {
             >
               Sign up for free
             </button>
+          </p>
+
+          <p className="auth-legal">
+            <a href={routeHref('/privacy-policy')}>Privacy Policy</a>
           </p>
         </div>
       </main>

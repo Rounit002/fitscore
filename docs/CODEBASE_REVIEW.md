@@ -1,4 +1,4 @@
-# NutriScan Codebase Review
+# bitezsnap Codebase Review
 
 Reviewed server (Express + Postgres + BullMQ + Gemini), client (React 19 + Vite), middleware, config, and packaging. Findings below, grouped by severity.
 
@@ -80,7 +80,7 @@ Reviewed server (Express + Postgres + BullMQ + Gemini), client (React 19 + Vite)
 
 - **Hardcoded `MODEL_LIST`** (`server/routes/analyze.js:86-90`) — make configurable.
 
-- **Two slightly different prompts** ("Nutri Scan" vs "FitScan") in image vs text analyzers. Brand inconsistency; consolidate.
+- **Two slightly different prompts** ("bitezsnap" vs "bitezsnap") in image vs text analyzers. Brand inconsistency; consolidate.
 
 - **`scans` table duplicates data already in `product_database`.** Consider `scans` referencing `product_database.id` and keeping only per-user fields (timestamp, servings, score-at-scan-time).
 

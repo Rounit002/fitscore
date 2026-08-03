@@ -1,4 +1,4 @@
-# NutriScan Frontend & UI/UX Review
+# bitezsnap Frontend & UI/UX Review
 
 Reviewed React 19 + Vite SPA: `src/App.jsx`, all components in `src/components/`, `src/geminiService.js`, `src/i18n/`, `src/index.css`, and `vite.config.js`. Grouped by severity.
 
@@ -49,7 +49,7 @@ Reviewed React 19 + Vite SPA: `src/App.jsx`, all components in `src/components/`
 - **Accessibility (a11y) is thin.**
   - Plenty of icon-only buttons without `aria-label` (e.g. `Home.jsx:230,238` reset and search buttons, `Dashboard` chevrons, scan torch `Home.jsx:169-174`, header bell `App.jsx:140`).
   - No visible focus styles in custom CSS classes (`.fitscan-app-shell`, `.nf-input`); Tailwind's `focus:ring` is not applied to custom-styled inputs.
-  - Color contrast: `#ADADAD` placeholder on `#fff` (Login) ≈ 2.6:1 — fails WCAG AA. `--ns-outline` used for "Loading NutriScan…" copy is grey-on-grey.
+  - Color contrast: `#ADADAD` placeholder on `#fff` (Login) ≈ 2.6:1 — fails WCAG AA. `--ns-outline` used for "Loading bitezsnap…" copy is grey-on-grey.
   - No `prefers-reduced-motion` handling despite heavy `framer-motion` and CSS keyframes. The score ring animation runs 1.4s with bouncy cubic-bezier (`Results.jsx:28`).
   - `<input type="range">` (zoom slider in `Home.jsx:184-192`) has no `aria-valuetext`.
   - No skip-link, no landmark roles beyond the implicit `<main>`/`<aside>`/`<nav>`.
@@ -160,7 +160,7 @@ Reviewed React 19 + Vite SPA: `src/App.jsx`, all components in `src/components/`
 
 ## Low-priority polish
 
-- **Brand inconsistency**: "FitScan", "NutriScan", "Nutri Scan" all appear across UI and prompts. Pick one and `find/replace`.
+- **Brand inconsistency**: "bitezsnap", "bitezsnap", "bitezsnap" all appear across UI and prompts. Pick one and `find/replace`.
 - **Hard-coded copyright year** in `Login.jsx:465` uses `new Date().getFullYear()` — good. But "All rights reserved" is English only.
 - **`stray home_screen.html`** at repo root is referenced nowhere — delete.
 - **`SignUp.css`** is 74 bytes — likely empty; consolidate into the SignUp component or delete.

@@ -1,6 +1,6 @@
 # Billing Integration Usage Examples
 
-This file contains practical examples of how to integrate the Google Play Billing system into your NutriScan app.
+This file contains practical examples of how to integrate the Google Play Billing system into your bitezsnap app.
 
 ## 1. Initialize Billing in Your App
 

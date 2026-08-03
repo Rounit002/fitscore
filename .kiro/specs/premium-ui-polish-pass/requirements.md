@@ -2,7 +2,7 @@
 
 ## Introduction
 
-FitScan already has a decided visual identity: Emerald Green palette (`#10B981` primary, `#059669` hover, `#047857` pressed/dark accent), Sora for display type and DM Sans for body/UI, card-based layouts, and a light/dark theme driven by CSS custom properties in `Frontend/src/tailwind.css`. This feature is **not** a redesign.
+bitezsnap already has a decided visual identity: Emerald Green palette (`#10B981` primary, `#059669` hover, `#047857` pressed/dark accent), Sora for display type and DM Sans for body/UI, card-based layouts, and a light/dark theme driven by CSS custom properties in `Frontend/src/tailwind.css`. This feature is **not** a redesign.
 
 This feature is a last-10% senior mobile product designer polish pass over the existing Vite + React + TypeScript/JSX SPA in `Frontend/src`: border treatment, elevation, spacing rhythm, button states, motion timing, icon alignment, and touch targets. The reference bar is Whoop, Oura, Apple Health, and MyFitnessPal at their best screens — referenced for restraint and precision, not for color choices.
 

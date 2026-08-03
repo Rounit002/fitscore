@@ -38,6 +38,33 @@ describe('RevenueCat Routes', () => {
   });
 
   describe('POST /rc/sync', () => {
+    it('requires Play Integrity before entitlement sync when production enforcement is enabled', async () => {
+      const previousNodeEnv = process.env.NODE_ENV;
+      const previousFlag = process.env.PLAY_INTEGRITY_ENFORCEMENT_ENABLED;
+      const previousJwtSecret = process.env.JWT_SECRET;
+      process.env.NODE_ENV = 'production';
+      process.env.PLAY_INTEGRITY_ENFORCEMENT_ENABLED = 'true';
+      process.env.JWT_SECRET = 'production-test-jwt-secret-at-least-32-characters';
+
+      try {
+        const res = await request(app)
+          .post('/rc/sync')
+          .set('Cookie', 'token=valid')
+          .send({ appUserId: 'nutriscan_1' });
+
+        expect(res.status).toBe(403);
+        expect(res.body.code).toBe('PLAY_INTEGRITY_REQUIRED');
+        expect(global.fetch).not.toHaveBeenCalled();
+      } finally {
+        if (previousNodeEnv === undefined) delete process.env.NODE_ENV;
+        else process.env.NODE_ENV = previousNodeEnv;
+        if (previousFlag === undefined) delete process.env.PLAY_INTEGRITY_ENFORCEMENT_ENABLED;
+        else process.env.PLAY_INTEGRITY_ENFORCEMENT_ENABLED = previousFlag;
+        if (previousJwtSecret === undefined) delete process.env.JWT_SECRET;
+        else process.env.JWT_SECRET = previousJwtSecret;
+      }
+    });
+
     it('returns 403 when appUserId mismatches', async () => {
       const res = await request(app)
         .post('/rc/sync')

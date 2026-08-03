@@ -1,0 +1,119 @@
+﻿D:\NutriScan-mainn\Backend\config\queue.js:17: console.log('[FitScore Queue] REDIS_URL detected. Initializing BullMQ connection...');
+D:\NutriScan-mainn\Backend\config\queue.js:23: console.error('[FitScore Queue] Redis client error:', err.message);
+D:\NutriScan-mainn\Backend\config\queue.js:29: console.log('[FitScore Queue] BullMQ successfully initialized.');
+D:\NutriScan-mainn\Backend\config\queue.js:31: console.error('[FitScore Queue] Failed to initialize Redis queue, falling back to In-Memory:', err.message);
+D:\NutriScan-mainn\Backend\config\queue.js:34: console.log('[FitScore Queue] No REDIS_URL detected. Running in secure In-Memory queue mode.');
+D:\NutriScan-mainn\Backend\config\queue.js:110: console.error('[FitScore Queue] Error fetching job state from Redis:', err.message);
+D:\NutriScan-mainn\Backend\config\queue.js:139: console.error(`[FitScore Queue] Job ${jobId} failed in-memory:`, err.message);
+D:\NutriScan-mainn\Backend\config\worker.js:20: console.log('[FitScore Worker] Starting BullMQ background worker on "analysis" queue...');
+D:\NutriScan-mainn\Backend\config\worker.js:30: console.log(`[FitScore Worker] Job ${job.id} completed successfully.`);
+D:\NutriScan-mainn\Backend\config\worker.js:34: console.error(`[FitScore Worker] Job ${job.id} failed:`, err.message);
+D:\NutriScan-mainn\Backend\middleware\profileValidator.js:30: .min(MINIMUM_AGE, `You must be at least ${MINIMUM_AGE} years old to use FitScore`)
+D:\NutriScan-mainn\Backend\middleware\profileValidator.js:34: message: `You must be at least ${MINIMUM_AGE} years old to use FitScore`,
+D:\NutriScan-mainn\Backend\middleware\profileValidator.js:55: message: `You must be at least ${MINIMUM_AGE} years old to use FitScore`,
+D:\NutriScan-mainn\Backend\routes\analyze.js:120: console.log(`[FitScore AI] Trying ${modelName}...`);
+D:\NutriScan-mainn\Backend\routes\analyze.js:127: console.log(`[FitScore AI] ✅ Success with ${modelName}`);
+D:\NutriScan-mainn\Backend\routes\analyze.js:137: console.warn(`[FitScore AI] 🛑 Rate limited (429). Activating ${RATE_LIMIT_COOLDOWN_MS / 1000}s cooldown.`);
+D:\NutriScan-mainn\Backend\routes\analyze.js:143: console.warn(`[FitScore AI] ❌ ${modelName} unavailable/error (${status}).`);
+D:\NutriScan-mainn\Backend\routes\analyze.js:148: console.warn(`[FitScore AI] ⏳ ${modelName} server error (${status}). Trying next model...`);
+D:\NutriScan-mainn\Backend\routes\analyze.js:157: console.warn(`[FitScore AI] Error on ${modelName}:`, err.message);
+D:\NutriScan-mainn\Backend\routes\analyze.js:182: console.warn('[FitScore AI] Truncated JSON detected. Attempting emergency repair...');
+D:\NutriScan-mainn\Backend\routes\analyze.js:198: console.error('[FitScore AI] JSON Parse Failure. Cleaned text was:', clean);
+D:\NutriScan-mainn\Backend\routes\analyze.js:264: medicine: 'This looks like a medicine or tablet strip. FitScore only analyses food and drink — please scan a food product instead.',
+D:\NutriScan-mainn\Backend\routes\analyze.js:265: supplement: 'This looks like a medicinal supplement rather than a food product. FitScore only analyses food and drink.',
+D:\NutriScan-mainn\Backend\routes\analyze.js:266: cosmetic: 'This looks like a cosmetic or personal care product. FitScore only analyses food and drink.',
+D:\NutriScan-mainn\Backend\routes\analyze.js:267: household: 'This looks like a household or cleaning product. FitScore only analyses food and drink.',
+D:\NutriScan-mainn\Backend\routes\analyze.js:269: other: 'This does not look like a food or drink product. FitScore only analyses food and drink.',
+D:\NutriScan-mainn\Backend\routes\analyze.js:474: const prompt = `You are "FitScore", a brutally honest nutrition analyst for the Indian health market.
+D:\NutriScan-mainn\Backend\routes\analyze.js:628: console.error('[FitScore AI] Enqueue error:', err.message);
+D:\NutriScan-mainn\Backend\routes\analyze.js:643: console.log(`[FitScore AI] Rejected non-food product (${nonFoodReason}): ${productData?.product_name || 'unnamed'}`);
+D:\NutriScan-mainn\Backend\routes\analyze.js:698: console.error('[FitScore AI] Enqueue error:', err.message);
+D:\NutriScan-mainn\Backend\routes\analyze.js:713: console.error('[FitScore AI] Status retrieval error:', err.message);
+D:\NutriScan-mainn\Backend\routes\auth.js:361: error: `You must be at least ${MINIMUM_AGE} years old to use FitScore`,
+D:\NutriScan-mainn\Backend\utils\ageCheck.js:4: * FitScore is a 13+ product, so a date of birth that puts the user under 13 is
+D:\NutriScan-mainn\Backend\utils\mailer.js:14: name: process.env.MAIL_FROM_NAME || 'FitScore',
+D:\NutriScan-mainn\Backend\utils\mailer.js:62: const subject = 'Reset your FitScore password';
+D:\NutriScan-mainn\Backend\utils\mailer.js:67: 'We received a request to reset your FitScore password.',
+D:\NutriScan-mainn\Backend\utils\mailer.js:73: 'FitScore',
+D:\NutriScan-mainn\Backend\utils\mailer.js:81: We received a request to reset your FitScore password. Choose a new one using the button below.
+D:\NutriScan-mainn\Backend\server.js:480: res.send('FitScore API is running');
+D:\NutriScan-mainn\docs\home_screen.html:6: <title>FitScore - Home Dashboard</title>
+D:\NutriScan-mainn\docs\home_screen.html:115: <span class="text-xl font-extrabold text-primary tracking-tight">FitScore</span>
+D:\NutriScan-mainn\Frontend\public\manifest.webmanifest:2: "name": "FitScore",
+D:\NutriScan-mainn\Frontend\public\manifest.webmanifest:3: "short_name": "FitScore",
+D:\NutriScan-mainn\Frontend\public\_headers:1: # FitScore Cloudflare Pages Static Header Rules
+D:\NutriScan-mainn\Frontend\src\api\client.js:152: * Central security wrapper for calls to the FitScore API. It loads Android
+D:\NutriScan-mainn\Frontend\src\components\BarcodeScanner.jsx:60: <span>Powered by FitScore AI</span>
+D:\NutriScan-mainn\Frontend\src\components\BarcodeScanner.test.jsx:32: expect(screen.getByText('Powered by FitScore AI')).toBeInTheDocument();
+D:\NutriScan-mainn\Frontend\src\components\DashboardRedesign.jsx:26: *  FitScore Ã¢â‚¬â€ Home dashboard (visual redesign)
+D:\NutriScan-mainn\Frontend\src\components\DashboardRedesign.jsx:219: <span className="font-display text-lg font-extrabold tracking-tight text-[var(--fs-ink)]">FitScore</span>
+D:\NutriScan-mainn\Frontend\src\components\Login.jsx:86: &copy; {new Date().getFullYear()} FitScore Inc. All rights reserved.
+D:\NutriScan-mainn\Frontend\src\components\Onboarding.jsx:325: setError(`You must be at least ${MINIMUM_AGE} years old to use FitScore.`);
+D:\NutriScan-mainn\Frontend\src\components\PaywallContent.jsx:69: <h2 className="text-2xl font-black tracking-tight">FitScore Premium</h2>
+D:\NutriScan-mainn\Frontend\src\components\PaywallContent.jsx:90: In-app purchases are only available in the FitScore mobile app.
+D:\NutriScan-mainn\Frontend\src\components\PrivacyPolicy.jsx:28: // The device label, page <title> and Cordova <name> all say FitScore, so that is
+D:\NutriScan-mainn\Frontend\src\components\PrivacyPolicy.jsx:32: const APP_NAME = 'FitScore';
+D:\NutriScan-mainn\Frontend\src\components\Profile.jsx:930: name: "FitScore",
+D:\NutriScan-mainn\Frontend\src\components\Profile.jsx:931: description: `FitScore Premium — ${plans.find((p) => p.id === planId)?.label || 'Premium'}`,
+D:\NutriScan-mainn\Frontend\src\components\Profile.jsx:1065: window.location.href = 'mailto:support@nutrisnap.app?subject=FitScore%20Support';
+D:\NutriScan-mainn\Frontend\src\components\Profile.jsx:1382: <p>FitScore provides nutrition insights to help your choices. It is not a substitute for professional medical advice.</p>
+D:\NutriScan-mainn\Frontend\src\components\Results.jsx:76: await navigator.share({ files: [file], title: 'FitScore Health Audit', text: `Results for ${result.productName}` });
+D:\NutriScan-mainn\Frontend\src\components\SignUp.jsx:82: &copy; {new Date().getFullYear()} FitScore Inc. All rights reserved.
+D:\NutriScan-mainn\Frontend\src\components\SplashScreen.jsx:19: export const BRAND_NAME = 'FitScore';
+D:\NutriScan-mainn\Frontend\src\components\SplashScreen.test.jsx:6: it('shows the FitScore wordmark', () => {
+D:\NutriScan-mainn\Frontend\src\components\SplashScreen.test.jsx:8: expect(screen.getByText('FitScore')).toBeInTheDocument();
+D:\NutriScan-mainn\Frontend\src\components\SplashScreen.test.jsx:11: it('shows the FitScore loading copy', () => {
+D:\NutriScan-mainn\Frontend\src\components\SplashScreen.test.jsx:13: expect(screen.getByText('Loading FitScore...')).toBeInTheDocument();
+D:\NutriScan-mainn\Frontend\src\components\SplashScreen.test.jsx:21: it('exports FitScore as the brand name', () => {
+D:\NutriScan-mainn\Frontend\src\components\SplashScreen.test.jsx:22: expect(BRAND_NAME).toBe('FitScore');
+D:\NutriScan-mainn\Frontend\src\components\StreakLeaderboard.jsx:20: const name = player.name || (isCurrentUser ? 'You' : 'FitScore User');
+D:\NutriScan-mainn\Frontend\src\components\StreakLeaderboard.jsx:107: <span>FitScore</span>
+D:\NutriScan-mainn\Frontend\src\i18n\locales\ar\translation.json:70: "scanned_with_ai": "تم المسح بواسطة ذكاء FitScore الاصطناعي",
+D:\NutriScan-mainn\Frontend\src\i18n\locales\ar\translation.json:149: "top_users": "أفضل مستخدمي FitScore",
+D:\NutriScan-mainn\Frontend\src\i18n\locales\ar\translation.json:165: "no_requests_desc": "كن أول من يقترح ميزة جديدة وساعدنا في تحسين FitScore!",
+D:\NutriScan-mainn\Frontend\src\i18n\locales\ar\translation.json:177: "ai_processing": "معالجة ذكاء FitScore الاصطناعي",
+D:\NutriScan-mainn\Frontend\src\i18n\locales\de\translation.json:70: "scanned_with_ai": "Gescannt mit FitScore AI",
+D:\NutriScan-mainn\Frontend\src\i18n\locales\de\translation.json:149: "top_users": "Top FitScore-Nutzer",
+D:\NutriScan-mainn\Frontend\src\i18n\locales\de\translation.json:165: "no_requests_desc": "Sei der Erste und hilf uns FitScore zu verbessern!",
+D:\NutriScan-mainn\Frontend\src\i18n\locales\de\translation.json:177: "ai_processing": "FitScore AI Verarbeitung",
+D:\NutriScan-mainn\Frontend\src\i18n\locales\en\translation.json:81: "scanned_with_ai": "Scanned with FitScore AI",
+D:\NutriScan-mainn\Frontend\src\i18n\locales\en\translation.json:160: "top_users": "Top FitScore users",
+D:\NutriScan-mainn\Frontend\src\i18n\locales\en\translation.json:176: "no_requests_desc": "Be the first to suggest a feature and help us improve FitScore!",
+D:\NutriScan-mainn\Frontend\src\i18n\locales\en\translation.json:188: "ai_processing": "FitScore AI Processing",
+D:\NutriScan-mainn\Frontend\src\i18n\locales\es\translation.json:70: "scanned_with_ai": "Escaneado con FitScore AI",
+D:\NutriScan-mainn\Frontend\src\i18n\locales\es\translation.json:149: "top_users": "Mejores usuarios de FitScore",
+D:\NutriScan-mainn\Frontend\src\i18n\locales\es\translation.json:177: "ai_processing": "Procesamiento FitScore AI",
+D:\NutriScan-mainn\Frontend\src\i18n\locales\fr\translation.json:70: "scanned_with_ai": "Scanné avec l'IA FitScore",
+D:\NutriScan-mainn\Frontend\src\i18n\locales\fr\translation.json:165: "no_requests_desc": "Soyez le premier à suggérer une fonctionnalité et aidez-nous à améliorer FitScore !",
+D:\NutriScan-mainn\Frontend\src\i18n\locales\fr\translation.json:177: "ai_processing": "Traitement de l'IA FitScore",
+D:\NutriScan-mainn\Frontend\src\i18n\locales\hi\translation.json:70: "scanned_with_ai": "FitScore AI से स्कैन किया गया",
+D:\NutriScan-mainn\Frontend\src\i18n\locales\hi\translation.json:149: "top_users": "शीर्ष FitScore उपयोगकर्ता",
+D:\NutriScan-mainn\Frontend\src\i18n\locales\hi\translation.json:165: "no_requests_desc": "FitScore को बेहतर बनाने में मदद करने के लिए पहले सुझाव दें!",
+D:\NutriScan-mainn\Frontend\src\i18n\locales\hi\translation.json:177: "ai_processing": "FitScore AI प्रोसेसिंग",
+D:\NutriScan-mainn\Frontend\src\i18n\locales\ne\translation.json:70: "scanned_with_ai": "FitScore AI द्वारा स्क्यान गरिएको",
+D:\NutriScan-mainn\Frontend\src\i18n\locales\ne\translation.json:177: "ai_processing": "FitScore AI प्रशोधन",
+D:\NutriScan-mainn\Frontend\src\i18n\locales\ur\translation.json:70: "scanned_with_ai": "FitScore AI سے اسکین شدہ",
+D:\NutriScan-mainn\Frontend\src\i18n\locales\ur\translation.json:165: "no_requests_desc": "سب سے پہلے فیچر تجویز کریں اور ہمیں FitScore بہتر بنانے میں مدد کریں!",
+D:\NutriScan-mainn\Frontend\src\i18n\locales\ur\translation.json:177: "ai_processing": "FitScore AI پروسیسنگ",
+D:\NutriScan-mainn\Frontend\src\utils\platformUtils.js:2: * Platform detection for FitScore.
+D:\NutriScan-mainn\Frontend\src\App.jsx:100: const displayName = userAuth?.name || userProfile?.name || 'FitScore User';
+D:\NutriScan-mainn\Frontend\src\App.jsx:166: <span>{t(shellTitles[currentView]) || 'FitScore'}</span>
+D:\NutriScan-mainn\Frontend\src\App.jsx:193: {t(shellTitles[currentView]) || 'FitScore'}
+D:\NutriScan-mainn\Frontend\src\geminiService.js:1: // FitScore AI Service â€” All Gemini calls are now proxied through the backend server.
+D:\NutriScan-mainn\Frontend\src\tailwind.css:6: /* Ã¢â€â‚¬Ã¢â€â‚¬ Tailwind v4 Theme Ã¢â‚¬â€ FitScore Design System Ã¢â€â‚¬Ã¢â€â‚¬ */
+D:\NutriScan-mainn\Frontend\src\tailwind.css:848: /* FitScore core palette Ã¢â‚¬â€ Deep Olive + Champagne Beige */
+D:\NutriScan-mainn\Frontend\src\tailwind.css:1064: /* Ã¢â€â‚¬Ã¢â€â‚¬ FitScore Card System Ã¢â€â‚¬Ã¢â€â‚¬ */
+D:\NutriScan-mainn\Frontend\src\tailwind.css:1759: /* FitScore sketch-inspired home dashboard */
+D:\NutriScan-mainn\Frontend\index.html:24: <title>FitScore</title>
+D:\NutriScan-mainn\mobile\cordova-plugin-fitscore-play-integrity\test\play-integrity.test.js:66: assert.equal(tokenCall.service, 'FitScorePlayIntegrity');
+D:\NutriScan-mainn\mobile\cordova-plugin-fitscore-play-integrity\www\play-integrity.js:15: exec(resolve, reject, 'FitScorePlayIntegrity', action, args);
+D:\NutriScan-mainn\mobile\cordova-plugin-fitscore-play-integrity\package.json:4: "description": "FitScore Cordova bridge for Google Play Integrity standard requests",
+D:\NutriScan-mainn\mobile\cordova-plugin-fitscore-play-integrity\plugin.xml:6: <name>FitScorePlayIntegrity</name>
+D:\NutriScan-mainn\mobile\cordova-plugin-fitscore-play-integrity\plugin.xml:7: <description>Request-bound Google Play Integrity standard tokens for FitScore.</description>
+D:\NutriScan-mainn\mobile\cordova-plugin-fitscore-play-integrity\plugin.xml:12: <clobbers target="FitScorePlayIntegrity" />
+D:\NutriScan-mainn\mobile\cordova-plugin-fitscore-play-integrity\plugin.xml:17: <feature name="FitScorePlayIntegrity">
+D:\NutriScan-mainn\mobile\cordova-plugin-fitscore-play-integrity\plugin.xml:18: <param name="android-package" value="com.fitscore.playintegrity.FitScorePlayIntegrity" />
+D:\NutriScan-mainn\mobile\cordova-plugin-fitscore-play-integrity\plugin.xml:22: <source-file src="src/android/FitScorePlayIntegrity.java"
+D:\NutriScan-mainn\mobile\config.xml:6: <name>FitScore</name>
+D:\NutriScan-mainn\mobile\config.xml:8: <author email="dev@nutriscore.app" href="https://nutriscore.app">FitScore Team</author>
+D:\NutriScan-mainn\mobile\package.json:5: "description": "Apache Cordova Android wrapper for the FitScore SPA",

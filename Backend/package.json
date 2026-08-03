@@ -12,6 +12,7 @@
   "author": "",
   "license": "ISC",
   "type": "commonjs",
+  "securityAuditTodo": "2026-08-01: No newly published compatible googleapis/uuid fix since 2026-07-28. Recheck the npm registry and evaluate googleapis 173 or narrower Google clients in a dedicated breaking-change migration with billing and RTDN integration tests.",
   "dependencies": {
     "bcrypt": "^6.0.0",
     "bullmq": "^5.76.10",

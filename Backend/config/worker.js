@@ -17,7 +17,7 @@ const processJob = async (jobName, data) => {
 
 // Initialize BullMQ background worker only if Redis Connection is Active
 if (useRedis && redisConnection) {
-  console.log('[FitScan Worker] Starting BullMQ background worker on "analysis" queue...');
+  console.log('[bitezsnap Worker] Starting BullMQ background worker on "analysis" queue...');
   
   const worker = new Worker('analysis', async (job) => {
     return await processJob(job.name, job.data);
@@ -27,11 +27,11 @@ if (useRedis && redisConnection) {
   });
 
   worker.on('completed', (job) => {
-    console.log(`[FitScan Worker] Job ${job.id} completed successfully.`);
+    console.log(`[bitezsnap Worker] Job ${job.id} completed successfully.`);
   });
 
   worker.on('failed', (job, err) => {
-    console.error(`[FitScan Worker] Job ${job.id} failed:`, err.message);
+    console.error(`[bitezsnap Worker] Job ${job.id} failed:`, err.message);
   });
 }
 

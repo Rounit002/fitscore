@@ -28,6 +28,7 @@ const crypto = require('crypto');
 const authenticate = require('../middleware/auth');
 const { validateRequest } = require('../middleware/validateRequest');
 const { payments: paymentSchemas } = require('../validation/schemas');
+const { requirePlayIntegrity } = require('./playIntegrity');
 
 const router = express.Router();
 
@@ -69,7 +70,12 @@ async function fetchEntitlement(appUserId) {
  * POST /api/subscriptions/revenuecat/sync
  * Body: { appUserId, customerInfo }  (customerInfo is advisory only)
  */
-router.post('/sync', authenticate, validateRequest({ body: paymentSchemas.revenueCatSync }), async (req, res) => {
+router.post(
+  '/sync',
+  authenticate,
+  requirePlayIntegrity('revenuecat_sync'),
+  validateRequest({ body: paymentSchemas.revenueCatSync }),
+  async (req, res) => {
   try {
     const userId = req.userId;
     const expectedAppUserId = `${APP_USER_ID_PREFIX}${userId}`;
@@ -104,7 +110,8 @@ router.post('/sync', authenticate, validateRequest({ body: paymentSchemas.revenu
     console.error('[revenuecat/sync] failed:', err);
     return res.status(500).json({ error: 'Failed to sync subscription' });
   }
-});
+  },
+);
 
 /**
  * POST /api/subscriptions/revenuecat/webhook

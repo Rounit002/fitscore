@@ -1,4 +1,4 @@
-# NutriScan Android app (Apache Cordova)
+# bitezsnap Android app (Apache Cordova)
 
 This directory wraps the existing Vite/React SPA (`../Frontend`) in an Apache
 Cordova Android shell. There is **no separate mobile codebase** — the same SPA is
@@ -70,15 +70,38 @@ Outputs:
 
 ## Icons and splash screen
 
-Launcher icons (legacy + adaptive), the Android 12+ splash icon, and the 512px
-Play Store icon are rasterised from `Frontend/public/favicon.svg`:
+Every rasterised brand asset comes from two committed masters at the repo root:
+
+| Master | Size | Used for |
+|---|---|---|
+| `resources/icon.png` | 1024x1024, opaque | launcher icons, favicons, PWA icons |
+| `resources/splash.png` | 2732x2732, transparent | the Android 12+ splash icon |
+
+`splash.png` keeps the mark at ~52% of the canvas: the system masks the splash
+icon to a circle and may crop further per device, so the mark must stay well
+inside the safe area.
 
 ```powershell
 npm run gen:res
 ```
 
-Output goes to `mobile/res/` (git-ignored, regenerated). `config.xml` references
-these paths, so re-run this after changing the logo, then rebuild.
+This writes both platforms in one pass:
+
+- `mobile/res/` — 6 legacy launcher icons, 6 adaptive foreground + 6 adaptive
+  background layers, the splash icon, and the 512px Play Store icon.
+- `Frontend/public/icons/` + `Frontend/public/favicon.ico` — favicon PNGs,
+  apple-touch-icon, and the 192/512 PWA icons referenced by
+  `Frontend/public/manifest.webmanifest`.
+
+Both output dirs are git-ignored and regenerated; only the masters are committed.
+`config.xml` and `index.html` reference these paths, so re-run this after
+changing the logo, then rebuild.
+
+Note: `cordova-res` is **not** used. It emits `<splash>` tags, which
+cordova-android 15 rejects outright ("The `<splash>` tags were detected and are
+no longer supported"), and its full-screen splash PNGs have no meaning under the
+Android 12 splash API. `generate-resources.js` targets what this platform
+version actually consumes.
 
 Note: the adaptive icon `background` must be an **image**, not a colour literal.
 cordova-android always emits `@mipmap/ic_launcher_background`, so a `#RRGGBB`

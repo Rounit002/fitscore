@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { API } from '../api/client.js';
 import { PASSWORD_REQUIREMENTS, validatePassword } from '../utils/passwordPolicy.js';
+import BrandLogo from './BrandLogo.jsx';
 
 /**
  * Landing page for the emailed reset link (/reset-password?token=...&email=...).
@@ -62,7 +63,8 @@ export default function ResetPassword() {
       <main className="auth-form-panel" style={{ margin: '0 auto' }}>
         <div className="auth-form-inner">
           <div className="auth-form-mark">
-            <em>Fit</em>Scan
+            <BrandLogo className="auth-form-logo" alt="" aria-hidden="true" />
+            <span><em>bitez</em>snap</span>
           </div>
 
           {status === 'done' ? (

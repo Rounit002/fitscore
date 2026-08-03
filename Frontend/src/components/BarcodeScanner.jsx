@@ -57,7 +57,7 @@ export default function BarcodeScanner({ onScan, onBack }) {
 
         <footer className="barcode-footer">
           <ShieldCheck size={14} />
-          <span>Powered by NutriScore AI</span>
+          <span>Powered by bitezsnap AI</span>
         </footer>
       </section>
     </div>

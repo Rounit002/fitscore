@@ -1,4 +1,4 @@
-# FitScan — Design Token Audit (Phase 1)
+# bitezsnap — Design Token Audit (Phase 1)
 
 Single source of truth for the UI polish pass. Every change made in Phase 3 must be
 traceable to a rule in this document.

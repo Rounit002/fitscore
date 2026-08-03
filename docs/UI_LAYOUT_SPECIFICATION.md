@@ -1,6 +1,6 @@
-# FitScan UI Layout & Design Specification
+# bitezsnap UI Layout & Design Specification
 
-This document details the precise visual layout, component placement, and responsive behavior for every screen in the FitScan application. It serves as a reference for the exact structural differences between the Mobile and Widescreen (Desktop/Laptop) views.
+This document details the precise visual layout, component placement, and responsive behavior for every screen in the bitezsnap application. It serves as a reference for the exact structural differences between the Mobile and Widescreen (Desktop/Laptop) views.
 
 ---
 
@@ -34,7 +34,7 @@ This document details the precise visual layout, component placement, and respon
 *   **Widescreen Desktop**: 
     *   **Placement**: Side-by-side split layout.
     *   **Components**: 
-        *   **Left Half**: A gorgeous gradient-shaded brand hero banner showcasing FitScan's value propositions with clean Lucide icons.
+        *   **Left Half**: A gorgeous gradient-shaded brand hero banner showcasing bitezsnap's value propositions with clean Lucide icons.
         *   **Right Half**: The premium, minimal login/signup credentials form card vertically and horizontally centered.
  
 ### 2. Main Dashboard (Home) & Navigation Shells
@@ -49,7 +49,7 @@ This document details the precise visual layout, component placement, and respon
 *   **Widescreen Desktop**: 
     *   **Placement**: Sticky Left Sidebar App Shell with a dual-column dashboard grid workspace.
     *   **Components**:
-        *   **Left App Shell Sidebar (`DesktopAppShell`)**: A persistent sidebar containing the FitScan brand logo, high-fidelity navigation buttons (Home, History, Compare, Database, Profile), a custom-styled User Profile row, an integrated daily scan quota box with a smooth progress bar, and premium upgrade/logout actions.
+        *   **Left App Shell Sidebar (`DesktopAppShell`)**: A persistent sidebar containing the bitezsnap brand logo, high-fidelity navigation buttons (Home, History, Compare, Database, Profile), a custom-styled User Profile row, an integrated daily scan quota box with a smooth progress bar, and premium upgrade/logout actions.
         *   **Workspace - Left Column**: The Week Date Selector (flanked by left/right navigation arrows), followed by the large Daily Nutrition Score Card (dial + macros).
         *   **Workspace - Right Column**: Quick Actions (Scan/Database buttons placed side-by-side), followed by the Recent Scans list.
         *   The mobile bottom nav bar is hidden.

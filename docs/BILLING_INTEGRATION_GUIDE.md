@@ -1,6 +1,6 @@
 # Google Play Billing Integration Guide
 
-This document explains how to set up and use Google Play Billing subscriptions in NutriScan.
+This document explains how to set up and use Google Play Billing subscriptions in bitezsnap.
 
 ## Architecture Overview
 

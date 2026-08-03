@@ -4,10 +4,14 @@ plugins/
 www/
 node_modules/
 
-# Icons/splash are rasterised from Frontend/public/favicon.svg by `npm run gen:res`.
+# Icons/splash are rasterised from resources/icon.png + resources/splash.png by
+# `npm run gen:res`. The masters are committed; these outputs are not.
 res/
 
 # Release signing material must never be committed.
 build.json
 *.keystore
 *.jks
+
+# Copied build outputs staged for Play Console upload.
+release/

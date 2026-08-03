@@ -1,4 +1,4 @@
-# FitScan Cloudflare Pages Static Header Rules
+# bitezsnap Cloudflare Pages Static Header Rules
 # This file is automatically copied to Vite's build root (dist/_headers)
 # Cloudflare Pages parses this on deployment to enforce optimized edge-caching policies.
 

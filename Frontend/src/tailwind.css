@@ -3,7 +3,7 @@
 @import "tailwindcss" source(none);
 @source "./";
 
-/* Ã¢â€â‚¬Ã¢â€â‚¬ Tailwind v4 Theme Ã¢â‚¬â€ NutriScore Design System Ã¢â€â‚¬Ã¢â€â‚¬ */
+/* Ã¢â€â‚¬Ã¢â€â‚¬ Tailwind v4 Theme Ã¢â‚¬â€ bitezsnap Design System Ã¢â€â‚¬Ã¢â€â‚¬ */
 @theme {
   --color-ns-primary: #10B981;
   --color-ns-primary-con: #059669;
@@ -845,7 +845,7 @@ button, a, input, select, textarea, .interactive-card {
 
 /* Ã¢â€â‚¬Ã¢â€â‚¬ CSS Custom Properties Ã¢â€â‚¬Ã¢â€â‚¬ */
 :root {
-  /* NutriScore core palette Ã¢â‚¬â€ Deep Olive + Champagne Beige */
+  /* bitezsnap core palette Ã¢â‚¬â€ Deep Olive + Champagne Beige */
   --ns-primary: #10B981;
   --ns-primary-con: #059669;
   --ns-on-primary: #ffffff;
@@ -1061,7 +1061,7 @@ h6 {
   color: var(--ns-on-surface);
 }
 
-/* Ã¢â€â‚¬Ã¢â€â‚¬ NutriScore Card System Ã¢â€â‚¬Ã¢â€â‚¬ */
+/* Ã¢â€â‚¬Ã¢â€â‚¬ bitezsnap Card System Ã¢â€â‚¬Ã¢â€â‚¬ */
 .ns-card {
   background: var(--ns-card-bg);
   border-radius: var(--radius-xl);
@@ -1756,7 +1756,7 @@ input::placeholder {
   scrollbar-width: none;
 }
 
-/* FitScan sketch-inspired home dashboard */
+/* bitezsnap sketch-inspired home dashboard */
 .fitscan-home-page {
   min-height: 100vh;
   width: 100%;
@@ -3508,11 +3508,72 @@ html.dark .fitscan-nutrient-chip b {
   box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
 }
 
+/* Four tiers do not fit in a row on a laptop at the old `flex-direction: row`,
+   so the container wraps and each card states a minimum comfortable width. */
+.profile-plans-container {
+  flex-wrap: wrap;
+}
+
+@media (min-width: 600px) {
+  .profile-plan-card {
+    flex: 1 1 240px;
+    min-width: 240px;
+  }
+}
+
+/* Loading / unavailable state for the plan fetch. Matches the modal's own body
+   copy rather than introducing a new surface. */
+.profile-plans-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 28px 20px;
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ns-text-muted);
+}
+
+.profile-plans-status svg {
+  flex-shrink: 0;
+  color: var(--ns-primary);
+}
+
 .plan-header {
   text-align: center;
   margin-bottom: 20px;
   padding-bottom: 16px;
   border-bottom: 1px solid var(--ns-border);
+}
+
+/* Tier positioning line ("For new users only"), directly under the tier name. */
+.plan-subtitle {
+  margin-top: 2px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--ns-text-muted);
+  line-height: 1.35;
+}
+
+/* Secondary currency reference. Muted and smaller than the rupee figure so it
+   reads as a conversion rather than a second price. */
+.plan-price-usd {
+  margin-top: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ns-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Billing qualifier — the yearly total, or the lifetime "never expires" note.
+   Accent-coloured because it is the sentence that resolves the headline figure. */
+.plan-note {
+  margin-top: 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ns-primary);
 }
 
 .plan-header h3 {
@@ -6725,6 +6786,15 @@ html.dark .fitscan-nutrient-chip b {
     color: #fff;
     background: var(--ns-primary);
     box-shadow: 0 10px 24px rgba(16, 185, 129,0.38);
+    overflow: hidden;
+  }
+
+  .fitscan-app-brand-logo {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    object-fit: cover;
   }
 
   .fitscan-app-brand strong {
@@ -10228,10 +10298,22 @@ html.dark .ns-bnav-pill {
 }
 
 .auth-brand-mark {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   font-family: var(--font-headline);
   font-size: 28px;
   font-weight: 800;
   letter-spacing: -0.02em;
+}
+
+.auth-brand-logo {
+  display: block;
+  width: 52px;
+  height: 52px;
+  flex: 0 0 52px;
+  border-radius: 14px;
+  object-fit: cover;
 }
 
 .auth-brand-mark em {
@@ -10318,12 +10400,24 @@ html.dark .ns-bnav-pill {
 }
 
 .auth-form-mark {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   margin-bottom: 32px;
   font-family: var(--font-headline);
   font-size: 24px;
   font-weight: 800;
   letter-spacing: -0.01em;
   color: var(--ns-primary-con);
+}
+
+.auth-form-logo {
+  display: block;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  border-radius: 11px;
+  object-fit: cover;
 }
 
 .auth-form-mark em {
@@ -10670,6 +10764,200 @@ html.dark .auth-form-mark {
   color: var(--ns-primary);
 }
 
+.auth-legal {
+  margin: 18px 0 0;
+  font-size: 11px;
+  line-height: 1.5;
+  text-align: center;
+  color: var(--ns-outline);
+}
+
+.auth-legal a {
+  color: var(--ns-primary);
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* ── Legal document pages (privacy policy) ──
+   A long-form reading surface, not an app screen: it renders outside the shell
+   so the route is shareable, and it carries its own measure and rhythm rather
+   than borrowing the dashboard card grid. */
+
+.legal-page {
+  min-height: 100vh;
+  background: var(--ns-page-bg);
+  font-family: var(--font-main);
+  color: var(--ns-on-surface);
+}
+
+.legal-page-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  background: color-mix(in srgb, var(--ns-page-bg) 88%, transparent);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--ns-border-light);
+}
+
+.legal-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 12px;
+  background: var(--ns-input-bg);
+  color: var(--ns-on-surface);
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.legal-page-body {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 20px calc(72px + env(safe-area-inset-bottom, 0px));
+}
+
+.legal-title-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.legal-title-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--ns-primary) 14%, transparent);
+  color: var(--ns-primary);
+}
+
+.legal-title-row h1 {
+  font-family: var(--font-headline);
+  font-size: 1.6rem;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.legal-updated {
+  margin-top: 2px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--ns-outline);
+}
+
+.legal-intro {
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.65;
+  color: var(--ns-on-surface-var);
+}
+
+.legal-intro code {
+  padding: 1px 5px;
+  border-radius: 6px;
+  background: var(--ns-input-bg);
+  font-size: 0.85em;
+}
+
+.legal-toc {
+  margin: 24px 0;
+  padding: 16px 18px;
+  border-radius: 16px;
+  background: var(--ns-card-bg);
+  border: 1px solid var(--ns-border-light);
+}
+
+.legal-toc ul {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.legal-toc button {
+  width: 100%;
+  min-height: 44px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  color: var(--ns-primary);
+  font-size: 0.85rem;
+  font-weight: 750;
+  text-align: left;
+}
+
+.legal-toc button:hover {
+  background: var(--ns-surface-low);
+  text-decoration: underline;
+}
+
+.legal-back:focus-visible,
+.legal-toc button:focus-visible,
+.legal-section a:focus-visible {
+  outline: 3px solid rgba(16, 185, 129, 0.25);
+  outline-offset: 2px;
+}
+
+.legal-section {
+  /* Anchored jumps must clear the sticky header, or the heading lands under it. */
+  scroll-margin-top: 72px;
+  margin-top: 28px;
+}
+
+.legal-section h2 {
+  margin-bottom: 10px;
+  font-family: var(--font-headline);
+  font-size: 1.05rem;
+  font-weight: 850;
+  color: var(--ns-on-surface);
+}
+
+.legal-section p {
+  margin-bottom: 10px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.65;
+  color: var(--ns-on-surface-var);
+}
+
+.legal-section a {
+  color: var(--ns-primary);
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.legal-footnote {
+  margin-top: 32px;
+  padding-top: 16px;
+  border-top: 1px solid var(--ns-border-light);
+  font-size: 0.78rem;
+  font-weight: 650;
+  line-height: 1.55;
+  color: var(--ns-outline);
+}
+
+@media (min-width: 768px) {
+  .legal-toc ul {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .legal-page-body {
+    padding: 32px 24px 64px;
+  }
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    ROUND 4 — Onboarding
 
@@ -10734,15 +11022,20 @@ html.dark .auth-form-mark {
   font-weight: 700;
 }
 
+.ob-brand-logo {
+  display: block;
+  width: 28px;
+  height: 28px;
+  margin-right: 3px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
 .ob-brand-a {
   color: var(--ns-outline);
 }
 
 .ob-brand-b {
-  color: var(--ns-primary-con);
-}
-
-.ob-brand-leaf {
   color: var(--ns-primary-con);
 }
 
@@ -11204,4 +11497,260 @@ html.dark .auth-form-mark {
   border: 0 !important;
   background: transparent;
   box-shadow: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Health Progress (Trends.jsx) — spacing pass
+   ---------------------------------------------------------------------------
+   Spacing only. No colour, font, radius or state treatment is touched here, and
+   no rule below changes which element is rendered — the JSX is untouched.
+
+   Appended at the end of the file on purpose: the Trends screen already has its
+   base rules at ~5108, a `!important` normalisation block at ~8259 and two
+   `min-width: 1024px` layout blocks at ~6669 / ~7269. Anything that has to beat
+   the normalisation block needs `!important` *and* a later source position, and
+   anything that must NOT beat the desktop blocks is scoped to
+   `max-width: 1023px` below. That keeps the desktop two-column layout exactly as
+   it was while fixing the phone rhythm.
+
+   One scale for the whole screen, declared once on the page root:
+     --trends-gap       12px  — grid gutters, both axes
+     --trends-card-pad  16px  — internal padding of *every* card + the header bar
+     --trends-section   16px  — vertical rhythm between major sections
+   16px is not a new value: it is what --page-pad-x/--page-pad-y already collapse
+   to at <=430px, so the cards' internal padding now matches the page's own
+   horizontal inset and everything sits on one grid.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.trends-page {
+  --trends-gap: 12px;
+  --trends-card-pad: 16px;
+  --trends-section: 16px;
+}
+
+/* ── 1. Space between the two "Health Progress" headings ──
+   The duplication is real, not a rendering artefact: the app shell's mobile bar
+   (App.jsx) prints `t(shellTitles.trends)` and Trends.jsx prints its own
+   `<h1>{t('health_progress')}</h1>` — the same key twice. Collapsing them means
+   deleting one of the two headings, which is a JSX/structure change and a
+   product decision (the in-page bar also carries the back button and the filter
+   affordance), so it is left for you to call — see the note in my reply.
+
+   What is fixed here is the spacing: the in-page bar's own bottom margin was
+   --page-gap (14px) while the space above it came from the page's --page-pad-y
+   (16px), so the two headings sat closer together than the bar sat to the cards
+   below it. Both are --trends-section (16px) now, giving the pair an even step. */
+
+/* ── 6. Global rhythm: one horizontal inset, one vertical step ──
+   `.trends-content` was on `gap: var(--page-gap)` (14px) while the header used
+   the same var for its bottom margin and the page used 16px for its own inset —
+   three near-identical values doing the same job. All three are now
+   --trends-section (16px), so header -> stat grid -> toggle -> score card step
+   by the same amount and that amount equals the page's side padding.
+
+   The header keeps --trends-card-pad rather than its old hardcoded `0 16px`, so
+   its back button lines up with the stat cards' icon badges on the same optical
+   edge instead of coincidentally matching. */
+.trends-header {
+  padding: 0 var(--trends-card-pad) !important;
+}
+
+@media (max-width: 1023px) {
+  /* Scoped to phone/tablet: at >=1024px --page-gap opens up to 24px and the
+     desktop two-column layout is tuned around that, so the header's bottom
+     margin is only pinned to the 16px step where the single-column rhythm
+     actually applies. */
+  .trends-header {
+    margin: 0 auto var(--trends-section) !important;
+  }
+
+  /* ── 2b. Label area reserves two lines so cards in a row align ──
+     "WORST DAY", "OVERALL TREND" and "BEST STREAK" wrap at this width while
+     "BEST DAY" does not. Reducing tracking does not fix it (the two longest
+     labels still wrap), so the label box always reserves two lines instead:
+     line-height 1.3 x 2 = 2.6em. Both cards in a row now start their value on
+     the same baseline whatever the label length. min-height, not fixed height,
+     so a longer translation still grows rather than clips.
+
+     Mobile-only: the desktop stat cards are a single-column stack at 320px wide
+     where nothing wraps, and reserving a second line there would just add dead
+     space to four cards. */
+  .stat-card-info span {
+    line-height: 1.3;
+    min-height: 2.6em;
+  }
+
+  .trends-content {
+    gap: var(--trends-section) !important;
+  }
+
+  /* ── 2c. One gap value on both axes ──
+     Row and column gutters are now the same 12px. They were already both 12px
+     numerically, but via two separate declarations (`gap: 12px` at ~5160 and
+     `gap: 12px !important` at ~8318) that could drift apart; they now read from
+     the single page-level var. */
+  .trends-stats-grid {
+    gap: var(--trends-gap) !important;
+    align-items: stretch !important;
+  }
+
+  /* ── 2a. Even internal padding on the stat cards ──
+     16px on all four sides via the shared var (was a bare `padding: 16px`), and
+     the icon badge is pinned at `flex: 0 0 auto` so it can no longer be squeezed
+     toward the card edge when a long label competes for the row's width — that
+     shrinking was what made the badge inset look different card to card. */
+  .stat-card-premium {
+    padding: var(--trends-card-pad) !important;
+    gap: var(--trends-gap) !important;
+  }
+
+  /* ── 4a. Score card padding matched to the stat cards ──
+     Was `20px 16px` (asymmetric) against the stat cards' 16px, which is why the
+     progress ring read as sitting closer to the card edge than anything else on
+     the screen. Same var now, so the ring starts on the same vertical line as
+     the stat cards' icon badges. */
+  .trends-graph-container {
+    padding: var(--trends-card-pad) !important;
+    gap: var(--trends-section) !important;
+  }
+}
+
+.stat-card-icon {
+  flex: 0 0 auto;
+}
+
+/* ── 3. Equal padding across all three range tabs ──
+   The selected pill was genuinely larger: the shared "selected = bold outline"
+   rule at ~8685 swaps the resting 1px border for `2px !important`, adding 1px
+   per side on top of the `8px 16px` padding. Fixing it by tweaking padding per
+   state would just hide the cause, so size is taken off the content box
+   entirely: equal flex basis + fixed min-height + border-box. Only the border
+   and colour change on selection now, never the geometry.
+
+   `padding: 0 12px` with a 40px min-height replaces `8px 16px` — same optical
+   size, but the vertical value no longer participates in the box height, so the
+   border swap cannot move it. */
+.range-tabs {
+  gap: 4px;
+}
+
+.range-tabs button {
+  box-sizing: border-box;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 40px;
+  padding: 0 12px;
+  white-space: nowrap;
+}
+
+/* ── 4b/4c/4d. Score card header: let it breathe onto two rows ──
+   The ring, the eyebrow, the score and the Good/Avg/Bad legend were all fighting
+   for one 330px-wide row via `justify-content: space-between`, which is what
+   caused three separate symptoms: "DAILY HEALTH SCORE" wrapping to three lines,
+   "/ 10" dropping below "6.0", and the trend chip pinned against the card's
+   right edge with the legend jammed into it.
+
+   Allowing the row to wrap fixes all three at once without restructuring the
+   JSX: the heading (ring + label + score) claims the full width on a phone and
+   the legend drops to its own line. `space-between` is kept, so on the wide
+   desktop card nothing wraps and the legend stays right-aligned exactly as
+   before; when it does wrap it is the only item on its line and therefore sits
+   flush left instead of hugging the right edge.
+
+   Vertical gap between the two rows is --trends-gap, i.e. the same 12px as the
+   stat grid gutters. */
+.graph-header {
+  flex-wrap: wrap;
+  gap: var(--trends-gap, 12px) 12px;
+}
+
+/* 240px basis is the trigger: below ~390px of card width the legend can no
+   longer sit beside this, so it wraps. Above it, the old single-row layout. */
+.graph-heading-row {
+  flex: 1 1 240px;
+}
+
+.graph-heading {
+  flex: 1 1 auto;
+}
+
+/* With the full row to itself the label fits on one line, so it is allowed to
+   state that. Removes the three-line stack that was eating the card's height. */
+.graph-eyebrow {
+  white-space: nowrap;
+}
+
+/* ── 4d. "/ 10" stays inline with "6.0" ──
+   The row holds three items (value, "/ 10", trend chip) and only had
+   `gap: 6px` — no wrap rule — so overflow broke wherever it landed, which was
+   between the value and its unit. Wrapping is now explicit, and because the
+   chip is the last item it is the one that drops when space runs out. "6.0" and
+   "/ 10" therefore stay on one baseline, smaller and muted as before. */
+.graph-score {
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  min-width: 0;
+}
+
+.graph-score-max {
+  white-space: nowrap;
+}
+
+/* ── 4c. Legend dots read with the label they belong to ──
+   `gap: 12px` applied between every item including the bare text nodes, while
+   each dot also carried `margin-right: 4px`. Net result was 16px between a dot
+   and its own label but only 12px to the *next* dot, so each dot looked like it
+   belonged to the label on its right. Tightening the gap and moving the spacing
+   to a left margin on the dots reverses that: 4px from a dot to its label, 16px
+   before the next pair. */
+.graph-legend {
+  gap: 4px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.graph-legend span {
+  margin-right: 0;
+  margin-left: 12px;
+}
+
+.graph-legend span:first-child {
+  margin-left: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   5. Bottom navigation — clearance between the pill and the scan action
+   ---------------------------------------------------------------------------
+   The FAB carries a 3px `box-shadow` ring plus floating elevation, and none of
+   that was accounted for in the bar's spacing: `--bnav-gap` bottomed out at 8px
+   and the bar's side padding at 12px, so the ring ate most of the gap and the
+   button read as overlapping the Profile tab and spilling past the bar's right
+   edge. Both values now start above the ring's 3px so the visible gap is the
+   gap that was specified.
+
+   Tab distribution is unchanged in mechanism — `.ns-bnav-item` is already
+   `flex: 1 1 0`, which is equal-width by construction — but the tabs now get
+   4px of horizontal padding instead of 2px so the label of the last tab is not
+   optically pulled toward the FAB.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.ns-bnav {
+  /* 12px floor clears the FAB's 3px ring with 9px of actual air (was 8px total,
+     i.e. 5px visible). */
+  --bnav-gap: clamp(12px, 3.4vw, 18px);
+  /* 16px floor (was 12px) so the ring is inset from the viewport edge by the
+     same amount the pill is. */
+  padding: 0 clamp(16px, 4.5vw, 22px) calc(clamp(12px, 3vw, 16px) + env(safe-area-inset-bottom, 0px));
+}
+
+.ns-bnav-pill {
+  /* 6px flat instead of clamp(6px, 1.8vw, 8px): the pill's own padding no longer
+     grows with the viewport while the gap beside it also grows, which is what
+     made the spacing on either side of the FAB diverge by screen size. */
+  padding: 6px;
+}
+
+.ns-bnav-tab {
+  padding: 4px;
+  gap: 3px;
 }

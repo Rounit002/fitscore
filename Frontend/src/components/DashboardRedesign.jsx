@@ -21,9 +21,10 @@ import {
   LogOut,
   ArrowUpRight,
 } from 'lucide-react';
+import BrandLogo from './BrandLogo.jsx';
 
 /* ------------------------------------------------------------------ *
- *  FitScan Ã¢â‚¬â€ Home dashboard (visual redesign)
+ *  bitezsnap Ã¢â‚¬â€ Home dashboard (visual redesign)
  *  Self-contained + previewable. Placeholder data baked in.
  *  Drop-in: swap the placeholder arrays for your real props
  *  (userAuth, userProfile, scans, onNavigate, onViewDetailÃ¢â‚¬Â¦).
@@ -213,10 +214,10 @@ function Sidebar({ active, onNavigate }) {
     <aside className="sticky top-0 hidden h-[100dvh] w-[256px] shrink-0 flex-col border-r border-[var(--fs-border)] bg-[var(--fs-elevated)]/80 px-4 py-5 backdrop-blur-xl lg:flex">
       {/* brand */}
       <div className="mb-7 flex items-center gap-2.5 px-2">
-        <span className="grid h-9 w-9 place-items-center rounded-xl bg-[#10B981] text-white shadow-lg shadow-emerald-500/30">
-          <ScanLine size={19} />
+        <span className="grid h-9 w-9 place-items-center overflow-hidden rounded-xl bg-[#10B981] text-white shadow-lg shadow-emerald-500/30">
+          <BrandLogo className="h-full w-full object-cover" alt="" aria-hidden="true" />
         </span>
-        <span className="font-display text-lg font-extrabold tracking-tight text-[var(--fs-ink)]">NutriScore</span>
+        <span className="font-display text-lg font-extrabold tracking-tight text-[var(--fs-ink)]">bitezsnap</span>
       </div>
 
       {/* nav */}

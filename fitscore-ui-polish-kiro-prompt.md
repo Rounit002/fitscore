@@ -1,4 +1,4 @@
-# FitScan — Premium UI Polish Pass
+# bitezsnap — Premium UI Polish Pass
 ### Multi-agent prompt for Kiro (Claude Opus 5)
 
 Paste this whole document into Kiro as one spec. Do not summarize or shorten it before running.

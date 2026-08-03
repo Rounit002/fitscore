@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Leaf, ArrowLeft, Venus, Mars, Transgender, Check } from 'lucide-react';
+import { ArrowLeft, Venus, Mars, Transgender, Check } from 'lucide-react';
 import { MedicalProfilePage, HealthGoalsPage } from './Profile';
 import { API, setAuthToken } from '../api/client.js';
+import BrandLogo from './BrandLogo.jsx';
 
 const TOTAL_STEPS = 6;
 
@@ -322,7 +323,7 @@ export default function Onboarding({ onComplete, initialProfile, authToken, onBa
     // Defence in depth: the wheel cannot produce an under-13 value, but the
     // 13+ policy is enforced here too rather than relying on the widget alone.
     if (step === 1 && Number(profile.age) < MINIMUM_AGE) {
-      setError(`You must be at least ${MINIMUM_AGE} years old to use FitScan.`);
+      setError(`You must be at least ${MINIMUM_AGE} years old to use bitezsnap.`);
       return;
     }
 
@@ -420,9 +421,9 @@ export default function Onboarding({ onComplete, initialProfile, authToken, onBa
                 <ArrowLeft size={20} />
               </button>
               <div className="ob-brand">
-                <span className="ob-brand-a">Nutri</span>
-                <span className="ob-brand-b">Score</span>
-                <Leaf size={14} className="ob-brand-leaf" />
+                <BrandLogo className="ob-brand-logo" alt="" aria-hidden="true" />
+                <span className="ob-brand-a">bitez</span>
+                <span className="ob-brand-b">snap</span>
               </div>
               {/* Balances the back button so the brand stays optically centred. */}
               <div className="ob-topbar-spacer" />

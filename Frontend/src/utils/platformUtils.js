@@ -1,5 +1,5 @@
 /**
- * Platform detection for NutriScore.
+ * Platform detection for bitezsnap.
  *
  * RevenueCat / Google Play Billing only runs inside the Cordova Android shell.
  * We deliberately do NOT rely on `window.cordova` because cordova.js defines it
@@ -63,4 +63,22 @@ export function onCordovaReady(callback) {
   } else {
     Promise.resolve().then(callback);
   }
+}
+
+/**
+ * Build an href for an in-app route that works under both routers.
+ *
+ * main.jsx swaps BrowserRouter for HashRouter in the Cordova build, so a plain
+ * `/privacy-policy` href resolves to https://localhost/privacy-policy inside the
+ * WebView and hits a blank page. Prefixing with `#` keeps it client-side there
+ * while staying a clean path on the web.
+ *
+ * Use this only for plain <a> elements — inside components that are always
+ * mounted under a Router, prefer react-router's <Link>.
+ *
+ * @param {string} path route path beginning with "/"
+ * @returns {string}
+ */
+export function routeHref(path) {
+  return isCordova ? `#${path}` : path;
 }

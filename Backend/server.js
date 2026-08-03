@@ -18,6 +18,7 @@ const paymentRoutes = require('./routes/payment');
 const userRoutes = require('./routes/user');
 const billingRoutes = require('./routes/billing');
 const revenueCatRoutes = require('./routes/revenueCatSubscriptions');
+const playIntegrityRoutes = require('./routes/playIntegrity');
 
 // Initialize Async Job Queue Worker
 require('./config/worker');
@@ -306,11 +307,15 @@ const initDb = async () => {
         currency VARCHAR(3) NOT NULL,
         status VARCHAR(20) NOT NULL DEFAULT 'created',
         payment_id VARCHAR(100) UNIQUE,
+        plan_id VARCHAR(50),
         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         verified_at TIMESTAMP
       )
     `);
     await pool.query('CREATE INDEX IF NOT EXISTS payment_orders_user_id_idx ON payment_orders (user_id)');
+    // Existing deployments predate the multi-plan catalogue, so the column is
+    // backfilled as nullable; /verify falls back to monthly for NULL rows.
+    await addColumnIfMissing('payment_orders', 'plan_id', 'VARCHAR(50)');
 
     // Normalise stored emails to lowercase so the case-insensitive unique index
     // below can be created, and so logins match regardless of typed casing.
@@ -469,9 +474,10 @@ app.use('/features', featuresRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/billing', billingRoutes); // Billing routes - webhook does NOT require auth
 app.use('/api/subscriptions/revenuecat', revenueCatRoutes);
+app.use('/api/integrity', playIntegrityRoutes);
 
 app.get('/', (req, res) => {
-  res.send('FitScan API is running');
+  res.send('bitezsnap API is running');
 });
 
 app.use((req, res) => {
