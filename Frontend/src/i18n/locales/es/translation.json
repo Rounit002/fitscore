@@ -16,7 +16,7 @@
   "language": "Idioma",
   "dark_mode": "Modo oscuro",
   "theme": "Tema",
-  "theme_system": "Sistema",
+  "theme_system": "Predeterminado del dispositivo",
   "theme_light": "Claro",
   "theme_dark": "Oscuro",
   "switch_to": "Cambiar a",

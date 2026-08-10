@@ -234,7 +234,7 @@ function DesktopAppShell({ userAuth, userProfile, onNavigate, onLogout }) {
 
 export default function App() {
   const { t, i18n } = useTranslation();
-  const { isDark, mode: themeMode, toggle: toggleTheme } = useTheme();
+  const { mode: themeMode, setMode: setThemeMode } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -819,9 +819,8 @@ export default function App() {
                 onLogout={handleLogout}
                 onDetailsSaved={handleUserDetailsUpdated}
                 onNavigateFeatures={() => navigate('/features')}
-                isDark={isDark}
                 themeMode={themeMode}
-                toggleTheme={toggleTheme}
+                setThemeMode={setThemeMode}
               />
             }
           />

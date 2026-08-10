@@ -1,0 +1,712 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Privacy Policy - bitezsnap</title>
+    <meta
+      name="description"
+      content="bitezsnap privacy policy. How we collect, store, use, and protect information in the bitezsnap web app and Android app (com.bitezsnap.app)."
+    />
+    <meta name="robots" content="index,follow" />
+    <meta name="theme-color" content="#10B981" />
+    <link rel="canonical" href="https://fitscore-6hqp.onrender.com/privacy-policy" />
+
+    <!-- Brand assets. /favicon.ico is served at the static root. -->
+    <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
+
+    <!-- Open Graph / Twitter card — surfaces correctly when shared. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Privacy Policy - bitezsnap" />
+    <meta
+      property="og:description"
+      content="How bitezsnap collects, stores, uses, and protects your information."
+    />
+    <meta property="og:url" content="https://fitscore-6hqp.onrender.com/privacy-policy" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Privacy Policy - bitezsnap" />
+    <meta
+      name="twitter:description"
+      content="How bitezsnap collects, stores, uses, and protects your information."
+    />
+
+    <!-- System-font stack so the page renders cleanly even before the app's
+         custom fonts load. No external font requests so privacy-conscious
+         scanners do not flag the page. -->
+    <style>
+      :root {
+        --ns-primary: #10b981;
+        --ns-primary-con: #059669;
+        --ns-surface-low: #ecfdf5;
+        --ns-surface: #f5f5f5;
+        --ns-on-surface: #1a1a1a;
+        --ns-on-surface-var: #374151;
+        --ns-border-light: #e5e7eb;
+        --ns-border-medium: #d1d5db;
+        --ns-outline: #6b7280;
+        --font-main: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+          'Helvetica Neue', Arial, sans-serif;
+        --font-headline: 'Sora', 'Manrope', -apple-system, BlinkMacSystemFont,
+          'Segoe UI', sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: var(--ns-surface);
+        color: var(--ns-on-surface);
+        font-family: var(--font-main);
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      a {
+        color: var(--ns-primary-con);
+        font-weight: 700;
+        text-underline-offset: 3px;
+      }
+
+      a:hover,
+      a:focus {
+        text-decoration-thickness: 2px;
+      }
+
+      .legal-page {
+        min-height: 100vh;
+      }
+
+      .legal-page-header {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: rgba(255, 255, 255, 0.92);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        border-bottom: 1px solid var(--ns-border-light);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+      }
+
+      .legal-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: transparent;
+        border: 0;
+        padding: 14px 20px;
+        color: var(--ns-primary-con);
+        font-family: var(--font-headline);
+        font-weight: 800;
+        font-size: 0.95rem;
+        cursor: pointer;
+        text-decoration: none;
+      }
+
+      .legal-back:hover,
+      .legal-back:focus {
+        text-decoration: underline;
+      }
+
+      .legal-page-body {
+        width: 100%;
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 24px 18px 64px;
+      }
+
+      .legal-title-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+
+      .legal-title-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        background: var(--ns-surface-low);
+        color: var(--ns-primary-con);
+        flex-shrink: 0;
+      }
+
+      .legal-title-row h1 {
+        margin: 0;
+        font-family: var(--font-headline);
+        font-size: 1.6rem;
+        font-weight: 900;
+        line-height: 1.2;
+      }
+
+      .legal-updated {
+        margin: 4px 0 0;
+        color: var(--ns-outline);
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+
+      .legal-intro {
+        margin: 16px 0 20px;
+        color: var(--ns-on-surface-var);
+        font-size: 0.95rem;
+      }
+
+      .legal-intro code {
+        background: var(--ns-surface-low);
+        padding: 2px 6px;
+        border-radius: 6px;
+        font-size: 0.85rem;
+      }
+
+      .legal-toc {
+        margin: 24px 0;
+        padding: 16px 18px;
+        background: var(--ns-surface-low);
+        border: 1px solid var(--ns-surface-low);
+        border-radius: 16px;
+      }
+
+      .legal-toc-label {
+        margin: 0 0 8px;
+        font-family: var(--font-headline);
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--ns-primary-con);
+      }
+
+      .legal-toc ul {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        gap: 4px;
+      }
+
+      .legal-toc a {
+        display: block;
+        padding: 8px 10px;
+        border-radius: 10px;
+        color: var(--ns-on-surface);
+        font-weight: 600;
+        font-size: 0.9rem;
+        text-decoration: none;
+      }
+
+      .legal-toc a:hover,
+      .legal-toc a:focus {
+        background: rgba(255, 255, 255, 0.7);
+        text-decoration: underline;
+      }
+
+      .legal-section {
+        margin: 28px 0;
+        scroll-margin-top: 72px;
+      }
+
+      .legal-section h2 {
+        margin: 0 0 10px;
+        font-family: var(--font-headline);
+        font-size: 1.15rem;
+        font-weight: 900;
+        color: var(--ns-on-surface);
+      }
+
+      .legal-section p {
+        margin: 0 0 10px;
+        font-size: 0.95rem;
+        color: var(--ns-on-surface-var);
+      }
+
+      .legal-footer {
+        margin-top: 48px;
+        padding-top: 20px;
+        border-top: 1px solid var(--ns-border-light);
+        text-align: center;
+        color: var(--ns-outline);
+        font-size: 0.8rem;
+      }
+
+      .legal-footer a {
+        color: var(--ns-primary-con);
+      }
+
+      @media (min-width: 768px) {
+        .legal-toc ul {
+          grid-template-columns: 1fr 1fr;
+        }
+        .legal-page-body {
+          padding: 32px 24px 64px;
+        }
+        .legal-title-row h1 {
+          font-size: 1.9rem;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="legal-page">
+      <header class="legal-page-header">
+        <a class="legal-back" href="/" aria-label="Back to bitezsnap">
+          <span aria-hidden="true">&#8592;</span>
+          <span>Back to bitezsnap</span>
+        </a>
+      </header>
+
+      <main class="legal-page-body">
+        <div class="legal-title-row">
+          <span class="legal-title-icon" aria-hidden="true">
+            <!-- Inline lock glyph; no external request. -->
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+          </span>
+          <div>
+            <h1>Privacy Policy</h1>
+            <p class="legal-updated">Effective and last updated: August 2, 2026</p>
+          </div>
+        </div>
+
+        <p class="legal-intro">
+          This policy explains how bitezsnap handles information in its web app and
+          Android app (<code>com.bitezsnap.app</code>). In this policy, &ldquo;we&rdquo;,
+          &ldquo;us&rdquo;, and &ldquo;our&rdquo; mean the operator of the bitezsnap
+          service.
+        </p>
+
+        <nav class="legal-toc" aria-label="Privacy policy sections">
+          <p class="legal-toc-label">Contents</p>
+          <ul>
+            <li><a href="#summary">1. The short version</a></li>
+            <li><a href="#data-we-collect">2. Information we collect and store</a></li>
+            <li><a href="#data-we-do-not-collect">3. Information we do not collect</a></li>
+            <li><a href="#visibility">4. Information visible to other people</a></li>
+            <li><a href="#use">5. How we use information</a></li>
+            <li><a href="#providers">6. Service providers and disclosures</a></li>
+            <li><a href="#device-storage">7. Cookies and on-device storage</a></li>
+            <li><a href="#legal-bases">8. Legal bases</a></li>
+            <li><a href="#retention">9. Retention and account deletion</a></li>
+            <li><a href="#rights">10. Your choices and rights</a></li>
+            <li><a href="#security">11. How we protect information</a></li>
+            <li><a href="#children">12. Children&rsquo;s privacy</a></li>
+            <li><a href="#transfers">13. International processing</a></li>
+            <li>
+              <a href="#medical-disclaimer">14. AI results are not medical advice</a>
+            </li>
+            <li>
+              <a href="#refunds">15. Payments, cancellation, and refunds</a>
+            </li>
+            <li><a href="#changes">16. Changes to this policy</a></li>
+            <li><a href="#contact">17. Contact</a></li>
+          </ul>
+        </nav>
+
+        <section class="legal-section" id="summary">
+          <h2>1. The short version</h2>
+          <p>
+            bitezsnap lets you photograph food labels, scan barcodes, and receive
+            an AI-assisted food score. We store the limited information needed to
+            provide your account, saved scan history, personalised results,
+            subscriptions, and security features. This is not a zero-data service.
+          </p>
+          <p>
+            We do not sell personal information, use advertising trackers, track
+            you across other apps or websites, or store your card number, CVV, or
+            bank credentials.
+          </p>
+          <p>
+            Food images and relevant profile details are sent to service
+            providers when you ask us to analyse a product. Some community
+            information is visible to others, as explained below.
+          </p>
+          <p>
+            We do not voluntarily provide refunds. Refund rights required by law
+            or offered by Google Play or another payment provider still apply.
+            See section 15.
+          </p>
+        </section>
+
+        <section class="legal-section" id="data-we-collect">
+          <h2>2. Information we collect and store</h2>
+          <p>
+            Account information. We store your email address, display name,
+            account status, and an optional profile picture. If you use Google
+            Sign-In, we also store your Google account identifier. If you use a
+            password, we store only a salted password hash, not the readable
+            password.
+          </p>
+          <p>
+            Health and personal profile. During setup, the app stores age,
+            gender, height, and weight. You may also provide medical conditions
+            and health goals. These details are used to personalise food analysis
+            and health-related displays.
+          </p>
+          <p>
+            Scans and food activity. We store the photo or barcode you submit,
+            product details, ingredients, nutrient information, AI-generated
+            scores and explanations, possible side effects, alternatives, serving
+            adjustments, and whether you marked a food as eaten.
+          </p>
+          <p>
+            Progress and usage. We store scan-quota usage, points, streaks, and
+            login timestamps so account limits, history, and progress features
+            work.
+          </p>
+          <p>
+            Purchases and subscriptions. We store plan and entitlement status,
+            expiry dates, payment-provider order or payment identifiers, and
+            completed-order status. Payment providers process the underlying
+            payment credentials.
+          </p>
+          <p>
+            Community content. We store feature requests you submit and votes
+            you cast.
+          </p>
+          <p>
+            Security information. We process request timestamps and security
+            identifiers derived from network or device information, and we store
+            failed-login counts, lockout timestamps, and hashed refresh-token
+            records to protect accounts and prevent abuse.
+          </p>
+        </section>
+
+        <section class="legal-section" id="data-we-do-not-collect">
+          <h2>3. Information we do not collect</h2>
+          <p>
+            We do not include advertising SDKs, behavioural analytics SDKs,
+            session-recording tools, heatmaps, tracking pixels, cross-app
+            tracking, or fingerprinting.
+          </p>
+          <p>
+            We do not request GPS location, contacts, calendars, SMS messages,
+            call logs, the installed-app list, or microphone access.
+          </p>
+          <p>
+            Camera access is used when you open the scanner. An image is
+            transmitted only when you submit it for analysis or save the
+            resulting scan.
+          </p>
+          <p>
+            We do not receive or store card numbers, CVVs, or bank-login
+            credentials. Google Play or Razorpay handles that payment
+            information directly.
+          </p>
+        </section>
+
+        <section class="legal-section" id="visibility">
+          <h2>4. Information visible to other people</h2>
+          <p>
+            Leaderboard. Signed-in users can see the top display names with
+            their points and streaks. You can change your display name in
+            Profile.
+          </p>
+          <p>
+            Feature requests. A submitted request, its category, status, vote
+            count, and your display name may be visible to anyone who can access
+            the feature-request service. The service response also contains
+            internal account identifiers used for request ownership and voting;
+            it does not include your email address or health profile.
+          </p>
+          <p>
+            Shared food database. Signed-in users can search product-level
+            results contributed by scans, including product name, brand,
+            ingredients, nutrient values, score, and scan count. Your health
+            profile and scan history are not included in those searchable
+            product records.
+          </p>
+          <p>
+            Your email address, health profile, personal scan history, profile
+            picture, and billing status are not intentionally displayed to other
+            users.
+          </p>
+        </section>
+
+        <section class="legal-section" id="use">
+          <h2>5. How we use information</h2>
+          <p>
+            We use information to create and secure your account; authenticate
+            sessions; reset passwords; analyse food; personalise results; save
+            scan history; calculate nutrition totals, BMI, trends, points, and
+            streaks; apply scan limits; process and restore purchases; provide
+            the shared product database and feature board; respond to support
+            requests; and prevent fraud, scraping, and account abuse.
+          </p>
+          <p>
+            We do not use health information for advertising or sell it to data
+            brokers.
+          </p>
+        </section>
+
+        <section class="legal-section" id="providers">
+          <h2>6. Service providers and disclosures</h2>
+          <p>
+            Google Gemini processes the photo or product text you submit
+            together with relevant profile details, such as age, health goals,
+            and medical conditions, to generate the requested analysis.
+          </p>
+          <p>
+            Open Food Facts receives barcode or product-search terms used to
+            retrieve public food information.
+          </p>
+          <p>Cloudinary hosts food images attached to saved scans.</p>
+          <p>
+            Google provides optional sign-in, Google Play billing, and Play
+            Integrity signals. Integrity signals are a defence-in-depth risk
+            check and are not a guarantee that a device or app is free from
+            tampering.
+          </p>
+          <p>
+            RevenueCat manages Android subscription entitlements. Razorpay
+            processes web payments. We receive transaction and entitlement
+            results, not raw card or bank credentials.
+          </p>
+          <p>
+            Brevo sends transactional messages such as password-reset emails.
+            Render hosts the web application and API. The configured PostgreSQL
+            provider, including Supabase when used in production, stores
+            application records.
+          </p>
+          <p>
+            These providers process data under their own terms and privacy
+            notices. They may process information in countries other than yours.
+          </p>
+        </section>
+
+        <section class="legal-section" id="device-storage">
+          <h2>7. Cookies and on-device storage</h2>
+          <p>
+            The web app uses strictly functional authentication and
+            CSRF-protection cookies. Authentication cookies are HttpOnly so
+            page scripts cannot read them. We do not use advertising or
+            analytics cookies.
+          </p>
+          <p>
+            The browser stores cached copies of your account and profile,
+            including any profile details returned after sign-in, plus your
+            language and theme preference. Clearing site data removes these
+            local copies but does not delete server records.
+          </p>
+          <p>
+            The Android app stores authentication tokens with the Cordova
+            secure-storage plugin backed by Android security facilities. If
+            secure storage is unavailable, tokens remain in memory only and are
+            not intentionally written to localStorage. Other cached account and
+            preference data may remain in WebView storage until you clear the
+            app data or uninstall the app.
+          </p>
+        </section>
+
+        <section class="legal-section" id="legal-bases">
+          <h2>8. Legal bases</h2>
+          <p>
+            Where data-protection law requires a legal basis, we rely on
+            providing the service you request, your consent where required for
+            optional health information, our legitimate interests in securing
+            and operating the service, and legal obligations such as accounting
+            and fraud prevention.
+          </p>
+          <p>
+            You can stop future use of optional health information by clearing
+            it in Profile or deleting your account. This does not make earlier
+            processing unlawful.
+          </p>
+        </section>
+
+        <section class="legal-section" id="retention">
+          <h2>9. Retention and account deletion</h2>
+          <p>
+            Account, profile, scan, and progress records remain while your
+            account is active because they support history, personalisation, and
+            cross-device access.
+          </p>
+          <p>
+            You can request deletion from Profile &gt; Delete Account or through
+            the public deletion page using your registered email address. The
+            public form sends a 24-hour verification link before scheduling
+            deletion. A confirmed request has a 7-day grace period, signing in
+            during that period cancels it, and deletion is processed within 30
+            days. The automated purge removes your user record, profile,
+            medical conditions, health goals, scans, and feature requests that
+            you authored.
+          </p>
+          <p>
+            Shared product rows remain because they describe food products
+            rather than an individual. References identifying who first or last
+            scanned the product are cleared.
+          </p>
+          <p>
+            When an account is purged, bitezsnap also requests deletion of its
+            hosted Cloudinary scan images. If the image provider temporarily
+            fails, the account remains scheduled and the automated job retries
+            rather than silently leaving the hosted copy behind.
+          </p>
+          <p>
+            The purge removes your internal account identifier from votes on
+            feature requests authored by other users.
+          </p>
+          <p>
+            Refresh tokens are removed on logout, revocation, or expiry.
+            Security logs and payment records may remain for a limited period
+            where reasonably needed for security, dispute handling, tax,
+            accounting, or other legal requirements.
+          </p>
+        </section>
+
+        <section class="legal-section" id="rights">
+          <h2>10. Your choices and rights</h2>
+          <p>
+            Depending on where you live, you may have rights to access, correct,
+            export, delete, object to, or restrict use of personal information,
+            withdraw consent, and complain to a data-protection authority.
+          </p>
+          <p>
+            You can edit many profile details in the app and start account
+            deletion from Profile or the public deletion-request page. For a
+            copy of your data or another privacy request, contact us. We may
+            need to verify that the request relates to your account.
+          </p>
+        </section>
+
+        <section class="legal-section" id="security">
+          <h2>11. How we protect information</h2>
+          <p>
+            Production services use HTTPS. Passwords are salted and hashed. The
+            web app uses HttpOnly cookies, CSRF protection, schema validation,
+            parameterised database queries, rate limits, and temporary account
+            lockouts after repeated failed sign-in attempts.
+          </p>
+          <p>
+            The Android build disables cleartext traffic and app backups, and
+            uses secure storage for persistent authentication tokens when
+            available. No system can guarantee absolute security, so use a
+            strong, unique password and contact us if you suspect account
+            misuse.
+          </p>
+        </section>
+
+        <section class="legal-section" id="children">
+          <h2>12. Children&rsquo;s privacy</h2>
+          <p>
+            bitezsnap is not intended for children under 13, or under a higher
+            minimum age where local law requires it. We do not knowingly collect
+            information from a child below the applicable age. A parent or
+            guardian who believes a child has created an account should contact
+            us for deletion.
+          </p>
+        </section>
+
+        <section class="legal-section" id="transfers">
+          <h2>13. International processing</h2>
+          <p>
+            Our providers may process information outside your country. Where
+            applicable law requires a transfer safeguard, we rely on the
+            mechanisms made available by the relevant provider and required by
+            law.
+          </p>
+        </section>
+
+        <section class="legal-section" id="medical-disclaimer">
+          <h2>14. AI results are not medical advice</h2>
+          <p>
+            Food scores, ingredient notes, possible side effects, and
+            alternatives are generated with AI and may be incomplete or wrong.
+            They are general information, not a diagnosis, treatment plan, or
+            substitute for a doctor, pharmacist, or dietitian.
+          </p>
+          <p>
+            Always read the physical product label. Do not rely on the app to
+            identify allergens or determine whether a food is safe for you.
+          </p>
+        </section>
+
+        <section class="legal-section" id="refunds">
+          <h2>15. Payments, cancellation, and refunds</h2>
+          <p>
+            bitezsnap does not voluntarily offer refunds, partial refunds, or
+            pro-rata credits for unused subscription time, lifetime purchases,
+            or accidental purchases. Purchases are treated as final except
+            where applicable law or the policy of Google Play or another
+            payment provider requires or permits a refund. Your statutory
+            consumer rights are not limited by this policy.
+          </p>
+          <p>
+            Cancelling a recurring subscription stops future renewal charges
+            but normally does not refund the current paid period. Premium access
+            generally continues until that period ends.
+          </p>
+          <p>
+            Android subscriptions must be managed in Google Play. Uninstalling
+            the app or deleting your account does not cancel a Google Play
+            subscription. Cancel it in Google Play first to avoid future
+            charges.
+          </p>
+          <p>
+            For a Google Play transaction, eligibility and the request process
+            are governed by Google Play refund policies. For a web-payment
+            problem, contact us with the order identifier, but do not send card
+            details.
+          </p>
+          <p>
+            <a
+              href="https://support.google.com/googleplay/answer/2479637"
+              target="_blank"
+              rel="noreferrer"
+              >Read Google Play refund policies</a
+            >
+          </p>
+        </section>
+
+        <section class="legal-section" id="changes">
+          <h2>16. Changes to this policy</h2>
+          <p>
+            We will update this page and its effective date when our practices
+            change. If a change materially affects how we use personal
+            information, we will provide an additional in-app notice where
+            appropriate.
+          </p>
+        </section>
+
+        <section class="legal-section" id="contact">
+          <h2>17. Contact</h2>
+          <p>
+            bitezsnap is the service covered by this policy. For privacy
+            questions, data requests, account-deletion assistance, or payment
+            support, email
+            <a href="mailto:support@bitezsnap.app">support@bitezsnap.app</a>.
+          </p>
+        </section>
+
+        <footer class="legal-footer">
+          <p>
+            &copy; 2026 bitezsnap. This page is also available inside the app at
+            <a href="/privacy-policy">/privacy-policy</a>.
+          </p>
+        </footer>
+      </main>
+    </div>
+  </body>
+</html>

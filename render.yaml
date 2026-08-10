@@ -127,6 +127,18 @@ services:
       - key: VITE_API_BASE_URL
         value: https://fitscan-api.onrender.com
     routes:
+      # Privacy policy is served as a real, fully-rendered static HTML page
+      # so crawlers (Google Play Console, etc.) that do not execute JavaScript
+      # can still verify the policy exists. Must come BEFORE the SPA fallback.
+      - type: rewrite
+        source: /privacy-policy
+        destination: /privacy-policy.html
+      - type: rewrite
+        source: /privacy
+        destination: /privacy-policy.html
+      # SPA fallback: BrowserRouter deep links (e.g. /dashboard, /reset-password)
+      # have no file on disk. Without this rule the static host returns 404 on
+      # refresh or direct navigation. The client router resolves the path.
       - type: rewrite
         source: /*
         destination: /index.html

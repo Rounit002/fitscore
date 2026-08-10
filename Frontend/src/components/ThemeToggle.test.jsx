@@ -1,12 +1,13 @@
 import '@testing-library/jest-dom';
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import ThemeToggle, { useTheme, getThemeMode, resolveTheme } from './ThemeToggle';
+import ThemeToggle, { ThemeModeSelector, useTheme, getThemeMode, resolveTheme } from './ThemeToggle';
 
 jest.mock('lucide-react', () => ({
   Moon: () => <span data-testid="moon-icon" />,
   Sun: () => <span data-testid="sun-icon" />,
   Monitor: () => <span data-testid="monitor-icon" />,
+  Check: () => <span data-testid="check-icon" />,
 }));
 
 /* matchMedia is not implemented in jsdom, and the theme now genuinely depends on
@@ -53,7 +54,7 @@ describe('ThemeToggle', () => {
   it('names the current mode and the next one for assistive tech', () => {
     render(<ThemeToggle mode="system" isDark={false} onToggle={() => {}} />);
     expect(
-      screen.getByRole('button', { name: 'System theme. Switch to Light mode.' })
+      screen.getByRole('button', { name: 'Device default. Switch to Light mode.' })
     ).toBeInTheDocument();
   });
 
@@ -67,6 +68,33 @@ describe('ThemeToggle', () => {
     render(<ThemeToggle mode="system" isDark={false} onToggle={onToggle} />);
     await userEvent.click(screen.getByRole('button'));
     expect(onToggle).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('ThemeModeSelector', () => {
+  it('renders device, dark, and light as accessible icon-only choices', () => {
+    render(<ThemeModeSelector mode="system" onChange={() => {}} />);
+
+    const device = screen.getByRole('button', { name: 'Device default' });
+    const dark = screen.getByRole('button', { name: 'Dark mode' });
+    const light = screen.getByRole('button', { name: 'Light mode' });
+
+    expect(device).toHaveAttribute('aria-pressed', 'true');
+    expect(dark).toHaveAttribute('aria-pressed', 'false');
+    expect(light).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByTestId('monitor-icon')).toBeInTheDocument();
+    expect(screen.getByTestId('moon-icon')).toBeInTheDocument();
+    expect(screen.getByTestId('sun-icon')).toBeInTheDocument();
+    expect(screen.getByTestId('check-icon')).toBeInTheDocument();
+    expect(screen.queryByText('Device default')).not.toBeInTheDocument();
+  });
+
+  it('selects a requested theme mode', async () => {
+    const onChange = jest.fn();
+    render(<ThemeModeSelector mode="system" onChange={onChange} />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Dark mode' }));
+    expect(onChange).toHaveBeenCalledWith('dark');
   });
 });
 

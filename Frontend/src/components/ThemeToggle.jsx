@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Monitor, Moon, Sun } from 'lucide-react';
+import { Check, Monitor, Moon, Sun } from 'lucide-react';
 
 const STORAGE_KEY = 'fitscan_theme';
 
@@ -96,10 +96,53 @@ const NEXT_LABEL = { system: 'light', light: 'dark', dark: 'system' };
 export function themeModeLabel(mode, t) {
   const label = (key, fallback) => (t ? t(key, fallback) : fallback);
   return {
-    system: label('theme_system', 'System theme'),
+    system: label('theme_system', 'Device default'),
     light: label('theme_light', 'Light mode'),
     dark: label('theme_dark', 'Dark mode'),
   }[mode];
+}
+
+/* Profile order follows the setting's visual hierarchy: inherit from the
+   device first, then the two explicit overrides. */
+const THEME_SELECTOR_MODES = ['system', 'dark', 'light'];
+
+/**
+ * Three-choice icon selector used in settings surfaces.
+ *
+ * The labels stay available to assistive technology and as native tooltips,
+ * while the visible control remains icon-only as requested. `aria-pressed`
+ * gives each native button a clear selected state without turning the control
+ * into a custom keyboard widget.
+ */
+export function ThemeModeSelector({ mode = 'system', onChange, t }) {
+  const groupLabel = t ? t('theme', 'Theme') : 'Theme';
+
+  return (
+    <div className="theme-mode-selector" role="group" aria-label={groupLabel}>
+      {THEME_SELECTOR_MODES.map((option) => {
+        const isSelected = option === mode;
+        const label = themeModeLabel(option, t);
+
+        return (
+          <button
+            key={option}
+            type="button"
+            className={`theme-mode-option${isSelected ? ' is-selected' : ''}`}
+            onClick={() => onChange?.(option)}
+            aria-label={label}
+            aria-pressed={isSelected}
+            title={label}
+            data-mode={option}
+          >
+            <span className="theme-mode-option-icon" aria-hidden="true">
+              {themeModeIcon(option, 19)}
+            </span>
+            {isSelected && <Check className="theme-mode-option-check" size={12} strokeWidth={3} aria-hidden="true" />}
+          </button>
+        );
+      })}
+    </div>
+  );
 }
 
 /**

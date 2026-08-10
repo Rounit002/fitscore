@@ -17,7 +17,6 @@ import {
   Lock,
   LogOut,
   Mail,
-  Moon,
   Search,
   ShieldCheck,
   Sparkles,
@@ -27,6 +26,7 @@ import {
 } from 'lucide-react';
 import { API } from '../api/client.js';
 import { LANGUAGES } from '../utils/languages.js';
+import { ThemeModeSelector } from './ThemeToggle.jsx';
 
 /**
  * Display copy for the paywall tiers.
@@ -806,7 +806,7 @@ export function HealthGoalsPage({
   );
 }
 
-export default function Profile({ userProfile, userAuth, authToken, onBack, onLogout, onDetailsSaved, onNavigateFeatures, isDark, toggleTheme }) {
+export default function Profile({ userProfile, userAuth, authToken, onBack, onLogout, onDetailsSaved, onNavigateFeatures, themeMode, setThemeMode }) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [modal, setModal] = useState(null);
@@ -1187,19 +1187,15 @@ export default function Profile({ userProfile, userAuth, authToken, onBack, onLo
         <ProfileSection title={t('account')}>
           <ProfileAction label={t('personal_detail')} icon={User} onClick={() => setView('personal')} area="account" />
           <ProfileAction label={`${t('language')}: ${profileLanguages.find((option) => option.code === language)?.label || 'English'}`} icon={Languages} onClick={() => setModal('language')} area="account" />
-          <div className="profile-theme-toggle" data-area="account" onClick={toggleTheme} role="button" tabIndex={0} aria-label={t('dark_mode')}>
-            <span className="profile-action-icon" aria-hidden="true">
-              <Moon size={18} />
-            </span>
-            <span>{t('dark_mode')}</span>
-            <span className={`profile-theme-switch${isDark ? ' is-active' : ''}`} aria-hidden="true" />
+          <div className="profile-theme-setting" data-area="account">
+            <span className="profile-theme-label">{t('theme')}</span>
+            <ThemeModeSelector mode={themeMode} onChange={setThemeMode} t={t} />
           </div>
         </ProfileSection>
 
         <ProfileSection title={t('goals_tracking')}>
           <ProfileAction label={t('edit_medical_profile')} icon={HeartPulse} onClick={() => setView('medical')} area="health" />
           <ProfileAction label={t('edit_health_goal')} icon={Sparkles} onClick={() => setView('goals')} area="health" />
-          <ProfileAction label={userAuth?.isPremium ? t('manage_subscription', 'Manage Subscription') : t('upgrade')} icon={Crown} onClick={() => setModal('family')} area="premium" />
         </ProfileSection>
 
         <ProfileSection title={t('support_legal')}>

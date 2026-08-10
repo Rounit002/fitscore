@@ -5,7 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog and this project adheres to Semantic Versioning where applicable.
 
 ## [Unreleased]
-- 
+### Fixed
+- Privacy policy URL `https://fitscore-6hqp.onrender.com/privacy-policy` was
+  returning an empty SPA shell (just `<div id="root"></div>`) because Google Play
+  Console's crawler does not execute JavaScript, so it read an empty page and
+  reported "Privacy policy page returns a page not found error".
+  - Added `Frontend/public/privacy-policy.html`: a self-contained static page
+    with the full policy content baked in (17 sections, brand-styled inline CSS,
+    no external font/JS requests, proper `<title>`, description, canonical,
+    OpenGraph and Twitter meta tags). Vite copies it as-is to `dist/`.
+  - Added explicit rewrite rules in `render.yaml` (BEFORE the SPA fallback):
+    `/privacy-policy` and `/privacy` -> `/privacy-policy.html`.
+  - Same rules added to `Frontend/public/_redirects` for portability if the
+    static host is ever swapped to Netlify/Cloudflare Pages.
+  - The React `<PrivacyPolicy />` page, the `/privacy` -> `/privacy-policy`
+    SPA redirect, and all related tests are unchanged.
 
 ## 2026-06-21
 ### Changed
@@ -1219,3 +1233,76 @@ Also confirmed absent from cordova-android 15: `SplashShowOnlyFirstTime`,
   `Frontend/dist/_redirects` contains the SPA fallback. Render still needs the Blueprint synced
   (or the identical rule added under the existing site's Redirects/Rewrites tab) and redeployed
   before the currently hosted URL changes behavior.
+
+## 2026-08-04 - Rebuilt signed Play Store AAB from current source
+- Ran `mobile/npm run build:aab` with the Android SDK available outside the workspace sandbox and
+  isolated Gradle/temp directories on drive D. The Cordova-mode Vite build succeeded, synced 17
+  current web files into `mobile/www`, and the Cordova/Gradle release bundle completed successfully.
+- Replaced the top-level upload artifact at `D:\NutriScan-mainn\bitezsnap-release.aab` with the
+  fresh signed bundle (6,551,152 bytes). SHA-256:
+  `11D9773105AE186994B039D1518BD815EE2E0790F244B8EE40DEBBB62DFDB82F`.
+- Bundletool manifest verification passed: package `com.bitezsnap.app`, versionName `1.0.0`,
+  versionCode `10000`, min SDK 24, target/compile SDK 36, launcher
+  `com.bitezsnap.app.MainActivity`, CAMERA/INTERNET permissions present, cleartext disabled, and
+  backups disabled. The embedded Cordova payload contains the latest public account-deletion route,
+  registered-email form, and deletion-request endpoint.
+- `jarsigner -verify -verbose -certs` passed. Upload certificate SHA-256 remains
+  `3C:AB:59:60:5C:8C:6D:43:D4:58:84:99:FE:6A:E7:B7:6F:E9:22:2D:64:49:AF:68:83:DA:6E:D6:5E:E8:4E:83`.
+- Native Play Integrity tests passed (4/4). Production warning remains: `mobile/config.xml` still
+  sets `PlayIntegrityCloudProjectNumber` to `0`; configure the real Google Cloud project number in
+  Play Console/source and rebuild before relying on standard Play Integrity requests in production.
+
+## 2026-08-04 - Replaced Profile dark-mode switch with three-choice Theme selector
+- Replaced the Profile account-section `Dark Mode` switch with a visible `Theme` setting and three
+  icon-only choices in this order: device default (monitor), dark (moon), and light (sun).
+- Wired the selector to the existing `useTheme().setMode` API. Device default clears the stored
+  override and follows live `prefers-color-scheme` changes; explicit dark/light choices remain
+  persisted under the existing `fitscan_theme` key.
+- Added the reusable `ThemeModeSelector` component with 44px native buttons, translated ARIA labels
+  and tooltips, `aria-pressed`, visible keyboard focus, and a check marker so selection is not
+  communicated by colour alone. Added responsive, RTL-safe, light/dark token-based styling without
+  reintroducing glow effects.
+- Changed `theme_system` from generic `System` copy to localized `Device default` wording in all
+  eight locale files.
+- Verification: the focused ThemeToggle suite passed 18/18 tests; targeted source lint passed when
+  excluding the repository's documented pre-existing Profile/Fast Refresh rule violations; normal
+  Vite production build passed. The standard unscoped lint command still reports those baseline
+  violations plus its existing missing Jest-global configuration.
+- Rebuilt and signed the Cordova Play Store bundle so it includes the new Theme selector. Updated
+  `D:\NutriScan-mainn\bitezsnap-release.aab` is 6,551,968 bytes; SHA-256:
+  `38D098A15FA824D114947E6EFFADB888B4FE8CA719625407F91D84108225219F`.
+  `jarsigner -verify` passed, and the embedded payload was checked for both the selector CSS and
+  `Device default` copy. The existing non-fatal Vite large-chunk and Amazon SDK R8 warnings remain.
+
+## 2026-08-04 - Removed Profile subscription action row
+- Removed the `ProfileAction` in the Goals & Tracking section that rendered `Manage Subscription`
+  for premium accounts and `Upgrade` for non-premium accounts. This removes the exact
+  `.profile-menu-action[data-area="premium"]` button from the Profile menu for every account type.
+- Left the separate subscription/paywall modal behavior unchanged; only the requested Profile menu
+  row was removed. The two remaining health-setting rows close the responsive grid without an
+  empty placeholder or spacing artifact.
+- Verification: source audit found zero Profile premium action rows and the normal Vite production
+  build passed. Rebuilt and signed the Cordova Play Store bundle; refreshed
+  `D:\NutriScan-mainn\bitezsnap-release.aab` is 6,551,936 bytes with SHA-256
+  `8F0D476D011EC8C4AE13AE174C91B841F14537F5C23A2CC973FD5637C1473B58`.
+  `jarsigner -verify` passed. Existing non-fatal Vite large-chunk and Amazon SDK R8 warnings remain.
+
+## 2026-08-10 - Built and verified Play Store AAB v1.0.1 (10001)
+- Bumped the Cordova Android release from versionName `1.0.0` / versionCode `10000` to
+  versionName `1.0.1` / versionCode `10001` in `mobile/config.xml`, and synchronized the
+  mobile npm package/package-lock versions to `1.0.1`.
+- Ran the four native Play Integrity tests successfully, rebuilt the current Vite SPA in Cordova
+  mode, synchronized 17 web files, and completed the signed Cordova/Gradle release bundle build.
+- Replaced `D:\NutriScan-mainn\bitezsnap-release.aab` with the new upload artifact (6,551,934
+  bytes). SHA-256: `0E2FED7A1C8B9E388F82CE656A03278E3EC247913196655141ED7A3C6E9357A7`.
+- Bundletool 1.18.0 validation passed. The final manifest reports package `com.bitezsnap.app`,
+  versionName `1.0.1`, versionCode `10001`, min SDK 24, target/compile SDK 36, cleartext disabled,
+  backups disabled, and only CAMERA/INTERNET/BILLING/ACCESS_NETWORK_STATE permissions.
+- The bundle uses AGP 8.10.1 and declares `PAGE_ALIGNMENT_16K`; it contains zero native `.so`
+  libraries. Bundletool successfully generated a universal APK, `apksigner` verified v2/v3
+  signatures, and `zipalign -c -P 16` passed.
+- The upload certificate is unchanged from the previous AAB: SHA-256
+  `3C:AB:59:60:5C:8C:6D:43:D4:58:84:99:FE:6A:E7:B7:6F:E9:22:2D:64:49:AF:68:83:DA:6E:D6:5E:E8:4E:83`.
+- External production configuration remains: `PlayIntegrityCloudProjectNumber` is still `0` in
+  `mobile/config.xml`; the real Google Cloud project number is required for production Play
+  Integrity requests, though this does not invalidate the AAB or block bundle upload validation.
