@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog and this project adheres to Semantic Versioning where applicable.
 
 ## [Unreleased]
+### Added
+- Brief "AI-assisted recommendations" note in the app shell footer so every
+  authenticated screen carries the same one-line reassurance. The full
+  AI-disclaimer text now lives only in the Privacy Policy and the new
+  `/terms-conditions` page (mirrors Privacy Policy, 14 sections including
+  §4 "AI-driven recommendations" and §5 "Not medical advice").
+  - New: `Frontend/src/components/AIHint.jsx`,
+    `Frontend/src/components/TermsConditions.jsx`,
+    `Frontend/src/components/AIHint.test.jsx`,
+    `Frontend/src/components/TermsConditions.test.jsx`,
+    `Frontend/src/components/AppShell.integration.test.jsx`.
+  - New i18n keys (en + 7 other locales): `ai_assisted_note`,
+    `ai_assisted_note_aria`, `ai_assisted_learn_more`, `terms_conditions`.
+  - New route `/terms-conditions` (and `/terms` alias) added to
+    `PUBLIC_STANDALONE_PATHS` so the page is reachable without a session.
+  - Profile > "Terms & Condition" now navigates to the new page; the old
+    one-line modal is removed.
+  - `jest.config.js` + new `src/test-polyfill.js` add the WHATWG
+    TextEncoder/TextDecoder globals so react-router-dom 7 can load in jsdom.
+### Changed
+- `Results.jsx`: removed the verbose "AI recommendation only" disclaimer
+  block from the result page. The small "Scanned with bitezsnap AI" tag
+  inside the shareable summary card is kept; the full disclaimer text is
+  no longer shown on any main screen.
 ### Fixed
 - Privacy policy URL `https://fitscore-6hqp.onrender.com/privacy-policy` was
   returning an empty SPA shell (just `<div id="root"></div>`) because Google Play
@@ -1306,3 +1330,44 @@ Also confirmed absent from cordova-android 15: `SplashShowOnlyFirstTime`,
 - External production configuration remains: `PlayIntegrityCloudProjectNumber` is still `0` in
   `mobile/config.xml`; the real Google Cloud project number is required for production Play
   Integrity requests, though this does not invalidate the AAB or block bundle upload validation.
+
+## 2026-08-10 - Added AI recommendation and medical-advice disclaimers
+- Strengthened section 14 of both privacy-policy implementations:
+  `Frontend/src/components/PrivacyPolicy.jsx` and the crawler-visible static
+  `Frontend/public/privacy-policy.html`. The policy now explicitly covers every AI-assisted
+  search, scan, score, explanation, nutrition estimate, ingredient note, possible side effect,
+  and suggested alternative; labels them automated informational recommendations; warns that
+  they may be inaccurate or unsuitable; and directs users to consult a qualified doctor or
+  registered dietitian rather than delay professional advice.
+- Updated the policy effective date to August 10, 2026 and retained explicit product-label,
+  allergen, food-safety, and emergency-services warnings.
+- Added a visible `AI recommendation only` notice to the shared `Results.jsx` screen, so every
+  newly generated or reopened AI analysis displays the medical disclaimer. Added corresponding
+  English i18n copy and responsive theme-token styling.
+- Added a focused Privacy Policy assertion for the recommendation/professional-advice language.
+  Verification: Privacy Policy tests passed 5/5, focused policy ESLint passed, translation JSON
+  parsed successfully, production Vite build passed, and the generated static policy contains
+  the updated disclaimer. The existing `Results.jsx` unused `authToken` lint finding remains
+  pre-existing and unrelated.
+- Rebuilt the signed Play Store AAB without changing its release identity (`1.0.1` / `10001`).
+  Bundletool validation and `jarsigner` verification passed. Confirmed directly inside the AAB
+  that both `base/assets/www/privacy-policy.html` and the compiled result-screen JavaScript contain
+  the new disclaimer. Updated `D:\NutriScan-mainn\bitezsnap-release.aab` is 6,561,103 bytes;
+  SHA-256: `9E364777185BCED13E1DDD1C5BFCB201A4840D89FFD832F6FE1A2BFBE38E794D`.
+
+## 2026-08-10 - Built Play Store AAB v1.0.2 (10002)
+- Advanced the Android release from versionName `1.0.1` / versionCode `10001` to
+  versionName `1.0.2` / versionCode `10002` in `mobile/config.xml`, and synchronized
+  `mobile/package.json` plus `mobile/package-lock.json` to version `1.0.2`.
+- Native Play Integrity tests passed 4/4. The Cordova-mode Vite build completed, synchronized
+  18 web files (including the crawler-visible static Privacy Policy), and the signed Gradle
+  release bundle finished successfully. The Amazon Appstore SDK emitted its existing non-fatal
+  R8 stack-map warnings; Gradle completed `bundleRelease` successfully.
+- Bundletool validation passed. The compiled manifest reports package `com.bitezsnap.app`,
+  versionName `1.0.2`, versionCode `10002`, min SDK 24, and target SDK 36. Bundle config retains
+  `PAGE_ALIGNMENT_16K`; the bundle contains zero native `.so` libraries.
+- Confirmed the static Privacy Policy and the per-result `AI recommendation only` medical
+  disclaimer are embedded in the compiled AAB. `jarsigner` verification passed.
+- Replaced `D:\NutriScan-mainn\bitezsnap-release.aab` with the verified upload artifact
+  (6,561,099 bytes). SHA-256:
+  `7B2EA12984F067C4A354A232F5CAA6F1306AF5D66BAD67CF54233F998367FFB6`.

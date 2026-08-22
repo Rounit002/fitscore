@@ -10,6 +10,7 @@ import Login from './components/Login';
 import SignUp from './components/SignUp';
 import ResetPassword from './components/ResetPassword';
 import PrivacyPolicy from './components/PrivacyPolicy';
+import TermsConditions from './components/TermsConditions';
 import DeleteAccount from './components/DeleteAccount';
 import Dashboard from './components/Dashboard';
 import Onboarding from './components/Onboarding';
@@ -39,6 +40,7 @@ import ErrorBoundary from './components/ErrorBoundary.jsx';
 import MobileBottomNav from './components/MobileBottomNav.jsx';
 import SplashScreen from './components/SplashScreen.jsx';
 import BrandLogo from './components/BrandLogo.jsx';
+import AIHint from './components/AIHint.jsx';
 import { RevenueCatProvider } from './context/RevenueCatContext.jsx';
 import Paywall from './components/Paywall.jsx';
 
@@ -66,6 +68,8 @@ const PATH_TO_VIEW = Object.fromEntries(
 const PUBLIC_STANDALONE_PATHS = new Set([
   '/privacy-policy',
   '/privacy',
+  '/terms-conditions',
+  '/terms',
   '/delete-account',
   '/reset-password',
 ]);
@@ -224,6 +228,13 @@ function DesktopAppShell({ userAuth, userProfile, onNavigate, onLogout }) {
             <Outlet />
           </ErrorBoundary>
         </main>
+
+        {/* Brief, app-level note that every recommendation in the app is
+            AI-assisted. Lives in the shell so it appears on every protected
+            screen without each page having to re-implement it. The full
+            disclaimer and limitations are documented in the Privacy Policy
+            and Terms & Conditions pages only. */}
+        <AIHint />
 
         {/* Persistent mobile bottom navigation */}
         <MobileBottomNav onNavigate={onNavigate} initials={initials} />
@@ -721,6 +732,8 @@ export default function App() {
             session, and the pre-signup links point here too. */}
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/privacy" element={<Navigate to="/privacy-policy" replace />} />
+        <Route path="/terms-conditions" element={<TermsConditions />} />
+        <Route path="/terms" element={<Navigate to="/terms-conditions" replace />} />
         <Route
           path="/delete-account"
           element={

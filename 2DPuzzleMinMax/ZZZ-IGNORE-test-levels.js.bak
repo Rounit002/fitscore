@@ -1,0 +1,58 @@
+// Sanity test for levels.js
+const fs = require('fs');
+const path = require('path');
+const vm = require('vm');
+
+// Wrap with explicit global assignments so they're accessible after run.
+const src = fs.readFileSync(path.join(__dirname, 'levels.js'), 'utf8');
+const wrapped = src + '\nglobalThis.HANDCRAFTED_LEVELS = HANDCRAFTED_LEVELS; globalThis.generateProceduralLevel = generateProceduralLevel; globalThis.ARROW_DELTAS = ARROW_DELTAS;';
+const ctx = {};
+vm.createContext(ctx);
+vm.runInContext(wrapped, ctx);
+const { HANDCRAFTED_LEVELS, generateProceduralLevel, ARROW_DELTAS } = ctx;
+
+console.log('Hand-crafted levels:', HANDCRAFTED_LEVELS.length);
+HANDCRAFTED_LEVELS.forEach((lvl, i) => {
+  const arrows = lvl.grid.flat().filter(v => v !== 0).length;
+  console.log(`  L${i + 1} "${lvl.name}": ${lvl.grid.length}x${lvl.grid[0].length}, ${arrows} arrows`);
+});
+
+console.log('\nProcedural samples:');
+for (const lvlNum of [5, 7, 9, 11, 12]) {
+  const lvl = generateProceduralLevel(lvlNum);
+  const arrows = lvl.grid.flat().filter(v => v !== 0).length;
+  console.log(`  L${lvlNum}: ${lvl.grid.length}x${lvl.grid[0].length}, ${arrows} arrows`);
+}
+
+// Verify a hand-crafted level is at least trivially solvable: at least one
+// arrow can escape at start.
+function countEscapable(grid) {
+  const size = grid.length;
+  let count = 0;
+  for (let r = 0; r < size; r++) {
+    for (let c = 0; c < size; c++) {
+      const dir = grid[r][c];
+      if (dir === 0) continue;
+      const d = ARROW_DELTAS[dir];
+      let nr = r + d.dr, nc = c + d.dc;
+      let ok = true;
+      while (nr >= 0 && nr < size && nc >= 0 && nc < size) {
+        if (grid[nr][nc] !== 0) { ok = false; break; }
+        nr += d.dr; nc += d.dc;
+      }
+      if (ok) count++;
+    }
+  }
+  return count;
+}
+
+console.log('\nEscapable arrows at start (hand-crafted):');
+HANDCRAFTED_LEVELS.forEach((lvl, i) => {
+  console.log(`  L${i + 1}: ${countEscapable(lvl.grid)}`);
+});
+
+console.log('\nEscapable arrows at start (procedural samples):');
+for (const lvlNum of [5, 7, 9, 11, 12]) {
+  const lvl = generateProceduralLevel(lvlNum);
+  console.log(`  L${lvlNum}: ${countEscapable(lvl.grid)}`);
+}

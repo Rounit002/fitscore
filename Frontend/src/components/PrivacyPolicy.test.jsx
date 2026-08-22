@@ -31,6 +31,14 @@ describe('PrivacyPolicy', () => {
     );
   });
 
+  it('states that every AI result is only a recommendation and requires professional advice', () => {
+    renderPolicy();
+
+    expect(screen.getByText(/Every AI-assisted search, scan, score/i)).toBeInTheDocument();
+    expect(screen.getByText(/Consult a qualified doctor or registered dietitian/i)).toBeInTheDocument();
+    expect(screen.getByText(/Do not delay or disregard professional advice/i)).toBeInTheDocument();
+  });
+
   it('provides a working privacy contact', () => {
     renderPolicy();
 

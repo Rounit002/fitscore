@@ -224,5 +224,9 @@
   "showing_date": "عرض",
   "filter_by_date": "تصفية الفحوصات بالتاريخ",
   "no_scans_this_day_hint": "لم يتم فحص أي شيء في هذا التاريخ. اختر يومًا آخر بالأعلى.",
-  "mobile_navigation": "تنقل الهاتف"
+  "mobile_navigation": "تنقل الهاتف",
+  "ai_assisted_note": "توصيات بمساعدة الذكاء الاصطناعي",
+  "ai_assisted_note_aria": "توصيات بمساعدة الذكاء الاصطناعي. إخلاء المسؤولية الكامل متاح في سياسة الخصوصية والشروط والأحكام.",
+  "ai_assisted_learn_more": "اعرف المزيد",
+  "terms_conditions": "الشروط والأحكام"
 }

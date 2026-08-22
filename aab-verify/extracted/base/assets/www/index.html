@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <!-- Brand icons, all rasterised from resources/icon.png by `npm run gen:res`
+       in mobile/. Vite rewrites these hrefs to the build's base, so the same
+       tags work for the web build (`/`) and the Cordova build (`./`). -->
+  <link rel="icon" href="./favicon.ico" sizes="16x16 32x32 48x48" />
+  <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="./icons/favicon-16x16.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <!-- Tells the browser (and the Android WebView) to render its own chrome —
+       scrollbars, form controls, the address bar — to match. Without it a dark
+       page keeps light native scrollbars. Both values, in preference order, so
+       the OS setting decides. -->
+  <meta name="color-scheme" content="light dark" />
+  <!-- Emerald `--ns-primary`. Per-scheme so the mobile browser chrome follows
+       the page rather than forcing a light bar onto the dark theme. -->
+  <meta name="theme-color" content="#10B981" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#10B981" media="(prefers-color-scheme: dark)" />
+  <title>bitezsnap</title>
+  <!--
+    Theme applied before first paint, synchronously in <head>.
+
+    React applies the theme in an effect, i.e. after the first paint, so a user on
+    a dark system theme saw a white flash on every cold start — most visible in the
+    Cordova WebView, where the splash hands over to a white page. Inlined and
+    blocking on purpose: deferring it is the bug.
+
+    Deliberately duplicates the storage key and the resolution order from
+    ThemeToggle.jsx, because a module import cannot run this early. The two must
+    stay in step; the reviewer gate checks the key matches.
+  -->
+  <script>
+    (function () {
+      try {
+        var saved = localStorage.getItem('fitscan_theme');
+        var dark = saved === 'dark' || (saved !== 'light'
+          && window.matchMedia
+          && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (dark) document.documentElement.classList.add('dark');
+      } catch (e) {
+        /* Private mode can throw on localStorage access. Light is the fallback,
+           which is what the stylesheet already defaults to. */
+      }
+    })();
+  </script>
+  <script type="module" crossorigin src="./assets/index-Czj0J5nn.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-C6i8fxsN.css">
+  <script src="cordova.js"></script>
+</head>
+
+<body>
+  <div id="root"></div>
+</body>
+
+</html>

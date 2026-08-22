@@ -224,5 +224,9 @@
   "showing_date": "देखाइँदै",
   "filter_by_date": "मिति अनुसार स्क्यान छान्नुहोस्",
   "no_scans_this_day_hint": "यो मितिमा केही स्क्यान भएको छैन। माथिबाट अर्को दिन छान्नुहोस्।",
-  "mobile_navigation": "मोबाइल नेभिगेसन"
+  "mobile_navigation": "मोबाइल नेभिगेसन",
+  "ai_assisted_note": "AI सहायताको सिफारिसहरू",
+  "ai_assisted_note_aria": "AI सहायताको सिफारिसहरू। पूर्ण अस्वीकरण गोपनीयता नीति र सर्तहरूमा उपलब्ध छ।",
+  "ai_assisted_learn_more": "थप जान्नुहोस्",
+  "terms_conditions": "सर्तहरू"
 }

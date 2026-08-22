@@ -13,7 +13,7 @@ import { ArrowLeft, Lock } from 'lucide-react';
 const APP_NAME = 'bitezsnap';
 const ANDROID_PACKAGE = 'com.bitezsnap.app';
 const SUPPORT_EMAIL = 'support@bitezsnap.app';
-const LAST_UPDATED = 'August 2, 2026';
+const LAST_UPDATED = 'August 10, 2026';
 
 const PRIVACY_SECTIONS = [
   {
@@ -143,8 +143,9 @@ const PRIVACY_SECTIONS = [
     id: 'medical-disclaimer',
     title: '14. AI results are not medical advice',
     body: [
-      'Food scores, ingredient notes, possible side effects, and alternatives are generated with AI and may be incomplete or wrong. They are general information, not a diagnosis, treatment plan, or substitute for a doctor, pharmacist, or dietitian.',
-      'Always read the physical product label. Do not rely on the app to identify allergens or determine whether a food is safe for you.',
+      'Every AI-assisted search, scan, score, explanation, nutrition estimate, ingredient note, possible side effect, and suggested alternative is an automated recommendation provided for general informational and educational purposes only. AI output may be incomplete, inaccurate, outdated, or unsuitable for your circumstances.',
+      'AI results are not medical, nutritional, or dietary advice and do not diagnose, treat, cure, or prevent any condition. Consult a qualified doctor or registered dietitian before making health or dietary decisions, especially if you have allergies or another medical condition, take medication, are pregnant, or have urgent symptoms. Do not delay or disregard professional advice because of an app result.',
+      'Always read and verify the physical product label. Do not rely on the app to identify allergens or determine whether a food is safe for you. For a medical emergency, contact your local emergency services.',
     ],
   },
   {

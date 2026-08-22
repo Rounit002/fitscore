@@ -1,0 +1,11 @@
+# Privacy policy is served as a real, fully-rendered static HTML page so
+# crawlers (Google Play Console, etc.) that do not execute JavaScript can
+# still verify the policy exists. Must come BEFORE the SPA fallback.
+/privacy-policy    /privacy-policy.html   200
+/privacy           /privacy-policy.html   200
+# SPA fallback: the app uses BrowserRouter, so deep links like /dashboard or
+# /reset-password have no file on disk. Without this rule the static host returns
+# 404 on refresh or direct navigation. Serve index.html for any unmatched path
+# and let the client router resolve it. Vite copies this portability fallback
+# from public/ into dist/; Render's active rule is declared in /render.yaml.
+/*    /index.html   200

@@ -224,5 +224,9 @@
   "showing_date": "दिखा रहे हैं",
   "filter_by_date": "तारीख से स्कैन छानें",
   "no_scans_this_day_hint": "इस तारीख को कुछ स्कैन नहीं हुआ। ऊपर से दूसरा दिन चुनें।",
-  "mobile_navigation": "मोबाइल नेविगेशन"
+  "mobile_navigation": "मोबाइल नेविगेशन",
+  "ai_assisted_note": "AI-सहायता प्राप्त सिफारिशें",
+  "ai_assisted_note_aria": "AI-सहायता प्राप्त सिफारिशें। पूरा अस्वीकरण गोपनीयता नीति और नियम व शर्तों में उपलब्ध है।",
+  "ai_assisted_learn_more": "और जानें",
+  "terms_conditions": "नियम व शर्तें"
 }

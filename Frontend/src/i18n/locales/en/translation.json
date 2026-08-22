@@ -235,5 +235,11 @@
   "showing_date": "Showing",
   "filter_by_date": "Filter scans by date",
   "no_scans_this_day_hint": "Nothing was scanned on this date. Pick another day above.",
-  "mobile_navigation": "Mobile navigation"
+  "mobile_navigation": "Mobile navigation",
+  "ai_recommendation_disclaimer_title": "AI recommendation only",
+  "ai_recommendation_disclaimer_body": "This AI-generated result may be inaccurate and is general information, not medical advice. Check the product label and consult a qualified doctor or registered dietitian before making health or dietary decisions.",
+  "ai_assisted_note": "AI-assisted recommendations",
+  "ai_assisted_note_aria": "AI-assisted recommendations. Full disclaimer available in Privacy Policy and Terms & Conditions.",
+  "ai_assisted_learn_more": "Learn more",
+  "terms_conditions": "Terms & Conditions"
 }

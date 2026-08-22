@@ -617,6 +617,40 @@ button, a, input, select, textarea, .interactive-card {
   animation: spin 0.9s linear infinite;
 }
 
+.result-ai-disclaimer {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--warning) 35%, var(--ns-border-light));
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--warning) 8%, var(--ns-surface-high));
+  color: var(--ns-on-surface-var);
+}
+
+.result-ai-disclaimer > svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--warning);
+}
+
+.result-ai-disclaimer strong {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--ns-on-surface);
+  font-family: var(--font-headline);
+  font-size: 0.86rem;
+  font-weight: 850;
+}
+
+.result-ai-disclaimer p {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
 .result-tabs {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -10789,6 +10823,51 @@ html.dark .auth-form-mark {
   background: var(--ns-page-bg);
   font-family: var(--font-main);
   color: var(--ns-on-surface);
+}
+
+/* ------------------------------------------------------------------ */
+/*  AI hint (app shell footer)                                         */
+/* ------------------------------------------------------------------ */
+
+/* Brief, single-line note that the recommendations in the app are
+   AI-assisted. Lives in the shell so it is present on every protected
+   screen without each page having to re-implement it. The full AI
+   limitations and medical disclaimer are documented in the Privacy Policy
+   and Terms & Conditions pages only. The hint itself is intentionally
+   muted and centred so it does not compete with the page content. */
+.ai-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 16px calc(8px + env(safe-area-inset-bottom, 0px));
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ns-outline);
+  text-align: center;
+  letter-spacing: 0.01em;
+  pointer-events: none;
+  user-select: none;
+}
+
+.ai-hint .ai-hint-icon {
+  flex: 0 0 auto;
+  color: var(--ns-primary);
+  opacity: 0.85;
+}
+
+/* Slightly more prominent variant for surfaces that want a touch more
+   presence than the shell footer. Same content, more breathing room. */
+.ai-hint--light {
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--ns-primary) 5%, var(--ns-surface-low));
+  border: 1px solid var(--ns-border-light);
+  color: var(--ns-on-surface-var);
+  pointer-events: auto;
+  user-select: text;
 }
 
 .legal-page-header {

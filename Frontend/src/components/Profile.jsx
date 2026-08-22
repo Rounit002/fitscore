@@ -1201,9 +1201,10 @@ export default function Profile({ userProfile, userAuth, authToken, onBack, onLo
         <ProfileSection title={t('support_legal')}>
           <ProfileAction label={t('request_feature')} icon={Globe2} onClick={onNavigateFeatures} area="support" />
           <ProfileAction label={t('support_email')} icon={Mail} onClick={mailSupport} area="support" />
-          <ProfileAction label={t('terms_condition')} icon={ShieldCheck} onClick={() => setModal('terms')} area="support" />
-          {/* Opens the full policy page rather than a one-line modal: it has to
-              be a shareable URL for the store listing and OAuth consent screen. */}
+          {/* Both legal pages open at shareable URLs rather than modals so the
+              full AI disclaimer and limitations can live in one place and be
+              linked from the store listing and OAuth consent screens. */}
+          <ProfileAction label={t('terms_condition')} icon={ShieldCheck} onClick={() => navigate('/terms-conditions')} area="support" />
           <ProfileAction label={t('privacy_policy')} icon={Lock} onClick={() => navigate('/privacy-policy')} area="support" />
         </ProfileSection>
 
@@ -1346,13 +1347,6 @@ export default function Profile({ userProfile, userAuth, authToken, onBack, onLo
               </button>
             ))}
           </div>
-        </ProfileModal>
-      )}
-
-
-      {modal === 'terms' && (
-        <ProfileModal title="Terms & Condition" onClose={() => setModal(null)}>
-          <p>bitezsnap provides nutrition insights to help your choices. It is not a substitute for professional medical advice.</p>
         </ProfileModal>
       )}
 

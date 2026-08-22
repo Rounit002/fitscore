@@ -224,5 +224,9 @@
   "showing_date": "Mostrando",
   "filter_by_date": "Filtrar escaneos por fecha",
   "no_scans_this_day_hint": "No se escaneó nada en esta fecha. Elige otro día arriba.",
-  "mobile_navigation": "Navegación móvil"
+  "mobile_navigation": "Navegación móvil",
+  "ai_assisted_note": "Recomendaciones con asistencia de IA",
+  "ai_assisted_note_aria": "Recomendaciones con asistencia de IA. Aviso completo disponible en la Política de Privacidad y los Términos y Condiciones.",
+  "ai_assisted_learn_more": "Más información",
+  "terms_conditions": "Términos y Condiciones"
 }

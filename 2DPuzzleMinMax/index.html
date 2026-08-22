@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Arrow Puzzle — Tap to Clear</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo">➤</div>
+        <div class="title">
+          <h1>Arrow Puzzle</h1>
+          <p>Find the free path. Tap. Relax.</p>
+        </div>
+      </div>
+      <div class="stats">
+        <div class="stat" title="Level">
+          <span class="stat-label">Level</span>
+          <span class="stat-value" id="level-value">1</span>
+        </div>
+        <div class="stat" title="Lives">
+          <span class="stat-label">Lives</span>
+          <span class="stat-value lives" id="lives-value">♥♥♥</span>
+        </div>
+        <div class="stat" title="Arrows left">
+          <span class="stat-label">Arrows</span>
+          <span class="stat-value" id="arrows-value">0</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="stage">
+      <canvas id="board" width="640" height="640" aria-label="Arrow puzzle board"></canvas>
+
+      <div class="overlay" id="overlay">
+        <div class="overlay-card">
+          <h2 id="overlay-title">Arrow Puzzle</h2>
+          <p id="overlay-text">Tap an arrow to send it on its way.<br/>If the path is clear, it escapes. If not, you lose a life.</p>
+          <div class="overlay-actions">
+            <button class="btn primary" id="primary-btn">Start</button>
+            <button class="btn ghost hidden" id="secondary-btn">Restart</button>
+          </div>
+          <p class="overlay-hint" id="overlay-hint"></p>
+        </div>
+      </div>
+    </main>
+
+    <footer class="actions">
+      <button class="btn" id="hint-btn" title="Highlight an arrow that can escape">
+        <span class="btn-icon">💡</span> Hint
+      </button>
+      <button class="btn" id="reset-btn" title="Restart this level">
+        <span class="btn-icon">↻</span> Reset
+      </button>
+      <button class="btn" id="menu-btn" title="Back to menu">
+        <span class="btn-icon">☰</span> Menu
+      </button>
+    </footer>
+  </div>
+
+  <script src="levels.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

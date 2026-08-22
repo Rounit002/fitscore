@@ -1,5 +1,6 @@
 export default {
   testEnvironment: 'jsdom',
+  setupFiles: ['<rootDir>/src/test-polyfill.js'],
   transform: {
     '^.+\\.[jt]sx?$': 'babel-jest'
   },

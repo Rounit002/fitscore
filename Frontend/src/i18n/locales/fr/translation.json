@@ -224,5 +224,9 @@
   "showing_date": "Affichage",
   "filter_by_date": "Filtrer les scans par date",
   "no_scans_this_day_hint": "Rien n'a été scanné à cette date. Choisissez un autre jour ci-dessus.",
-  "mobile_navigation": "Navigation mobile"
+  "mobile_navigation": "Navigation mobile",
+  "ai_assisted_note": "Recommandations assistées par IA",
+  "ai_assisted_note_aria": "Recommandations assistées par IA. Avertissement complet disponible dans la politique de confidentialité et les conditions d'utilisation.",
+  "ai_assisted_learn_more": "En savoir plus",
+  "terms_conditions": "Conditions d'utilisation"
 }
